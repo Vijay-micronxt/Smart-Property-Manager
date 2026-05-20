@@ -1,0 +1,6 @@
+app_name = "property_commissions"
+app_title = "Property Commissions"
+app_publisher = "Smart Property Manager"
+app_description = "Sales Commission Rules, Entries and Settlements"
+app_email = "admin@smartproperty.com"
+app_license = "MIT"

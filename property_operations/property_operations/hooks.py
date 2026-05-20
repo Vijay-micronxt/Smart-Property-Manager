@@ -1,0 +1,6 @@
+app_name = "property_operations"
+app_title = "Property Operations"
+app_publisher = "Smart Property Manager"
+app_description = "Property Maintenance, Work Orders, Inspections and Utility Tracking"
+app_email = "admin@smartproperty.com"
+app_license = "MIT"
