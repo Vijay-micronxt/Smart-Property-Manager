@@ -1,0 +1,122 @@
+{
+  "actions": [],
+  "autoname": "field:property_name",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "property_name",
+    "property_type",
+    "company",
+    "status",
+    "launch_date",
+    "column_break_1",
+    "total_area",
+    "address",
+    "section_geo",
+    "geo_location"
+  ],
+  "fields": [
+    {
+      "fieldname": "property_name",
+      "fieldtype": "Data",
+      "label": "Property Name",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "property_type",
+      "fieldtype": "Select",
+      "label": "Property Type",
+      "options": "Township\nCommunity\nApartment\nFarmland\nCommercial Complex\nIndustrial",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "company",
+      "fieldtype": "Link",
+      "label": "Company",
+      "options": "Company",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Active\nInactive\nUnder Development\nCompleted",
+      "default": "Active",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "launch_date",
+      "fieldtype": "Date",
+      "label": "Launch Date"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "total_area",
+      "fieldtype": "Float",
+      "label": "Total Area (sq ft)"
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "label": "Address"
+    },
+    {
+      "fieldname": "section_geo",
+      "fieldtype": "Section Break",
+      "label": "GIS Location"
+    },
+    {
+      "fieldname": "geo_location",
+      "fieldtype": "Geolocation",
+      "label": "Geo Location"
+    }
+  ],
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Property",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Sales User",
+      "share": 1
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Operations User"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}
