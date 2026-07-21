@@ -8,6 +8,12 @@ app_license = "MIT"
 app_include_js = []
 app_include_css = []
 
+doctype_js = {
+    "Property": "public/js/property.js",
+    "Property Unit": "public/js/property_unit.js",
+    "Payment Plan": "public/js/payment_plan.js",
+}
+
 doc_events = {
     "Property Booking": {
         "on_submit": "property_core.property_core.doctype.property_booking.property_booking.on_submit",

@@ -11,6 +11,24 @@ DEFAULT_MILESTONES = [
 ]
 
 
+def _get_milestones(booking_doc):
+    unit = frappe.get_doc("Property Unit", booking_doc.property_unit)
+    template_name = frappe.db.get_value("Property", unit.property, "payment_plan_template")
+
+    if template_name:
+        template = frappe.get_doc("Payment Plan Template", template_name)
+        return [
+            {
+                "milestone": row.milestone,
+                "offset_months": row.offset_months,
+                "percentage": row.percentage,
+            }
+            for row in template.milestones
+        ]
+
+    return DEFAULT_MILESTONES
+
+
 def generate_payment_plan(booking_doc):
     unit = frappe.get_doc("Property Unit", booking_doc.property_unit)
     total_price = unit.base_price or 0
@@ -23,8 +41,9 @@ def generate_payment_plan(booking_doc):
         return
 
     base_date = booking_doc.booking_date or today()
+    milestones = _get_milestones(booking_doc)
 
-    for item in DEFAULT_MILESTONES:
+    for item in milestones:
         pp = frappe.new_doc("Payment Plan")
         pp.booking = booking_doc.name
         pp.milestone = item["milestone"]

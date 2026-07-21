@@ -13,6 +13,7 @@
     "column_break_1",
     "total_area",
     "address",
+    "payment_plan_template",
     "section_geo",
     "geo_location"
   ],
@@ -70,9 +71,18 @@
       "label": "Address"
     },
     {
+      "fieldname": "payment_plan_template",
+      "fieldtype": "Link",
+      "label": "Payment Plan Template",
+      "options": "Payment Plan Template",
+      "description": "Default milestone split for bookings under this property"
+    },
+    {
       "fieldname": "section_geo",
       "fieldtype": "Section Break",
-      "label": "GIS Location"
+      "label": "GIS Location",
+      "collapsible": 1,
+      "collapsed": 1
     },
     {
       "fieldname": "geo_location",
@@ -80,7 +90,13 @@
       "label": "Geo Location"
     }
   ],
-  "links": [],
+  "links": [
+    {
+      "group": "Units",
+      "link_doctype": "Property Unit",
+      "link_fieldname": "property"
+    }
+  ],
   "modified": "2024-01-01 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "Property Core",

@@ -15,6 +15,7 @@
     "facing",
     "floor",
     "base_price",
+    "item_code",
     "section_customer",
     "customer",
     "section_geo",
@@ -88,6 +89,13 @@
       "label": "Base Price"
     },
     {
+      "fieldname": "item_code",
+      "fieldtype": "Link",
+      "label": "ERPNext Item",
+      "options": "Item",
+      "description": "ERPNext Item used when generating Sales Invoices for this unit. Create an Item (e.g. 'Plot', 'Flat') and link it here."
+    },
+    {
       "fieldname": "section_customer",
       "fieldtype": "Section Break",
       "label": "Customer"
@@ -102,7 +110,9 @@
     {
       "fieldname": "section_geo",
       "fieldtype": "Section Break",
-      "label": "GIS Location"
+      "label": "GIS Location",
+      "collapsible": 1,
+      "collapsed": 1
     },
     {
       "fieldname": "geo_location",
@@ -110,7 +120,18 @@
       "label": "Geo Location"
     }
   ],
-  "links": [],
+  "links": [
+    {
+      "group": "Transactions",
+      "link_doctype": "Property Booking",
+      "link_fieldname": "property_unit"
+    },
+    {
+      "group": "Transactions",
+      "link_doctype": "Property Allocation",
+      "link_fieldname": "property_unit"
+    }
+  ],
   "modified": "2024-01-01 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "Property Core",
