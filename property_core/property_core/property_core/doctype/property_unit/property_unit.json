@@ -163,6 +163,11 @@
     {
       "read": 1,
       "role": "Operations User"
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Property Owner"
     }
   ],
   "sort_field": "modified",

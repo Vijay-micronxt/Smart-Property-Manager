@@ -1,6 +1,6 @@
 # Smart Property Manager — Test Cases
 
-> **Last updated:** 2026-07-21 — added Customer KYC test cases (TC-KYC-01 to TC-KYC-08)
+> **Last updated:** 2026-07-21 — Phase 1: added TC-AM (amenities), TC-PD (project documents), TC-LR (lease renewal), TC-LF (late fees), TC-RO (role permissions)
 > Add test cases for every new feature. Mark status after each test run.
 > Status: ✅ Pass | ❌ Fail | ⏭ Skip | 🔄 In Progress
 
@@ -462,6 +462,191 @@ Before running any test:
 | **Expected** | Error logged. Invoice not generated. |
 | **Status** | ⏭ |
 
+### TC-CS-03 — Late Fee Settings Saved
+| | |
+|---|---|
+| **Steps** | Enable Late Fees, set Grace Period = 7, Percentage = 2, Late Fee Item Code → Save |
+| **Expected** | All fields saved without error. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Property Amenities
+
+### TC-AM-01 — Add Amenity Row
+| | |
+|---|---|
+| **Use Case** | UC-13 |
+| **Steps** | Open Property → expand Amenities → Add Row → fill amenity_name="Swimming Pool", amenity_type="Recreation" → Save |
+| **Expected** | Amenity row saved on Property. Visible on re-open. |
+| **Status** | ⏭ |
+
+### TC-AM-02 — Multiple Amenity Types
+| | |
+|---|---|
+| **Steps** | Add rows: "CCTV" (Security), "Solar Panels" (Green), "Gym" (Recreation) → Save |
+| **Expected** | All three rows saved. Type dropdown options: Basic / Security / Recreation / Commercial / Green / Smart Home. |
+| **Status** | ⏭ |
+
+### TC-AM-03 — Amenities Section Collapsed by Default
+| | |
+|---|---|
+| **Steps** | Open a Property form |
+| **Expected** | Amenities section is collapsed. Main fields visible without scrolling. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Project Documents
+
+### TC-PD-01 — Attach Project Document
+| | |
+|---|---|
+| **Use Case** | UC-14 |
+| **Steps** | Open Property → expand Project Documents → Add Row → fill document_name="Title Deed", document_type="Title Deed", upload file → Save |
+| **Expected** | Document row saved. File link visible on re-open. |
+| **Status** | ⏭ |
+
+### TC-PD-02 — Document Expiry Date
+| | |
+|---|---|
+| **Steps** | Add document row with expiry_date set 1 year from today → Save |
+| **Expected** | expiry_date stored and visible in the table. |
+| **Status** | ⏭ |
+
+### TC-PD-03 — Multiple Document Types
+| | |
+|---|---|
+| **Steps** | Add rows with types: Layout Plan, NOC, Encumbrance Certificate |
+| **Expected** | All type options available in dropdown. Rows saved correctly. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Lease Renewal
+
+### TC-LR-01 — Renew Lease (Happy Path)
+| | |
+|---|---|
+| **Use Case** | UC-15 |
+| **Steps** | Submit a Lease allocation → click Actions → Renew Lease → set new_end_date = 1 year ahead, escalation_percent = 0 → Renew |
+| **Expected** | end_date updated. rent_amount unchanged. Success alert shown. |
+| **Status** | ⏭ |
+
+### TC-LR-02 — Renew with Rent Escalation
+| | |
+|---|---|
+| **Steps** | Active Lease with rent_amount = 25000 → Renew Lease with escalation_percent = 10 → Renew |
+| **Expected** | rent_amount updated to 27500. new_end_date set. Alert shows new rent amount. |
+| **Status** | ⏭ |
+
+### TC-LR-03 — Renewal Blocked on Non-Lease Allocation
+| | |
+|---|---|
+| **Steps** | Submit a Sale allocation → Actions → Renew Lease |
+| **Expected** | "Renew Lease" button not visible (only shown for Lease/Rental types). |
+| **Status** | ⏭ |
+
+### TC-LR-04 — Renewal Blocked on Cancelled Allocation
+| | |
+|---|---|
+| **Steps** | Call renew_lease() API directly on a cancelled allocation |
+| **Expected** | Server throws "Only active submitted allocations can be renewed." |
+| **Status** | ⏭ |
+
+### TC-LR-05 — New End Date Required
+| | |
+|---|---|
+| **Steps** | Open Renew Lease dialog → leave New End Date blank → click Renew |
+| **Expected** | Dialog validation blocks submission. "New End Date is mandatory." |
+| **Status** | ⏭ |
+
+---
+
+## Module: Late Fee Automation
+
+### TC-LF-01 — Late Fee Applied After Grace Period
+| | |
+|---|---|
+| **Use Case** | UC-16 |
+| **Steps** | 1. Enable late fees in Settings (grace=5, pct=2, item configured). 2. Create a Payment Plan milestone with due_date = 6 days ago, payment_status=Pending. 3. Run billing engine. |
+| **Expected** | late_fee_applied = 1. late_fee_amount = milestone_amount × 2%. Sales Invoice created and linked in late_fee_invoice. payment_status = Overdue. |
+| **Status** | ⏭ |
+
+### TC-LF-02 — Within Grace Period — No Fee
+| | |
+|---|---|
+| **Steps** | Same config. Milestone due_date = 3 days ago (within 5-day grace). Run billing engine. |
+| **Expected** | late_fee_applied = 0. No invoice created. payment_status unchanged. |
+| **Status** | ⏭ |
+
+### TC-LF-03 — Fee Not Applied Twice
+| | |
+|---|---|
+| **Steps** | Run billing engine on a milestone that already has late_fee_applied = 1. |
+| **Expected** | No second invoice created. billing engine skips due to filter on late_fee_applied = 0. |
+| **Status** | ⏭ |
+
+### TC-LF-04 — Late Fees Disabled — No Action
+| | |
+|---|---|
+| **Steps** | Set enable_late_fees = unchecked in Settings. Create overdue milestone. Run billing engine. |
+| **Expected** | No late fee applied. apply_late_fees() returns immediately. |
+| **Status** | ⏭ |
+
+### TC-LF-05 — Missing Late Fee Item Logs Error
+| | |
+|---|---|
+| **Steps** | Enable late fees but set late_fee_item_code to a non-existent ERPNext Item. Run billing engine on overdue milestone. |
+| **Expected** | Frappe Error Log entry created. Other milestones still processed. |
+| **Status** | ⏭ |
+
+### TC-LF-06 — Already Invoiced Milestone Not Charged
+| | |
+|---|---|
+| **Steps** | Milestone with payment_status = Invoiced (not Pending). Run billing engine. |
+| **Expected** | Late fee NOT applied (filter requires payment_status = Pending). |
+| **Status** | ⏭ |
+
+---
+
+## Module: Role Permissions
+
+### TC-RO-01 — Property Owner Read Access
+| | |
+|---|---|
+| **Steps** | Login as user with Property Owner role only → navigate to Property list |
+| **Expected** | Property list loads. No Create/Edit/Delete buttons visible. |
+| **Status** | ⏭ |
+
+### TC-RO-02 — Property Owner Cannot Book
+| | |
+|---|---|
+| **Steps** | Property Owner user → Property Booking → New |
+| **Expected** | Permission denied error. |
+| **Status** | ⏭ |
+
+### TC-RO-03 — Tenant Can Read Agreement
+| | |
+|---|---|
+| **Steps** | Login as user with Tenant role → open Property Agreement |
+| **Expected** | Agreement visible. Print button available. No edit allowed. |
+| **Status** | ⏭ |
+
+### TC-RO-04 — Tenant Can Read Payment Plan
+| | |
+|---|---|
+| **Steps** | Tenant user → open Payment Plan list |
+| **Expected** | Payment Plans visible. Print available. No write access. |
+| **Status** | ⏭ |
+
+### TC-RO-05 — Tenant Cannot Access Property Booking
+| | |
+|---|---|
+| **Steps** | Tenant user → navigate to Property Booking |
+| **Expected** | Permission denied. |
+| **Status** | ⏭ |
+
 ---
 
 ## Regression Checklist
@@ -476,6 +661,14 @@ Run after every code change:
 - [ ] TC-PP-01: Invoice generated correctly
 - [ ] TC-A-01: Sale allocation → unit becomes Allocated
 - [ ] TC-LB-02: Billing engine generates rent invoice
+- [ ] TC-AM-01: Amenity row saved on Property
+- [ ] TC-PD-01: Project document attached to Property
+- [ ] TC-LR-01: Lease renewed with new end date
+- [ ] TC-LR-02: Rent escalation applied correctly
+- [ ] TC-LF-01: Late fee applied after grace period
+- [ ] TC-LF-03: Late fee not applied twice
+- [ ] TC-RO-01: Property Owner has read-only access
+- [ ] TC-RO-03: Tenant can read Agreement
 - [ ] TC-SD-01: Security deposit JE created correctly
 
 ---

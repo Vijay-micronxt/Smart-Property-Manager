@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import getdate, today, add_months, formatdate
+from frappe.utils import getdate, today, add_months, add_days, formatdate
 
 
 FREQUENCY_MONTHS = {
@@ -40,6 +40,8 @@ def run_daily_billing():
             _advance_billing_date(alloc)
         except Exception:
             frappe.log_error(frappe.get_traceback(), f"Rent Billing Error: {alloc.name}")
+
+    apply_late_fees(today_date)
 
 
 def _create_rent_invoice(alloc):
@@ -96,6 +98,68 @@ def _expire_allocation(allocation_name):
     frappe.db.set_value(
         "Property Allocation", allocation_name, "status", "Expired", update_modified=False
     )
+
+
+def apply_late_fees(today_date=None):
+    """Apply late fee Sales Invoices to overdue Payment Plan milestones."""
+    settings = frappe.get_single("Property Core Settings")
+    if not getattr(settings, "enable_late_fees", False):
+        return
+
+    late_fee_pct = float(settings.late_fee_percentage or 0)
+    late_fee_item = settings.late_fee_item_code
+    grace_days = int(settings.late_fee_grace_days or 5)
+
+    if not late_fee_pct or not late_fee_item:
+        return
+
+    cutoff = add_days(today_date or getdate(today()), -grace_days)
+
+    overdue_plans = frappe.get_all(
+        "Payment Plan",
+        filters={
+            "payment_status": "Pending",
+            "due_date": ["<", cutoff],
+            "late_fee_applied": 0,
+        },
+        fields=["name", "booking", "amount", "milestone"],
+    )
+
+    for plan in overdue_plans:
+        try:
+            booking = frappe.get_doc("Property Booking", plan.booking)
+            late_fee_amount = plan.amount * late_fee_pct / 100
+
+            if not frappe.db.exists("Item", late_fee_item):
+                frappe.throw(
+                    frappe._(
+                        "Late Fee Item '{0}' not found. Configure in Property Core Settings."
+                    ).format(late_fee_item)
+                )
+
+            invoice = frappe.new_doc("Sales Invoice")
+            invoice.customer = booking.customer
+            invoice.append("items", {
+                "item_code": late_fee_item,
+                "description": "Late Fee — {} ({})".format(plan.milestone, plan.name),
+                "qty": 1,
+                "rate": late_fee_amount,
+            })
+            invoice.insert(ignore_permissions=True)
+
+            frappe.db.set_value(
+                "Payment Plan",
+                plan.name,
+                {
+                    "late_fee_applied": 1,
+                    "late_fee_amount": late_fee_amount,
+                    "late_fee_invoice": invoice.name,
+                    "payment_status": "Overdue",
+                },
+                update_modified=False,
+            )
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Late Fee Error: {plan.name}")
 
 
 def _period_label(billing_date, frequency):

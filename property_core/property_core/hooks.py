@@ -47,6 +47,8 @@ fixtures = [
         "Operations User",
         "Finance User",
         "Commission Manager",
+        "Property Owner",
+        "Tenant",
     ]]]},
     {"dt": "Workflow", "filters": [["document_type", "in", [
         "Property Booking",

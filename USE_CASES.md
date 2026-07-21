@@ -1,6 +1,6 @@
 # Smart Property Manager — Use Cases
 
-> **Last updated:** 2026-07-21 — added UC-12 Customer KYC
+> **Last updated:** 2026-07-21 — Phase 1: added UC-13 Property Amenities, UC-14 Project Documents, UC-15 Renew Lease, UC-16 Late Fee Automation
 > Add a new use case whenever a new business workflow is implemented.
 
 ---
@@ -270,15 +270,95 @@
 
 ---
 
+## UC-13: Add Amenities to a Property
+
+**Actor:** Property Manager
+**Trigger:** Property listing needs to advertise its facilities.
+
+**Steps:**
+1. Open the Property record
+2. Expand **Amenities** section
+3. Click Add Row in the Amenities table
+4. Enter Amenity name (e.g. "Swimming Pool"), Type (Recreation), optional Description
+5. Repeat for each amenity
+6. Save
+
+**Outcome:** Amenities stored on the Property record, visible to Sales Users when pitching the property.
+
+---
+
+## UC-14: Attach Project Documents to a Property
+
+**Actor:** Property Manager
+**Trigger:** Legal or approval documents need to be stored against the project.
+
+**Steps:**
+1. Open the Property record
+2. Expand **Project Documents** section
+3. Click Add Row in the Documents table
+4. Enter Document Name, Type (e.g. Title Deed), upload File, optionally set Expiry Date
+5. Save
+
+**Outcome:** Documents stored and linked to the property. Finance/Operations teams can access without leaving the form.
+
+---
+
+## UC-15: Renew a Lease
+
+**Actor:** Property Manager
+**Trigger:** A lease is approaching its end date and the tenant wishes to renew.
+
+**Pre-condition:** Property Allocation is submitted with status Active and type Lease or Rental.
+
+**Steps:**
+1. Open the Property Allocation
+2. Click Actions → **Renew Lease**
+3. In the dialog:
+   - Set **New End Date** (required)
+   - Optionally enter **Rent Escalation (%)** (0 = keep current rent)
+4. Click **Renew**
+
+**Outcome:**
+- `end_date` updated to the new date
+- If escalation > 0: `rent_amount` updated accordingly (e.g. 10% → rent × 1.10)
+- Success alert shown; form reloads with updated values
+- Next billing cycle continues unchanged
+
+**Error condition:** If allocation is not Active/submitted or is not Lease/Rental — error thrown and no change made.
+
+---
+
+## UC-16: Automatic Late Fee on Overdue Milestones
+
+**Actor:** ERPNext System (scheduled daily job)
+**Trigger:** Payment Plan milestone is unpaid beyond the grace period.
+
+**Pre-condition:**
+- `enable_late_fees` = checked in Property Core Settings
+- `late_fee_percentage`, `late_fee_grace_days`, and `late_fee_item_code` configured
+
+**Steps (automated):**
+1. Daily billing engine runs
+2. Queries Payment Plans where `payment_status = Pending`, `due_date < today - grace_days`, `late_fee_applied = 0`
+3. Calculates `late_fee_amount = milestone_amount × late_fee_percentage / 100`
+4. Creates a Sales Invoice for the late fee and links it to the milestone
+5. Sets `late_fee_applied = 1`, `payment_status = Overdue`
+
+**Outcome:** Overdue milestones automatically flagged; Finance team can collect the late fee via the linked Sales Invoice.
+
+**Error condition:** If late fee Item not found — logged to Frappe Error Log per plan, others continue unaffected.
+
+---
+
 ## Future Use Cases (Not Yet Implemented)
 
 | ID | Use Case | App |
 |---|---|---|
-| UC-13 | Raise Maintenance Request | property_operations |
-| UC-14 | Assign Work Order to Vendor | property_operations |
-| UC-15 | Run Inspection Checklist | property_operations |
-| UC-16 | Record Utility Meter Reading | property_operations |
-| UC-17 | Define Commission Rule for Sales Person | property_commissions |
-| UC-18 | Auto-generate Commission Entry on Booking | property_commissions |
-| UC-19 | Settle Commission Payout | property_commissions |
-| UC-20 | Tenant Portal — view invoices and submit requests | customer portal |
+| UC-17 | Raise Maintenance Request | property_operations |
+| UC-18 | Assign Work Order to Vendor | property_operations |
+| UC-19 | Run Inspection Checklist | property_operations |
+| UC-20 | Record Utility Meter Reading | property_operations |
+| UC-21 | Define Commission Rule for Sales Person | property_commissions |
+| UC-22 | Auto-generate Commission Entry on Booking | property_commissions |
+| UC-23 | Settle Commission Payout | property_commissions |
+| UC-24 | Tenant Portal — view invoices and submit requests | customer portal |

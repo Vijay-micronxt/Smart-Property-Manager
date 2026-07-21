@@ -1,6 +1,6 @@
 # Smart Property Manager — Feature List
 
-> **Last updated:** 2026-07-21 — added Customer KYC custom fields
+> **Last updated:** 2026-07-21 — Phase 1: amenities/documents on Property, lease renewal, late fees, Property Owner and Tenant roles
 > Update this file whenever a DocType, engine, or workflow is added, changed, or removed.
 
 ---
@@ -39,6 +39,10 @@ Master record for a real estate project.
 | geo_location | Geolocation | Leaflet map widget (collapsible section) |
 
 **Connections (shown on form):** Property Units
+
+**Child tables:**
+- `amenities` → Property Amenity (amenity_name, amenity_type, description) — collapsible section
+- `property_documents` → Property Document (document_name, document_type, document_file, expiry_date, notes) — collapsible section
 
 ---
 
@@ -166,6 +170,9 @@ Installment milestone for a booking.
 | amount | Currency | Required (> 0 validated) |
 | invoice | Link → Sales Invoice | Read-only; set on invoice generation |
 | payment_status | Select | Pending / Invoiced / Paid / Overdue |
+| late_fee_applied | Check | Read-only; set by billing engine |
+| late_fee_amount | Currency | Read-only; calculated by billing engine |
+| late_fee_invoice | Link → Sales Invoice | Read-only; auto-created late fee invoice |
 
 **UI Buttons:**
 - Generate Invoice → calls `generate_invoice()` (visible when Pending, no invoice)
@@ -210,13 +217,17 @@ Tracks each auto-generated rent invoice per billing cycle.
 ---
 
 #### Property Core Settings *(Single)*
-One-time configuration for accounting defaults.
+One-time configuration for accounting defaults and automation.
 
 | Field | Notes |
 |---|---|
 | default_company | Required for Journal Entry creation |
 | security_deposit_account | Liability account for deposit JEs |
 | rent_item_code | ERPNext Item used for auto-generated rent invoices |
+| enable_late_fees | Toggle late fee automation (default off) |
+| late_fee_grace_days | Days after due date before fee applies (default 5) |
+| late_fee_percentage | Late fee as % of milestone amount |
+| late_fee_item_code | ERPNext Item used for late fee Sales Invoices |
 
 ---
 
@@ -247,7 +258,7 @@ Generates Payment Plan records on booking confirmation.
 ---
 
 #### Billing Engine (`utils/billing_engine.py`)
-Daily scheduled job for recurring lease/rental invoicing.
+Daily scheduled job for recurring lease/rental invoicing and late fee enforcement.
 
 - Runs via `scheduler_events → daily` in `hooks.py`
 - Queries active Lease/Rental allocations where `next_billing_date <= today`
@@ -255,6 +266,14 @@ Daily scheduled job for recurring lease/rental invoicing.
 - Logs each cycle in `Rent Invoice Log`
 - Advances `next_billing_date` by billing frequency
 - Auto-expires allocations past their `end_date`
+- Calls `apply_late_fees()` at end of each daily run
+
+**`apply_late_fees()`:**
+- Reads `enable_late_fees`, `late_fee_grace_days`, `late_fee_percentage`, `late_fee_item_code` from Settings
+- Finds Pending Payment Plans where `due_date < today - grace_days` and `late_fee_applied = 0`
+- Creates a Sales Invoice for `amount × late_fee_percentage / 100`
+- Sets `late_fee_applied = 1`, `late_fee_amount`, `late_fee_invoice`, `payment_status = Overdue`
+- Errors logged per plan without stopping others
 
 ---
 
@@ -267,6 +286,18 @@ Daily scheduled job for recurring lease/rental invoicing.
 | Finance User | Read Allocations, Payment Plans, Rent Invoice Log |
 | Operations User | Read Properties, Units |
 | Commission Manager | (reserved for property_commissions app) |
+| Property Owner | Read Properties, Units, Allocations, Agreements |
+| Tenant | Read Agreements (own), Payment Plans (own) with print access |
+
+#### Lease Renewal (Property Allocation)
+
+**UI Button:** "Renew Lease" (Actions group) — visible on active Lease/Rental allocations.
+
+**Server method:** `renew_lease(allocation_name, new_end_date, escalation_percent)`
+- Sets `end_date` to `new_end_date`
+- If `escalation_percent > 0`: updates `rent_amount` = current × (1 + pct/100)
+- Returns `{new_end_date, new_rent_amount, escalation_applied}`
+- Throws if allocation is not active/submitted or is not Lease/Rental type
 
 ---
 

@@ -73,3 +73,27 @@ def on_submit(doc, method=None):
 
 def on_cancel(doc, method=None):
     pass
+
+
+@frappe.whitelist()
+def renew_lease(allocation_name, new_end_date, escalation_percent=0):
+    """Extend lease end date and optionally escalate rent. Returns updated values."""
+    doc = frappe.get_doc("Property Allocation", allocation_name)
+
+    if doc.docstatus != 1 or doc.status != "Active":
+        frappe.throw(frappe._("Only active submitted allocations can be renewed."))
+    if doc.allocation_type not in ("Lease", "Rental"):
+        frappe.throw(frappe._("Only Lease or Rental allocations support renewal."))
+
+    escalation_percent = float(escalation_percent or 0)
+    new_rent = doc.rent_amount * (1 + escalation_percent / 100)
+
+    doc.db_set("end_date", new_end_date, update_modified=True)
+    if escalation_percent:
+        doc.db_set("rent_amount", new_rent, update_modified=False)
+
+    return {
+        "new_end_date": new_end_date,
+        "new_rent_amount": new_rent,
+        "escalation_applied": bool(escalation_percent),
+    }

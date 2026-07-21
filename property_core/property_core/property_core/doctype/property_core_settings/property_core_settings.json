@@ -7,7 +7,12 @@
     "default_company",
     "section_accounts",
     "security_deposit_account",
-    "rent_item_code"
+    "rent_item_code",
+    "section_late_fees",
+    "enable_late_fees",
+    "late_fee_grace_days",
+    "late_fee_percentage",
+    "late_fee_item_code"
   ],
   "fields": [
     {
@@ -35,6 +40,38 @@
       "label": "Rent Item Code",
       "options": "Item",
       "description": "ERPNext Item used when auto-generating rent Sales Invoices (e.g. 'Monthly Rent')"
+    },
+    {
+      "fieldname": "section_late_fees",
+      "fieldtype": "Section Break",
+      "label": "Late Fee Settings"
+    },
+    {
+      "fieldname": "enable_late_fees",
+      "fieldtype": "Check",
+      "label": "Enable Late Fees",
+      "default": 0,
+      "description": "Automatically charge late fees on overdue Payment Plan milestones"
+    },
+    {
+      "fieldname": "late_fee_grace_days",
+      "fieldtype": "Int",
+      "label": "Grace Period (Days)",
+      "default": 5,
+      "description": "Days after due date before late fee is applied"
+    },
+    {
+      "fieldname": "late_fee_percentage",
+      "fieldtype": "Float",
+      "label": "Late Fee (%)",
+      "description": "Late fee as a percentage of the outstanding milestone amount"
+    },
+    {
+      "fieldname": "late_fee_item_code",
+      "fieldtype": "Link",
+      "label": "Late Fee Item Code",
+      "options": "Item",
+      "description": "ERPNext Item used when generating late fee Sales Invoices"
     }
   ],
   "issingle": 1,

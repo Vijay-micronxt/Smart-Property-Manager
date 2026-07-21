@@ -12,7 +12,11 @@
     "amount",
     "column_break_1",
     "invoice",
-    "payment_status"
+    "payment_status",
+    "section_late_fee",
+    "late_fee_applied",
+    "late_fee_amount",
+    "late_fee_invoice"
   ],
   "fields": [
     {
@@ -70,6 +74,32 @@
       "default": "Pending",
       "in_list_view": 1,
       "in_standard_filter": 1
+    },
+    {
+      "fieldname": "section_late_fee",
+      "fieldtype": "Section Break",
+      "label": "Late Fee",
+      "collapsible": 1,
+      "collapsed": 1
+    },
+    {
+      "fieldname": "late_fee_applied",
+      "fieldtype": "Check",
+      "label": "Late Fee Applied",
+      "read_only": 1
+    },
+    {
+      "fieldname": "late_fee_amount",
+      "fieldtype": "Currency",
+      "label": "Late Fee Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "late_fee_invoice",
+      "fieldtype": "Link",
+      "label": "Late Fee Invoice",
+      "options": "Sales Invoice",
+      "read_only": 1
     }
   ],
   "links": [],
@@ -100,6 +130,11 @@
     {
       "read": 1,
       "role": "Sales User"
+    },
+    {
+      "read": 1,
+      "print": 1,
+      "role": "Tenant"
     }
   ],
   "sort_field": "due_date",

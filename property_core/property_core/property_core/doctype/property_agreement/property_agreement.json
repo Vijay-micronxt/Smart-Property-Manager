@@ -153,6 +153,16 @@
     {
       "read": 1,
       "role": "Finance User"
+    },
+    {
+      "read": 1,
+      "print": 1,
+      "role": "Property Owner"
+    },
+    {
+      "read": 1,
+      "print": 1,
+      "role": "Tenant"
     }
   ],
   "sort_field": "modified",

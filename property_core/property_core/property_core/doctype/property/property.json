@@ -14,6 +14,10 @@
     "total_area",
     "address",
     "payment_plan_template",
+    "section_amenities",
+    "amenities",
+    "section_documents",
+    "property_documents",
     "section_geo",
     "geo_location"
   ],
@@ -78,6 +82,32 @@
       "description": "Default milestone split for bookings under this property"
     },
     {
+      "fieldname": "section_amenities",
+      "fieldtype": "Section Break",
+      "label": "Amenities",
+      "collapsible": 1,
+      "collapsed": 1
+    },
+    {
+      "fieldname": "amenities",
+      "fieldtype": "Table",
+      "label": "Amenities",
+      "options": "Property Amenity"
+    },
+    {
+      "fieldname": "section_documents",
+      "fieldtype": "Section Break",
+      "label": "Project Documents",
+      "collapsible": 1,
+      "collapsed": 1
+    },
+    {
+      "fieldname": "property_documents",
+      "fieldtype": "Table",
+      "label": "Documents",
+      "options": "Property Document"
+    },
+    {
       "fieldname": "section_geo",
       "fieldtype": "Section Break",
       "label": "GIS Location",
@@ -129,6 +159,11 @@
       "read": 1,
       "report": 1,
       "role": "Operations User"
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Property Owner"
     }
   ],
   "sort_field": "modified",
