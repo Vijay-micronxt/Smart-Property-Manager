@@ -1,0 +1,58 @@
+{
+  "actions": [],
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "default_company",
+    "section_accounts",
+    "security_deposit_account",
+    "rent_item_code"
+  ],
+  "fields": [
+    {
+      "fieldname": "default_company",
+      "fieldtype": "Link",
+      "label": "Default Company",
+      "options": "Company",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_accounts",
+      "fieldtype": "Section Break",
+      "label": "Accounting Defaults"
+    },
+    {
+      "fieldname": "security_deposit_account",
+      "fieldtype": "Link",
+      "label": "Security Deposit Account",
+      "options": "Account",
+      "description": "Liability account where security deposits are held (e.g. 'Security Deposits Received')"
+    },
+    {
+      "fieldname": "rent_item_code",
+      "fieldtype": "Link",
+      "label": "Rent Item Code",
+      "options": "Item",
+      "description": "ERPNext Item used when auto-generating rent Sales Invoices (e.g. 'Monthly Rent')"
+    }
+  ],
+  "issingle": 1,
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Property Core Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Property Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

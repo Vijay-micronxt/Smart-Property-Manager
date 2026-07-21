@@ -1,0 +1,104 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "naming_series",
+    "allocation",
+    "period_label",
+    "period_start",
+    "period_end",
+    "column_break_1",
+    "invoice",
+    "status",
+    "error_log"
+  ],
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "RINV-.####"
+    },
+    {
+      "fieldname": "allocation",
+      "fieldtype": "Link",
+      "label": "Property Allocation",
+      "options": "Property Allocation",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "period_label",
+      "fieldtype": "Data",
+      "label": "Billing Period",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "period_start",
+      "fieldtype": "Date",
+      "label": "Period Start",
+      "reqd": 1
+    },
+    {
+      "fieldname": "period_end",
+      "fieldtype": "Date",
+      "label": "Period End"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "invoice",
+      "fieldtype": "Link",
+      "label": "Sales Invoice",
+      "options": "Sales Invoice",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Invoiced\nPaid\nFailed",
+      "default": "Invoiced",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "error_log",
+      "fieldtype": "Small Text",
+      "label": "Error Log",
+      "read_only": 1
+    }
+  ],
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Rent Invoice Log",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Finance User"
+    }
+  ],
+  "sort_field": "period_start",
+  "sort_order": "DESC",
+  "track_changes": 0
+}

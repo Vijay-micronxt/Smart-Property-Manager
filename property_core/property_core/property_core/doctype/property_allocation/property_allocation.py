@@ -1,18 +1,37 @@
 import frappe
 from frappe.model.document import Document
+from frappe.utils import getdate, add_months
 from property_core.property_core.utils.availability_engine import allocate_unit
+
+RECURRING_TYPES = ("Lease", "Rental")
+FREQUENCY_MONTHS = {
+    "Monthly": 1,
+    "Quarterly": 3,
+    "Half-Yearly": 6,
+    "Yearly": 12,
+}
 
 
 class PropertyAllocation(Document):
     def validate(self):
         self.validate_dates()
+        self.validate_rent_fields()
 
     def validate_dates(self):
         if self.end_date and self.start_date and self.end_date < self.start_date:
             frappe.throw(frappe._("End Date cannot be before Start Date"))
 
+    def validate_rent_fields(self):
+        if self.allocation_type in RECURRING_TYPES:
+            if self.rent_amount and self.rent_amount <= 0:
+                frappe.throw(frappe._("Rent Amount must be greater than zero"))
+            if self.billing_day and not (1 <= self.billing_day <= 28):
+                frappe.throw(frappe._("Billing Day must be between 1 and 28"))
+
     def before_submit(self):
         self.status = "Active"
+        if self.allocation_type in RECURRING_TYPES and self.rent_amount:
+            self.next_billing_date = self._compute_first_billing_date()
 
     def on_submit(self):
         allocate_unit(self.property_unit, self.customer, self.allocation_type)
@@ -29,6 +48,23 @@ class PropertyAllocation(Document):
     def release_allocation(self):
         unit = frappe.get_doc("Property Unit", self.property_unit)
         unit.set_availability_status("Available")
+
+    def _compute_first_billing_date(self):
+        import datetime
+        start = getdate(self.start_date)
+        day = self.billing_day or 1
+        try:
+            return start.replace(day=day)
+        except ValueError:
+            # e.g. billing_day=31 in a short month — fall back to last day
+            import calendar
+            last_day = calendar.monthrange(start.year, start.month)[1]
+            return start.replace(day=last_day)
+
+    def advance_billing_date(self):
+        months = FREQUENCY_MONTHS.get(self.billing_frequency or "Monthly", 1)
+        new_date = add_months(self.next_billing_date, months)
+        self.db_set("next_billing_date", new_date, update_modified=False)
 
 
 def on_submit(doc, method=None):

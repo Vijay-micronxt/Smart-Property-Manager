@@ -12,6 +12,14 @@ doctype_js = {
     "Property": "public/js/property.js",
     "Property Unit": "public/js/property_unit.js",
     "Payment Plan": "public/js/payment_plan.js",
+    "Property Allocation": "public/js/property_allocation.js",
+    "Property Agreement": "public/js/property_agreement.js",
+}
+
+scheduler_events = {
+    "daily": [
+        "property_core.property_core.utils.billing_engine.run_daily_billing",
+    ]
 }
 
 doc_events = {
