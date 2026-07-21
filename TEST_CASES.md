@@ -649,6 +649,261 @@ Before running any test:
 
 ---
 
+## Module: Maintenance Request
+
+### TC-MR-01 — Raise Maintenance Request (Happy Path)
+| | |
+|---|---|
+| **Use Case** | UC-17 |
+| **Steps** | New Maintenance Request → select property_unit, enter subject="Leaking tap", description, priority=High → Save |
+| **Expected** | Record created with status=Open. raised_on = today. |
+| **Status** | ⏭ |
+
+### TC-MR-02 — Customer Auto-Filled from Unit
+| | |
+|---|---|
+| **Steps** | Select property_unit that has a current customer → observe customer field |
+| **Expected** | Customer auto-populated from unit's customer field. |
+| **Status** | ⏭ |
+
+### TC-MR-03 — Create Work Order from Request
+| | |
+|---|---|
+| **Use Case** | UC-18 |
+| **Steps** | Open saved Maintenance Request → Actions → Create Work Order |
+| **Expected** | New Work Order form opens with maintenance_request and property_unit pre-filled. |
+| **Status** | ⏭ |
+
+### TC-MR-04 — Work Order Completion Updates Request
+| | |
+|---|---|
+| **Steps** | Create Work Order linked to Maintenance Request → set WO status=Completed → Save |
+| **Expected** | Maintenance Request status → Resolved. work_order field populated. |
+| **Status** | ⏭ |
+
+### TC-MR-05 — Tenant Can Create Request
+| | |
+|---|---|
+| **Steps** | Login as Tenant user → New Maintenance Request |
+| **Expected** | Save succeeds. Tenant cannot edit status field. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Inspection Checklist
+
+### TC-INS-01 — Create Inspection (Happy Path)
+| | |
+|---|---|
+| **Use Case** | UC-19 |
+| **Steps** | New Inspection Checklist → property_unit, type=Move-In, date=today → Save |
+| **Expected** | Record created with status=Draft. |
+| **Status** | ⏭ |
+
+### TC-INS-02 — Load Default Items
+| | |
+|---|---|
+| **Steps** | On a new inspection with empty checklist_items → Actions → Load Default Items |
+| **Expected** | 12 items pre-populated with category filled. condition field blank (to be filled by inspector). |
+| **Status** | ⏭ |
+
+### TC-INS-03 — Cannot Complete Without Items
+| | |
+|---|---|
+| **Steps** | Set status=Completed on a checklist with empty checklist_items → Save |
+| **Expected** | Validation error: "Add at least one checklist item before marking as Completed" |
+| **Status** | ⏭ |
+
+### TC-INS-04 — All Condition Options Available
+| | |
+|---|---|
+| **Steps** | Add a checklist item → click condition dropdown |
+| **Expected** | Options: OK / Minor Issue / Major Issue / N/A |
+| **Status** | ⏭ |
+
+---
+
+## Module: Utility Meter & Utility Bill
+
+### TC-UM-01 — Create Utility Meter
+| | |
+|---|---|
+| **Use Case** | UC-20 |
+| **Steps** | New Utility Meter → property_unit, utility_type=Electricity, meter_number="E001", rate_per_unit=8, customer, utility_item_code → Save |
+| **Expected** | Meter saved. Utility Bills connection shown. |
+| **Status** | ⏭ |
+
+### TC-UM-02 — Zero Rate Blocked
+| | |
+|---|---|
+| **Steps** | Create Utility Meter with rate_per_unit=0 → Save |
+| **Expected** | Validation error: "Rate per Unit must be greater than zero" |
+| **Status** | ⏭ |
+
+### TC-UB-01 — Create Utility Bill (Happy Path)
+| | |
+|---|---|
+| **Steps** | New Utility Bill → utility_meter, period_start, period_end, previous_reading=100, current_reading=250 → Save |
+| **Expected** | units_consumed=150. amount=150×rate. property_unit and customer auto-filled from meter. |
+| **Status** | ⏭ |
+
+### TC-UB-02 — Live Calculation in UI
+| | |
+|---|---|
+| **Steps** | On Utility Bill form → enter previous_reading=200, current_reading=350 |
+| **Expected** | units_consumed and amount update live in the UI without saving. |
+| **Status** | ⏭ |
+
+### TC-UB-03 — Current Reading Below Previous Blocked
+| | |
+|---|---|
+| **Steps** | Set current_reading < previous_reading → Save |
+| **Expected** | Validation error: "Current Reading cannot be less than Previous Reading" |
+| **Status** | ⏭ |
+
+### TC-UB-04 — Generate Invoice
+| | |
+|---|---|
+| **Steps** | Saved Utility Bill with status=Draft → Actions → Generate Invoice → Confirm |
+| **Expected** | Sales Invoice created. invoice field linked. status → Invoiced. "View Invoice" button appears. |
+| **Status** | ⏭ |
+
+### TC-UB-05 — Generate Invoice Blocked Without Item Code
+| | |
+|---|---|
+| **Steps** | Utility Meter has no utility_item_code → Generate Invoice on linked bill |
+| **Expected** | Error: "Set 'Utility Item Code' on the Utility Meter..." |
+| **Status** | ⏭ |
+
+### TC-UB-06 — No Double Invoice
+| | |
+|---|---|
+| **Steps** | Already-invoiced Utility Bill → Actions → Generate Invoice |
+| **Expected** | Error: "Invoice already generated: SI-XXXX" |
+| **Status** | ⏭ |
+
+---
+
+## Module: Commission Rule
+
+### TC-CR-01 — Create Percentage Commission Rule
+| | |
+|---|---|
+| **Use Case** | UC-21 |
+| **Steps** | New Commission Rule → rule_name="Standard 2%", commission_type=Percentage, commission_rate=2, is_active=1 → Save |
+| **Expected** | Rule saved. Applies to all properties and sales persons. |
+| **Status** | ⏭ |
+
+### TC-CR-02 — Rate Over 100% Blocked
+| | |
+|---|---|
+| **Steps** | Commission Rule with commission_type=Percentage, commission_rate=150 → Save |
+| **Expected** | Validation error: "Commission Rate cannot exceed 100% for Percentage type" |
+| **Status** | ⏭ |
+
+### TC-CR-03 — Flat Commission Rule
+| | |
+|---|---|
+| **Steps** | commission_type=Flat, commission_rate=50000 (fixed ₹50k per booking) → Save |
+| **Expected** | Rule saved. No percentage cap validation triggered. |
+| **Status** | ⏭ |
+
+### TC-CR-04 — Zero Rate Blocked
+| | |
+|---|---|
+| **Steps** | commission_rate=0 → Save |
+| **Expected** | Validation error: "Commission Rate must be greater than zero" |
+| **Status** | ⏭ |
+
+---
+
+## Module: Commission Entry
+
+### TC-CE-01 — Auto-Created on Booking Submit
+| | |
+|---|---|
+| **Use Case** | UC-22 |
+| **Steps** | 1. Create active Commission Rule (2%, global). 2. Create and submit a Booking with sales_person set and booking_amount=1000000. |
+| **Expected** | Commission Entry created: commission_amount=20000 (2%), status=Pending, booking linked. |
+| **Status** | ⏭ |
+
+### TC-CE-02 — No Entry Without Sales Person
+| | |
+|---|---|
+| **Steps** | Submit a Booking with no sales_person |
+| **Expected** | No Commission Entry created. No error thrown. |
+| **Status** | ⏭ |
+
+### TC-CE-03 — No Entry Without Matching Rule
+| | |
+|---|---|
+| **Steps** | No Commission Rule exists (or all inactive). Submit Booking with sales_person. |
+| **Expected** | No Commission Entry created. No error thrown. |
+| **Status** | ⏭ |
+
+### TC-CE-04 — Specific Rule Wins Over Global
+| | |
+|---|---|
+| **Steps** | Global rule: 2%. Property-specific rule for this property: 3%. Submit Booking. |
+| **Expected** | Commission Entry uses 3% (property-specific wins). |
+| **Status** | ⏭ |
+
+### TC-CE-05 — Entry Cancelled on Booking Cancel
+| | |
+|---|---|
+| **Steps** | Submit Booking → verify Commission Entry Pending → Cancel Booking |
+| **Expected** | Commission Entry status → Cancelled. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Commission Settlement
+
+### TC-CS2-01 — Load Pending Entries
+| | |
+|---|---|
+| **Use Case** | UC-23 |
+| **Steps** | New Commission Settlement → select sales_person → Actions → Load Pending Entries |
+| **Expected** | Child table populated with all Pending commission entries for that sales person. total_amount auto-summed. |
+| **Status** | ⏭ |
+
+### TC-CS2-02 — Submit Settlement Marks Entries Settled
+| | |
+|---|---|
+| **Steps** | Commission Settlement with 3 Pending entries → Submit |
+| **Expected** | All 3 Commission Entries → status=Settled, settlement field linked. Settlement status=Submitted. |
+| **Status** | ⏭ |
+
+### TC-CS2-03 — Cannot Settle Already-Settled Entry
+| | |
+|---|---|
+| **Steps** | Try to create a second settlement with the same already-Settled Commission Entry |
+| **Expected** | Validation error: "Commission Entry is not in Pending status" |
+| **Status** | ⏭ |
+
+### TC-CS2-04 — Cancel Settlement Reverts Entries
+| | |
+|---|---|
+| **Steps** | Cancel a Submitted settlement |
+| **Expected** | All linked Commission Entries → status=Pending. Settlement status=Draft. |
+| **Status** | ⏭ |
+
+### TC-CS2-05 — Wrong Sales Person Entry Blocked
+| | |
+|---|---|
+| **Steps** | Settlement for Sales Person A — manually add a Commission Entry belonging to Sales Person B |
+| **Expected** | Validation error: "Commission Entry belongs to a different Sales Person" |
+| **Status** | ⏭ |
+
+### TC-CS2-06 — Total Amount Computed
+| | |
+|---|---|
+| **Steps** | Add 3 entries with amounts 10000, 20000, 15000 → before_validate |
+| **Expected** | total_amount = 45000 |
+| **Status** | ⏭ |
+
+---
+
 ## Regression Checklist
 
 Run after every code change:
@@ -669,6 +924,14 @@ Run after every code change:
 - [ ] TC-LF-03: Late fee not applied twice
 - [ ] TC-RO-01: Property Owner has read-only access
 - [ ] TC-RO-03: Tenant can read Agreement
+- [ ] TC-MR-01: Maintenance Request created with status=Open
+- [ ] TC-MR-04: Work Order completion updates Maintenance Request
+- [ ] TC-INS-02: Load Default Items populates 12 checklist rows
+- [ ] TC-UB-01: Utility Bill calculates units and amount correctly
+- [ ] TC-UB-04: Generate Invoice creates Sales Invoice
+- [ ] TC-CE-01: Commission Entry auto-created on booking submit
+- [ ] TC-CE-04: Property-specific rule wins over global
+- [ ] TC-CS2-02: Submit settlement marks entries as Settled
 - [ ] TC-SD-01: Security deposit JE created correctly
 
 ---

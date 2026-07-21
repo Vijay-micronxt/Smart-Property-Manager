@@ -1,6 +1,6 @@
 # Smart Property Manager — Feature List
 
-> **Last updated:** 2026-07-21 — Phase 1: amenities/documents on Property, lease renewal, late fees, Property Owner and Tenant roles
+> **Last updated:** 2026-07-21 — Phase 2 & 3: property_operations (Maintenance, Work Order, Inspection, Utility) and property_commissions (Rule, Entry, Settlement) fully implemented
 > Update this file whenever a DocType, engine, or workflow is added, changed, or removed.
 
 ---
@@ -301,17 +301,227 @@ Daily scheduled job for recurring lease/rental invoicing and late fee enforcemen
 
 ---
 
-## App 2: property_operations *(Skeleton)*
+## App 2: property_operations
 
-Planned DocTypes: Maintenance Request, Work Order, Inspection Checklist, Utility Meter.
-Not yet implemented.
+### 2.1 DocTypes
+
+#### Maintenance Request
+Tenant or manager raises a maintenance issue for a unit.
+
+| Field | Type | Notes |
+|---|---|---|
+| naming_series | Select | MR-.#### |
+| property_unit | Link → Property Unit | Required |
+| customer | Link → Customer | |
+| subject | Data | Required |
+| priority | Select | Low / Medium / High / Urgent — default Medium |
+| status | Select | Open / Assigned / In Progress / Resolved / Closed — default Open |
+| raised_by | Data | Person reporting the issue |
+| raised_on | Date | Defaults to today |
+| assigned_to | Link → User | |
+| resolved_on | Date | Auto-filled on Resolved/Closed |
+| vendor | Link → Supplier | External contractor |
+| work_order | Link → Work Order | Read-only; set when WO is created |
+| description | Text | Required |
+| resolution_notes | Small Text | |
+
+**Connections:** Work Orders
+**UI:** "Create Work Order" button (Actions); auto-fills customer from unit; colour-coded status banner
 
 ---
 
-## App 3: property_commissions *(Skeleton)*
+#### Work Order
+Operational task assigned to resolve a maintenance issue.
 
-Planned DocTypes: Commission Rule, Commission Entry, Commission Settlement.
-Not yet implemented.
+| Field | Type | Notes |
+|---|---|---|
+| naming_series | Select | WO-.#### |
+| maintenance_request | Link → Maintenance Request | |
+| property_unit | Link → Property Unit | Required |
+| status | Select | Draft / Assigned / In Progress / Completed / Cancelled |
+| description | Text | Required |
+| assigned_to | Link → User | |
+| vendor | Link → Supplier | |
+| scheduled_date | Date | |
+| completed_date | Date | Auto-filled on Completed |
+| estimated_cost | Currency | |
+| actual_cost | Currency | |
+
+**Automation on update:** Syncs parent Maintenance Request status (Assigned/In Progress/Resolved)
+
+---
+
+#### Inspection Checklist
+Records the condition of a unit at move-in, move-out, or periodic inspection.
+
+| Field | Type | Notes |
+|---|---|---|
+| naming_series | Select | INS-.#### |
+| property_unit | Link → Property Unit | Required |
+| inspection_type | Select | Move-In / Move-Out / Periodic / Pre-Sale |
+| inspection_date | Date | Required, defaults to today |
+| status | Select | Draft / In Progress / Completed |
+| inspector | Link → User | |
+| overall_condition | Select | Excellent / Good / Fair / Poor |
+| checklist_items | Table → Inspection Checklist Item | |
+
+**Child table — Inspection Checklist Item:**
+| Field | Type | Notes |
+|---|---|---|
+| item_name | Data | Required |
+| category | Select | Electrical / Plumbing / Structural / Fixtures / Cleanliness / Safety / Other |
+| condition | Select | OK / Minor Issue / Major Issue / N/A |
+| remarks | Small Text | |
+
+**UI:** "Load Default Items" button (Actions) — pre-populates 12 standard items
+
+---
+
+#### Utility Meter
+Configuration record per unit for a utility type (Electricity, Water, Gas, Internet).
+
+| Field | Type | Notes |
+|---|---|---|
+| naming_series | Select | UMTR-.#### |
+| property_unit | Link → Property Unit | Required |
+| utility_type | Select | Electricity / Water / Gas / Internet |
+| meter_number | Data | |
+| unit_of_measure | Select | kWh / Liters / m³ / GB / Units |
+| rate_per_unit | Currency | Required |
+| customer | Link → Customer | Who is billed |
+| utility_item_code | Link → Item | ERPNext Item for invoice line |
+
+**Connections:** Utility Bills
+**UI:** "New Utility Bill" and "View Utility Bills" buttons
+
+---
+
+#### Utility Bill
+Records meter readings for a billing period and generates a Sales Invoice.
+
+| Field | Type | Notes |
+|---|---|---|
+| naming_series | Select | UBIL-.#### |
+| utility_meter | Link → Utility Meter | Required |
+| property_unit | Link → Property Unit | Read-only, fetched from meter |
+| customer | Link → Customer | Read-only, fetched from meter |
+| status | Select | Draft / Invoiced / Paid |
+| billing_period_start | Date | Required |
+| billing_period_end | Date | Required |
+| previous_reading | Float | Required |
+| current_reading | Float | Required |
+| units_consumed | Float | Read-only — current − previous |
+| rate_per_unit | Currency | Read-only, fetched from meter |
+| amount | Currency | Read-only — units × rate |
+| invoice | Link → Sales Invoice | Read-only, set on invoice generation |
+
+**Automation on validate:** Computes units_consumed and amount; fetches property_unit, customer, rate_per_unit from meter
+**UI:** Live calculation of amount; "Generate Invoice" button (Actions); "View Invoice" button when linked
+**Whitelisted method:** `generate_invoice(utility_bill_name)` — creates Sales Invoice, sets status to Invoiced
+
+---
+
+### 2.2 Roles
+
+| Role | Access |
+|---|---|
+| Property Manager | Full CRUD on all property_operations DocTypes |
+| Operations User | Read + Create + Write on Maintenance Request, Work Order, Inspection Checklist, Utility Meter, Utility Bill |
+| Tenant | Create + Read own Maintenance Requests; Read Utility Bills |
+| Finance User | Read Utility Meter, Utility Bill |
+| Property Owner | Read Inspection Checklist, Maintenance Request |
+
+---
+
+## App 3: property_commissions
+
+### 3.1 DocTypes
+
+#### Commission Rule
+Configures commission rates per property/sales person combination.
+
+| Field | Type | Notes |
+|---|---|---|
+| rule_name | Data | Primary key (autoname by field) |
+| property | Link → Property | Optional; blank = all properties |
+| sales_person | Link → Sales Person | Optional; blank = all sales persons |
+| commission_type | Select | Percentage / Flat |
+| commission_rate | Float | % of booking amount OR fixed amount |
+| effective_from | Date | Optional |
+| effective_to | Date | Optional |
+| is_active | Check | Default 1 |
+
+**Validation:** rate > 0; if Percentage, rate ≤ 100; effective_to ≥ effective_from
+
+**Priority when multiple rules match:**
+1. property + sales_person (most specific)
+2. property only
+3. sales_person only
+4. Global (both blank)
+
+---
+
+#### Commission Entry
+Auto-created when a Property Booking is submitted. Read-only; managed by hooks.
+
+| Field | Type | Notes |
+|---|---|---|
+| naming_series | Select | COM-.#### |
+| booking | Link → Property Booking | Read-only |
+| sales_person | Link → Sales Person | |
+| property_unit | Link → Property Unit | Read-only |
+| customer | Link → Customer | Read-only |
+| commission_date | Date | Booking date |
+| booking_amount | Currency | Read-only |
+| commission_type | Select | Read-only |
+| commission_rate | Float | Read-only |
+| commission_amount | Currency | Read-only |
+| status | Select | Pending / Settled / Cancelled — read-only |
+| commission_rule | Link → Commission Rule | Read-only |
+| settlement | Link → Commission Settlement | Read-only |
+
+**Hook — Property Booking on_submit:** `create_commission_entry()` finds applicable rule and creates entry
+**Hook — Property Booking on_cancel:** `cancel_commission_entry()` marks entry as Cancelled
+
+---
+
+#### Commission Settlement
+Groups Pending commission entries for a sales person and settles them in batch.
+
+| Field | Type | Notes |
+|---|---|---|
+| naming_series | Select | CSET-.#### |
+| sales_person | Link → Sales Person | Required |
+| settlement_date | Date | Required |
+| status | Select | Draft / Submitted / Paid — read-only |
+| total_amount | Currency | Read-only, auto-summed from entries |
+| payment_entry | Link → Payment Entry | Linked manually after payment |
+| commission_entries | Table → Commission Settlement Entry | |
+
+**Child table — Commission Settlement Entry:**
+| Field | Type | Notes |
+|---|---|---|
+| commission_entry | Link → Commission Entry | Required |
+| booking | Link → Property Booking | |
+| property_unit | Link → Property Unit | |
+| commission_amount | Currency | |
+| commission_date | Date | |
+
+**is_submittable:** Yes
+**on_submit:** All linked Commission Entries → status = Settled
+**on_cancel:** All linked Commission Entries → status = Pending
+**Validation:** All entries must belong to same sales_person; all must be in Pending status
+**Whitelisted method:** `get_pending_entries(sales_person)` — returns list for "Load Pending Entries" button
+
+---
+
+### 3.2 Roles
+
+| Role | Access |
+|---|---|
+| Property Manager | Full CRUD + submit/cancel on all property_commissions DocTypes |
+| Commission Manager | Create, read, write, submit, cancel Commission Rule / Settlement; read Commission Entry |
+| Sales User | Read own Commission Entries |
 
 ---
 

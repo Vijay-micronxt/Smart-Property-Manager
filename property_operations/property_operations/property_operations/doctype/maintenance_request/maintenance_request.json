@@ -1,0 +1,182 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "naming_series",
+    "property_unit",
+    "customer",
+    "subject",
+    "priority",
+    "status",
+    "column_break_1",
+    "raised_by",
+    "raised_on",
+    "assigned_to",
+    "resolved_on",
+    "section_work",
+    "vendor",
+    "work_order",
+    "section_detail",
+    "description",
+    "resolution_notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "MR-.####"
+    },
+    {
+      "fieldname": "property_unit",
+      "fieldtype": "Link",
+      "label": "Property Unit",
+      "options": "Property Unit",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "subject",
+      "fieldtype": "Data",
+      "label": "Subject",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "priority",
+      "fieldtype": "Select",
+      "label": "Priority",
+      "options": "Low\nMedium\nHigh\nUrgent",
+      "default": "Medium",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Open\nAssigned\nIn Progress\nResolved\nClosed",
+      "default": "Open",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "raised_by",
+      "fieldtype": "Data",
+      "label": "Raised By"
+    },
+    {
+      "fieldname": "raised_on",
+      "fieldtype": "Date",
+      "label": "Raised On",
+      "default": "Today"
+    },
+    {
+      "fieldname": "assigned_to",
+      "fieldtype": "Link",
+      "label": "Assigned To",
+      "options": "User"
+    },
+    {
+      "fieldname": "resolved_on",
+      "fieldtype": "Date",
+      "label": "Resolved On"
+    },
+    {
+      "fieldname": "section_work",
+      "fieldtype": "Section Break",
+      "label": "Work Assignment"
+    },
+    {
+      "fieldname": "vendor",
+      "fieldtype": "Link",
+      "label": "Vendor / Contractor",
+      "options": "Supplier"
+    },
+    {
+      "fieldname": "work_order",
+      "fieldtype": "Link",
+      "label": "Work Order",
+      "options": "Work Order",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_detail",
+      "fieldtype": "Section Break",
+      "label": "Details"
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Text",
+      "label": "Description",
+      "reqd": 1
+    },
+    {
+      "fieldname": "resolution_notes",
+      "fieldtype": "Small Text",
+      "label": "Resolution Notes"
+    }
+  ],
+  "links": [
+    {
+      "group": "Work Orders",
+      "link_doctype": "Work Order",
+      "link_fieldname": "maintenance_request"
+    }
+  ],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Operations",
+  "name": "Maintenance Request",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Operations User",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Tenant"
+    },
+    {
+      "read": 1,
+      "role": "Property Owner"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

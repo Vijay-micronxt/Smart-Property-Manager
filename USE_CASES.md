@@ -1,6 +1,6 @@
 # Smart Property Manager — Use Cases
 
-> **Last updated:** 2026-07-21 — Phase 1: added UC-13 Property Amenities, UC-14 Project Documents, UC-15 Renew Lease, UC-16 Late Fee Automation
+> **Last updated:** 2026-07-21 — Phase 2 & 3: UC-17 Raise Maintenance Request, UC-18 Work Order, UC-19 Inspection Checklist, UC-20 Utility Billing, UC-21 Commission Rule, UC-22 Commission Entry, UC-23 Commission Settlement
 > Add a new use case whenever a new business workflow is implemented.
 
 ---
@@ -350,15 +350,142 @@
 
 ---
 
+## UC-17: Raise a Maintenance Request
+
+**Actor:** Tenant / Property Manager
+**Trigger:** A unit has a fault or maintenance need.
+
+**Steps:**
+1. Go to Maintenance Request → New
+2. Select Property Unit (customer auto-filled from unit)
+3. Enter Subject, Description, Priority
+4. Save
+
+**Outcome:**
+- Request created with status = Open
+- Property Manager and Operations User can now assign it
+
+---
+
+## UC-18: Create a Work Order for Maintenance
+
+**Actor:** Operations User / Property Manager
+**Trigger:** Maintenance Request is received; work needs to be scheduled.
+
+**Steps:**
+1. Open a Maintenance Request
+2. Click Actions → **Create Work Order**
+3. New Work Order pre-fills property_unit and description
+4. Add assigned_to or vendor, set scheduled_date → Save
+
+**Outcome:**
+- Work Order created and linked to Maintenance Request
+- Maintenance Request status → Assigned
+- As work progresses, update WO status (In Progress → Completed)
+- On Completed: Maintenance Request status → Resolved
+
+---
+
+## UC-19: Run an Inspection Checklist
+
+**Actor:** Operations User / Property Manager
+**Trigger:** Tenant move-in, move-out, or periodic inspection.
+
+**Steps:**
+1. Go to Inspection Checklist → New
+2. Select Property Unit, Inspection Type (e.g. Move-In), Inspection Date
+3. Click Actions → **Load Default Items** (12 standard items pre-populated)
+4. For each item, set Condition (OK / Minor Issue / Major Issue / N/A) and add Remarks
+5. Set Overall Condition → Save → change status to Completed
+
+**Outcome:**
+- Inspection record stored permanently for the unit
+- Evidence available for security deposit disputes
+
+---
+
+## UC-20: Record Utility Reading and Generate Bill
+
+**Actor:** Operations User / Finance User
+**Trigger:** Monthly meter reading is taken.
+
+**Pre-condition:** Utility Meter set up for the unit with rate_per_unit and utility_item_code.
+
+**Steps:**
+1. Open the Utility Meter record → click Actions → **New Utility Bill**
+2. Set billing_period_start, billing_period_end, previous_reading, current_reading
+3. System calculates units_consumed and amount live
+4. Save
+5. Click Actions → **Generate Invoice**
+6. Confirm dialog
+
+**Outcome:**
+- Sales Invoice created in ERPNext for the customer
+- Utility Bill status → Invoiced
+- Invoice linked on the bill record
+
+---
+
+## UC-21: Define a Commission Rule
+
+**Actor:** Commission Manager / Property Manager
+**Trigger:** Company sets up commission rates for sales agents.
+
+**Steps:**
+1. Go to Commission Rule → New
+2. Enter Rule Name
+3. Optionally select Property and/or Sales Person (blank = applies to all)
+4. Select Commission Type (Percentage or Flat), enter Commission Rate
+5. Optionally set Effective From / Effective To
+6. Save
+
+**Outcome:**
+- Rule active and will apply to future bookings matching its scope
+
+---
+
+## UC-22: Auto-generate Commission Entry on Booking
+
+**Actor:** ERPNext System (hook on Property Booking submit)
+**Trigger:** Property Booking is submitted.
+
+**Pre-condition:** At least one active Commission Rule exists matching the booking's property/sales person.
+
+**Steps (automated):**
+1. Booking is submitted
+2. System finds highest-priority matching Commission Rule
+3. Calculates commission_amount (booking_amount × rate% or flat amount)
+4. Creates Commission Entry with status = Pending
+
+**Outcome:**
+- Commission Entry visible to Commission Manager and Sales User
+- Ready to be included in a settlement batch
+
+---
+
+## UC-23: Settle Commission Payout
+
+**Actor:** Commission Manager / Property Manager
+**Trigger:** Period end; commissions due to a sales person need to be paid.
+
+**Steps:**
+1. Go to Commission Settlement → New
+2. Select Sales Person, Settlement Date
+3. Click Actions → **Load Pending Entries** (auto-fills child table from all Pending entries)
+4. Review amounts; remove rows if needed
+5. Save → review total_amount
+6. Submit
+
+**Outcome:**
+- All included Commission Entries → status = Settled
+- Finance team creates a Payment Entry to the sales person and links it in the `payment_entry` field
+- On cancel: entries revert to Pending
+
+---
+
 ## Future Use Cases (Not Yet Implemented)
 
-| ID | Use Case | App |
+| ID | Use Case | Notes |
 |---|---|---|
-| UC-17 | Raise Maintenance Request | property_operations |
-| UC-18 | Assign Work Order to Vendor | property_operations |
-| UC-19 | Run Inspection Checklist | property_operations |
-| UC-20 | Record Utility Meter Reading | property_operations |
-| UC-21 | Define Commission Rule for Sales Person | property_commissions |
-| UC-22 | Auto-generate Commission Entry on Booking | property_commissions |
-| UC-23 | Settle Commission Payout | property_commissions |
 | UC-24 | Tenant Portal — view invoices and submit requests | customer portal |
+| UC-25 | Commission report by sales person and period | reporting |

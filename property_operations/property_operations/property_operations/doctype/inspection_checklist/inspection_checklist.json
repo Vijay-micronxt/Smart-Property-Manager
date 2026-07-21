@@ -1,0 +1,137 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "naming_series",
+    "property_unit",
+    "inspection_type",
+    "inspection_date",
+    "status",
+    "column_break_1",
+    "inspector",
+    "overall_condition",
+    "section_items",
+    "checklist_items",
+    "section_notes",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "INS-.####"
+    },
+    {
+      "fieldname": "property_unit",
+      "fieldtype": "Link",
+      "label": "Property Unit",
+      "options": "Property Unit",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "inspection_type",
+      "fieldtype": "Select",
+      "label": "Inspection Type",
+      "options": "Move-In\nMove-Out\nPeriodic\nPre-Sale",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "inspection_date",
+      "fieldtype": "Date",
+      "label": "Inspection Date",
+      "reqd": 1,
+      "in_list_view": 1,
+      "default": "Today"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Draft\nIn Progress\nCompleted",
+      "default": "Draft",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "inspector",
+      "fieldtype": "Link",
+      "label": "Inspector",
+      "options": "User"
+    },
+    {
+      "fieldname": "overall_condition",
+      "fieldtype": "Select",
+      "label": "Overall Condition",
+      "options": "\nExcellent\nGood\nFair\nPoor"
+    },
+    {
+      "fieldname": "section_items",
+      "fieldtype": "Section Break",
+      "label": "Checklist Items"
+    },
+    {
+      "fieldname": "checklist_items",
+      "fieldtype": "Table",
+      "label": "Checklist Items",
+      "options": "Inspection Checklist Item"
+    },
+    {
+      "fieldname": "section_notes",
+      "fieldtype": "Section Break",
+      "label": "Notes"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Text",
+      "label": "Notes"
+    }
+  ],
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Operations",
+  "name": "Inspection Checklist",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Operations User",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Property Owner"
+    }
+  ],
+  "sort_field": "inspection_date",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}
