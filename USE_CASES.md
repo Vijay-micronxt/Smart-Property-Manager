@@ -1,6 +1,6 @@
 # Smart Property Manager — Use Cases
 
-> **Last updated:** 2026-07-21
+> **Last updated:** 2026-07-21 — added UC-12 Customer KYC
 > Add a new use case whenever a new business workflow is implemented.
 
 ---
@@ -241,15 +241,44 @@
 
 ---
 
+## UC-12: Complete Customer KYC Screening
+
+**Actor:** Property Manager / Sales User
+**Trigger:** A new customer is created and must be KYC-verified before a booking or allocation is finalised.
+
+**Steps:**
+1. Go to CRM → Customer → open or create the customer record
+2. Expand the **KYC & Verification** section
+3. Fill:
+   - ID Proof Type (e.g. Aadhaar)
+   - ID Number
+   - Upload ID Proof Document (scan/PDF)
+4. Expand **Personal & Financial Details** section
+5. Fill: Date of Birth, Nationality, Occupation, Annual Income, PAN Number, GST Number (if commercial), Address Proof Type, Address Proof Document
+6. Click KYC → **Mark KYC Verified**
+7. Confirm the dialog
+
+**Outcome:**
+- kyc_status = Verified
+- kyc_verified_on = today, kyc_verified_by = current user
+- Green banner shown on Customer form
+- Customer is now cleared for booking/allocation
+
+**Alternate flow — Reject:**
+- Click KYC → **Reject KYC**
+- kyc_status = Rejected; red banner shown; booking should not proceed
+
+---
+
 ## Future Use Cases (Not Yet Implemented)
 
 | ID | Use Case | App |
 |---|---|---|
-| UC-12 | Raise Maintenance Request | property_operations |
-| UC-13 | Assign Work Order to Vendor | property_operations |
-| UC-14 | Run Inspection Checklist | property_operations |
-| UC-15 | Record Utility Meter Reading | property_operations |
-| UC-16 | Define Commission Rule for Sales Person | property_commissions |
-| UC-17 | Auto-generate Commission Entry on Booking | property_commissions |
-| UC-18 | Settle Commission Payout | property_commissions |
-| UC-19 | Tenant Portal — view invoices and submit requests | customer portal |
+| UC-13 | Raise Maintenance Request | property_operations |
+| UC-14 | Assign Work Order to Vendor | property_operations |
+| UC-15 | Run Inspection Checklist | property_operations |
+| UC-16 | Record Utility Meter Reading | property_operations |
+| UC-17 | Define Commission Rule for Sales Person | property_commissions |
+| UC-18 | Auto-generate Commission Entry on Booking | property_commissions |
+| UC-19 | Settle Commission Payout | property_commissions |
+| UC-20 | Tenant Portal — view invoices and submit requests | customer portal |

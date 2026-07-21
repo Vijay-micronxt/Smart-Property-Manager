@@ -1,3 +1,5 @@
+from property_core.property_core.property_core.customer_kyc import CUSTOMER_KYC_FIELDS
+
 app_name = "property_core"
 app_title = "Property Core"
 app_publisher = "Smart Property Manager"
@@ -14,6 +16,7 @@ doctype_js = {
     "Payment Plan": "public/js/payment_plan.js",
     "Property Allocation": "public/js/property_allocation.js",
     "Property Agreement": "public/js/property_agreement.js",
+    "Customer": "public/js/customer_kyc.js",
 }
 
 scheduler_events = {
@@ -33,6 +36,10 @@ doc_events = {
     },
 }
 
+custom_fields = {
+    "Customer": CUSTOMER_KYC_FIELDS,
+}
+
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", [
         "Property Manager",
@@ -43,5 +50,23 @@ fixtures = [
     ]]]},
     {"dt": "Workflow", "filters": [["document_type", "in", [
         "Property Booking",
+    ]]]},
+    {"dt": "Custom Field", "filters": [["dt", "=", "Customer"], ["fieldname", "like", "kyc_%"]]},
+    {"dt": "Custom Field", "filters": [["dt", "=", "Customer"], ["fieldname", "in", [
+        "property_kyc_section",
+        "property_personal_section",
+        "kyc_col_break_1",
+        "kyc_col_break_2",
+        "id_type",
+        "id_number",
+        "id_document",
+        "date_of_birth",
+        "nationality",
+        "occupation",
+        "annual_income",
+        "pan_number",
+        "gst_number",
+        "address_proof_type",
+        "address_proof_document",
     ]]]},
 ]

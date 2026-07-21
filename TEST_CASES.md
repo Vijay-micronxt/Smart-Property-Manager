@@ -1,6 +1,6 @@
 # Smart Property Manager — Test Cases
 
-> **Last updated:** 2026-07-21
+> **Last updated:** 2026-07-21 — added Customer KYC test cases (TC-KYC-01 to TC-KYC-08)
 > Add test cases for every new feature. Mark status after each test run.
 > Status: ✅ Pass | ❌ Fail | ⏭ Skip | 🔄 In Progress
 
@@ -384,6 +384,68 @@ Before running any test:
 
 ---
 
+## Module: Customer KYC
+
+### TC-KYC-01 — KYC Fields Appear on Customer Form
+| | |
+|---|---|
+| **Use Case** | UC-12 |
+| **Pre-condition** | property_core installed and migrated |
+| **Steps** | Open any Customer record |
+| **Expected** | "KYC & Verification" and "Personal & Financial Details" sections visible. kyc_status defaults to "Pending". |
+| **Status** | ⏭ |
+
+### TC-KYC-02 — Mark KYC Verified (Happy Path)
+| | |
+|---|---|
+| **Steps** | Open Customer → fill id_type, id_number, upload id_document → click KYC → "Mark KYC Verified" → Confirm |
+| **Expected** | kyc_status = "Verified". kyc_verified_on = today. kyc_verified_by = current user. Green intro banner shown. |
+| **Status** | ⏭ |
+
+### TC-KYC-03 — Verified Fields Auto-Stamped
+| | |
+|---|---|
+| **Steps** | After marking verified, reload the Customer form |
+| **Expected** | kyc_verified_on and kyc_verified_by are read-only and populated. Verify/Reject buttons gone. |
+| **Status** | ⏭ |
+
+### TC-KYC-04 — Reject KYC
+| | |
+|---|---|
+| **Steps** | Open Customer with kyc_status = Pending → click KYC → "Reject KYC" |
+| **Expected** | kyc_status = "Rejected". Red intro banner shown. |
+| **Status** | ⏭ |
+
+### TC-KYC-05 — Pending Banner Shown by Default
+| | |
+|---|---|
+| **Steps** | Create a new Customer and save |
+| **Expected** | Orange banner: "KYC verification is pending for this customer." |
+| **Status** | ⏭ |
+
+### TC-KYC-06 — All 14 KYC Fields Saveable
+| | |
+|---|---|
+| **Steps** | Fill all KYC fields: id_type, id_number, id_document, date_of_birth, nationality, occupation, annual_income, pan_number, gst_number, address_proof_type, address_proof_document → Save |
+| **Expected** | All 14 fields saved correctly. No errors. |
+| **Status** | ⏭ |
+
+### TC-KYC-07 — Verified/Rejected Fields Hidden When Pending
+| | |
+|---|---|
+| **Steps** | Open Customer with kyc_status = Pending |
+| **Expected** | kyc_verified_on and kyc_verified_by fields hidden (depends_on condition). |
+| **Status** | ⏭ |
+
+### TC-KYC-08 — KYC Fields Not Lost on ERPNext Upgrade
+| | |
+|---|---|
+| **Steps** | Run `bench update` → re-migrate → open Customer |
+| **Expected** | All KYC custom fields still present. No data lost. |
+| **Status** | ⏭ |
+
+---
+
 ## Module: Property Core Settings
 
 ### TC-CS-01 — Settings Required for Security Deposit
@@ -406,6 +468,8 @@ Before running any test:
 
 Run after every code change:
 
+- [ ] TC-KYC-01: KYC fields visible on Customer form
+- [ ] TC-KYC-02: Mark KYC Verified stamps date + user
 - [ ] TC-B-01: Submit booking → unit becomes Booked
 - [ ] TC-B-02: Double booking blocked
 - [ ] TC-B-07: Cancel booking → unit becomes Available

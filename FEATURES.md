@@ -1,6 +1,6 @@
 # Smart Property Manager — Feature List
 
-> **Last updated:** 2026-07-21
+> **Last updated:** 2026-07-21 — added Customer KYC custom fields
 > Update this file whenever a DocType, engine, or workflow is added, changed, or removed.
 
 ---
@@ -281,6 +281,47 @@ Not yet implemented.
 
 Planned DocTypes: Commission Rule, Commission Entry, Commission Settlement.
 Not yet implemented.
+
+---
+
+---
+
+## Customer KYC Custom Fields
+
+Defined in `property_core/customer_kyc.py`, applied via `custom_fields` in `hooks.py`.
+Added to the Customer form after the `website` field. No ERPNext core modification.
+
+### Section: KYC & Verification
+
+| # | Fieldname | Type | Notes |
+|---|---|---|---|
+| 1 | `kyc_status` | Select | Pending / Verified / Rejected — default Pending |
+| 2 | `kyc_verified_on` | Date | Visible only when status = Verified |
+| 3 | `kyc_verified_by` | Link → User | Read-only; auto-set by UI button |
+| 4 | `id_type` | Select | Aadhaar / PAN Card / Passport / Driving Licence / Voter ID |
+| 5 | `id_number` | Data | ID document number |
+| 6 | `id_document` | Attach | Scan of ID proof |
+
+### Section: Personal & Financial Details
+
+| # | Fieldname | Type | Notes |
+|---|---|---|---|
+| 7 | `date_of_birth` | Date | |
+| 8 | `nationality` | Link → Country | |
+| 9 | `occupation` | Data | |
+| 10 | `annual_income` | Currency | For financial screening |
+| 11 | `pan_number` | Data | Tax ID (India) |
+| 12 | `gst_number` | Data | For commercial buyers |
+| 13 | `address_proof_type` | Select | Utility Bill / Rent Agreement / Bank Statement / Passport / Aadhaar |
+| 14 | `address_proof_document` | Attach | Scan of address proof |
+
+### UI Buttons on Customer Form (customer_kyc.js)
+
+| Button | Visible When | Action |
+|---|---|---|
+| Mark KYC Verified | KYC Status = Pending | Sets status=Verified, stamps date + user |
+| Reject KYC | KYC Status = Pending | Sets status=Rejected |
+| Colour-coded intro banner | Always | Green (Verified) / Orange (Pending) / Red (Rejected) |
 
 ---
 
