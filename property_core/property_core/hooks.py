@@ -1,4 +1,4 @@
-from property_core.property_core.property_core.customer_kyc import CUSTOMER_KYC_FIELDS
+from property_core.property_core.customer_kyc import CUSTOMER_KYC_FIELDS
 
 app_name = "property_core"
 app_title = "Property Core"
