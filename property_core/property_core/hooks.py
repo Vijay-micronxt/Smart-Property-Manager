@@ -40,6 +40,8 @@ custom_fields = {
     "Customer": CUSTOMER_KYC_FIELDS,
 }
 
+after_migrate = "property_core.property_core.customer_kyc.sync_customer_kyc_fields"
+
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", [
         "Property Manager",

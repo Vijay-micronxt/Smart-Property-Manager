@@ -61,6 +61,8 @@ def _create_rent_invoice(alloc):
 
     invoice = frappe.new_doc("Sales Invoice")
     invoice.customer = alloc.customer
+    invoice.set_posting_time = 1
+    invoice.posting_date = alloc.next_billing_date
     invoice.due_date = alloc.next_billing_date
     invoice.append("items", {
         "item_code": item_code,

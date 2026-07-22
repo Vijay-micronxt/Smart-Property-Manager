@@ -128,3 +128,8 @@ CUSTOMER_KYC_FIELDS = [
         "insert_after": "address_proof_type",
     },
 ]
+
+
+def sync_customer_kyc_fields():
+    from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+    create_custom_fields({"Customer": CUSTOMER_KYC_FIELDS}, ignore_validate=True, update=True)

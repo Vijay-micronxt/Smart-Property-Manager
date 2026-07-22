@@ -31,7 +31,7 @@ class CommissionSettlement(Document):
                 )
 
     def on_submit(self):
-        self.status = "Submitted"
+        self.db_set("status", "Submitted")
         for row in self.commission_entries:
             frappe.db.set_value(
                 "Commission Entry",
@@ -41,7 +41,7 @@ class CommissionSettlement(Document):
             )
 
     def on_cancel(self):
-        self.status = "Draft"
+        self.db_set("status", "Draft")
         for row in self.commission_entries:
             frappe.db.set_value(
                 "Commission Entry",

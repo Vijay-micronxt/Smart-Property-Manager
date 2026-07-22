@@ -50,17 +50,25 @@ def cancel_commission_entry(doc, method=None):
 def _find_commission_rule(booking):
     """Return the highest-priority active Commission Rule for this booking."""
     today = getdate(booking.booking_date)
+    fields = ["name", "commission_type", "commission_rate", "effective_from", "effective_to"]
+
+    def is_effective(row):
+        if row.effective_from and getdate(row.effective_from) > today:
+            return False
+        if row.effective_to and getdate(row.effective_to) < today:
+            return False
+        return True
+
+    def first_effective(rules):
+        for row in rules:
+            if is_effective(row):
+                return row
+        return None
 
     def base_filters():
         return [
             ["is_active", "=", 1],
             ["commission_rate", ">", 0],
-            [
-                "ifnull(effective_from, '2000-01-01')", "<=", today
-            ],
-            [
-                "ifnull(effective_to, '2099-12-31')", ">=", today
-            ],
         ]
 
     property_name = frappe.db.get_value("Property Unit", booking.property_unit, "property")
@@ -73,11 +81,11 @@ def _find_commission_rule(booking):
                 ["property", "=", property_name],
                 ["sales_person", "=", booking.sales_person],
             ],
-            fields=["name", "commission_type", "commission_rate"],
-            limit=1,
+            fields=fields,
         )
-        if rules:
-            return rules[0]
+        rule = first_effective(rules)
+        if rule:
+            return rule
 
     # Priority 2: specific property only
     if property_name:
@@ -87,11 +95,11 @@ def _find_commission_rule(booking):
                 ["property", "=", property_name],
                 ["sales_person", "in", ["", None]],
             ],
-            fields=["name", "commission_type", "commission_rate"],
-            limit=1,
+            fields=fields,
         )
-        if rules:
-            return rules[0]
+        rule = first_effective(rules)
+        if rule:
+            return rule
 
     # Priority 3: specific sales_person only
     if booking.sales_person:
@@ -101,11 +109,11 @@ def _find_commission_rule(booking):
                 ["property", "in", ["", None]],
                 ["sales_person", "=", booking.sales_person],
             ],
-            fields=["name", "commission_type", "commission_rate"],
-            limit=1,
+            fields=fields,
         )
-        if rules:
-            return rules[0]
+        rule = first_effective(rules)
+        if rule:
+            return rule
 
     # Priority 4: global rule (no property, no sales_person)
     rules = frappe.get_all(
@@ -114,7 +122,6 @@ def _find_commission_rule(booking):
             ["property", "in", ["", None]],
             ["sales_person", "in", ["", None]],
         ],
-        fields=["name", "commission_type", "commission_rate"],
-        limit=1,
+        fields=fields,
     )
-    return rules[0] if rules else None
+    return first_effective(rules)

@@ -3,7 +3,7 @@ frappe.ui.form.on("Payment Plan", {
         if (!frm.is_new() && frm.doc.payment_status === "Pending" && !frm.doc.invoice) {
             frm.add_custom_button(__("Generate Invoice"), function () {
                 frappe.confirm(
-                    __("Generate a Sales Invoice for milestone <b>{0}</b> of ₹{1}?",
+                    __("Generate a Sales Invoice for milestone <b>{0}</b> of {1}?",
                         [frm.doc.milestone, format_currency(frm.doc.amount)]),
                     function () {
                         frappe.call({

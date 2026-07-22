@@ -18,7 +18,7 @@ doctype_js = {
 
 doc_events = {
     "Work Order": {
-        "on_update": "property_operations.property_operations.property_operations.doctype.work_order.work_order.on_update",
+        "on_update": "property_operations.property_operations.doctype.work_order.work_order.on_update",
     },
 }
 

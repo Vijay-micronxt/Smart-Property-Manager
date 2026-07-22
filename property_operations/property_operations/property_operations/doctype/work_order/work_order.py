@@ -25,9 +25,12 @@ def _sync_maintenance_request_status(wo):
     }
     mr_status = status_map.get(wo.status)
     if mr_status:
+        values = {"status": mr_status, "work_order": wo.name}
+        if mr_status in ("Resolved", "Closed"):
+            values["resolved_on"] = today()
         frappe.db.set_value(
             "Maintenance Request", wo.maintenance_request,
-            {"status": mr_status, "work_order": wo.name},
+            values,
             update_modified=False,
         )
 

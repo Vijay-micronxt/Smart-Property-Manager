@@ -16,8 +16,8 @@ doctype_js = {
 
 doc_events = {
     "Property Booking": {
-        "on_submit": "property_commissions.property_commissions.property_commissions.doctype.commission_entry.commission_entry.create_commission_entry",
-        "on_cancel": "property_commissions.property_commissions.property_commissions.doctype.commission_entry.commission_entry.cancel_commission_entry",
+        "on_submit": "property_commissions.property_commissions.doctype.commission_entry.commission_entry.create_commission_entry",
+        "on_cancel": "property_commissions.property_commissions.doctype.commission_entry.commission_entry.cancel_commission_entry",
     },
 }
 
