@@ -1,6 +1,7 @@
 # Smart Property Manager — Use Cases
 
-> **Last updated:** 2026-07-21 — Phase 2 & 3: UC-17 Raise Maintenance Request, UC-18 Work Order, UC-19 Inspection Checklist, UC-20 Utility Billing, UC-21 Commission Rule, UC-22 Commission Entry, UC-23 Commission Settlement
+> **Last updated:** 2026-07-23 — JD BRD gap-closing pass: UC-26 CRM↔Property link, UC-27 Raise Issue (portal API), UC-28 Customer Portal data API, UC-29 Automatic Payment Plan invoicing. Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md) and closed against JD's BRD (see BRD_GAP_ANALYSIS.md).
+> Previously: 2026-07-21 — Phase 2 & 3: UC-17 Raise Maintenance Request, UC-18 Work Order, UC-19 Inspection Checklist, UC-20 Utility Billing, UC-21 Commission Rule, UC-22 Commission Entry, UC-23 Commission Settlement
 > Add a new use case whenever a new business workflow is implemented.
 
 ---
@@ -483,9 +484,85 @@
 
 ---
 
+## UC-26: Link a CRM Opportunity to a Property/Unit
+
+**Actor:** Sales User
+**Trigger:** A lead progresses to an Opportunity and the prospect's property interest is known.
+
+**Steps:**
+1. Open (or convert to) an Opportunity
+2. Expand the **Property Interest** section
+3. Set Property, and optionally the specific Property Unit
+4. Save
+
+**Outcome:**
+- The Opportunity now carries which Property/Unit the prospect is interested in, from first contact onward — no longer only recorded once an actual Booking exists
+- Property's Connections show an "Opportunities" link back to every Opportunity raised against it
+
+---
+
+## UC-27: Customer Raises a Support Ticket (Portal API)
+
+**Actor:** Customer (via portal login)
+**Trigger:** Customer has a query or complaint about their unit.
+
+**Pre-condition:** Customer has portal access (see UC-28's provisioning note) and, if linking a unit, owns a Booking or Allocation against it.
+
+**Steps (API-level — no portal page yet, see Deferred below):**
+1. Logged-in customer calls `property_core.property_core.api.customer_portal.raise_issue(subject, description, property_unit)`
+
+**Outcome:**
+- An ERPNext **Issue** is created (`customer`, `property_unit` set), visible to staff in the standard Issue list
+- If `property_unit` is supplied but doesn't belong to the caller (no matching Booking/Allocation), the call is rejected: "Selected unit does not belong to your account"
+
+**Note:** this is the data/API layer only. The actual customer-facing raise-a-ticket page is deferred to the portal-UI pass.
+
+---
+
+## UC-28: Customer Views Their Own Bookings & Payment Status (Portal API)
+
+**Actor:** Customer (via portal login)
+**Trigger:** Customer wants to check what they've booked and what they owe.
+
+**Pre-condition:** Customer has portal access.
+
+**Steps (API-level — no portal page yet):**
+1. Logged-in customer calls `property_core.property_core.api.customer_portal.customer_portal_get()`
+
+**Outcome:** Returns, scoped strictly to that customer:
+- Their Property Bookings, each with its Payment Plan rows labelled Paid / Overdue / Due Soon / Upcoming
+- Their Property Units, Property Agreements, and Issues
+
+**Related — how portal access is granted:** submitting a Property Booking now auto-provisions portal access for the customer if they don't already have it (Website User + Portal User, email sourced from the Customer's primary Contact) — mirrors how JD's live site does it, wrapped so a missing contact email never blocks the booking itself.
+
+**Note:** API/data layer only — no portal web page yet (deferred to its own pass).
+
+---
+
+## UC-29: Automatic Invoice Generation for Payment Plan Milestones
+
+**Actor:** ERPNext System (scheduled daily job)
+**Trigger:** A Payment Plan milestone's due date arrives.
+
+**Steps (automated):**
+1. Daily scheduler (`payment_plan_billing.run_daily_payment_plan_billing`) runs
+2. Finds Payment Plan rows where `payment_status = Pending`, `due_date <= today`, and no invoice yet
+3. Calls the milestone's own `generate_invoice()` (same method the manual "Generate Invoice" button uses)
+
+**Outcome:**
+- The Sale side now gets the same automatic invoicing the Lease/Rent side already had via `billing_engine.py` — no more manual button-click required for a milestone that's come due
+- Milestones not yet due are left untouched
+
+**Note:** deliberately has no reminder/notification logic — that's left for the branch owner to wire via Server Script separately, so message templates can change without redeploying app code.
+
+---
+
 ## Future Use Cases (Not Yet Implemented)
 
 | ID | Use Case | Notes |
 |---|---|---|
-| UC-24 | Tenant Portal — view invoices and submit requests | customer portal |
+| UC-24 | Tenant Portal — view invoices and submit requests | Data APIs now exist (UC-27, UC-28); the actual customer-facing web page is still not built |
 | UC-25 | Commission report by sales person and period | reporting |
+| UC-30 | WhatsApp/SMS notifications (payment reminders, follow-ups) | explicitly deferred — to be wired via Server Script, not app code |
+| UC-31 | Lead assignment rules (round-robin, auto-apply salesperson) | raised as a feature-flag-gated configuration item, not yet scoped |
+| UC-32 | Recurring maintenance billing (Maintenance Plan Template) for property_operations | property_operations tracks Maintenance Request/Work Order but has no recurring monthly billing yet |

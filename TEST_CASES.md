@@ -1,6 +1,7 @@
 # Smart Property Manager — Test Cases
 
-> **Last updated:** 2026-07-21 — Phase 1: added TC-AM (amenities), TC-PD (project documents), TC-LR (lease renewal), TC-LF (late fees), TC-RO (role permissions)
+> **Last updated:** 2026-07-23 — JD BRD gap-closing pass: added TC-CRM (Opportunity↔Property link), TC-CP (Customer Portal API), TC-PPB (automatic Payment Plan invoicing). Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md).
+> Previously: 2026-07-21 — Phase 1: added TC-AM (amenities), TC-PD (project documents), TC-LR (lease renewal), TC-LF (late fees), TC-RO (role permissions)
 > Add test cases for every new feature. Mark status after each test run.
 > Status: ✅ Pass | ❌ Fail | ⏭ Skip | 🔄 In Progress
 
@@ -904,6 +905,102 @@ Before running any test:
 
 ---
 
+## Module: CRM ↔ Property Link
+
+### TC-CRM-01 — Opportunity Saves With Property/Unit
+| | |
+|---|---|
+| **Use Case** | UC-26 |
+| **Steps** | New Opportunity → expand Property Interest section → set property and property_unit → Save |
+| **Expected** | Fields save correctly; values persist on reload. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (`CRM-OPP-2026-00001` saved with property="Emerald Heights", property_unit="UNIT-0004") |
+
+### TC-CRM-02 — Property Shows Opportunities Connection
+| | |
+|---|---|
+| **Steps** | Create an Opportunity linked to a Property → open the Property form |
+| **Expected** | "Opportunities" connection appears under the Property's Connections, alongside "Units". |
+| **Status** | ⏭ (fields verified; connection-panel rendering not checked in browser) |
+
+---
+
+## Module: Customer Portal API
+
+### TC-CP-01 — Portal User Auto-Provisioned on Booking
+| | |
+|---|---|
+| **Use Case** | UC-28 |
+| **Steps** | Create a Customer with a primary Contact (with email) → no existing Portal User → create+insert a Property Booking for that customer |
+| **Expected** | A Website User is created from the contact email (role Customer), and a Portal User row links it to the Customer — all without blocking the booking insert. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (`BKG-0005` created; `portal.test@example.com` User + Portal User row both created) |
+
+### TC-CP-02 — Portal User Not Duplicated
+| | |
+|---|---|
+| **Steps** | Submit a second Property Booking for a customer who already has a Portal User |
+| **Expected** | No duplicate User/Portal User created; `ensure_portal_user()` returns early. |
+| **Status** | ⏭ |
+
+### TC-CP-03 — customer_portal_get Returns Own Data Only
+| | |
+|---|---|
+| **Use Case** | UC-28 |
+| **Steps** | Log in as a portal customer → call `customer_portal_get()` |
+| **Expected** | Returns only that customer's bookings (with Payment Plan rows labelled Paid/Overdue/Due Soon/Upcoming), units, agreements, and issues. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (booking `BKG-0005` returned with 4 Payment Plan rows correctly labelled Due Soon/Upcoming; unit UNIT-0004 shown) |
+
+### TC-CP-04 — raise_issue Creates Issue With Property Link
+| | |
+|---|---|
+| **Use Case** | UC-27 |
+| **Steps** | Log in as a portal customer who owns `UNIT-0004` → call `raise_issue("Water leakage in bathroom", "...", "UNIT-0004")` |
+| **Expected** | An Issue is created with `customer` and `property_unit` set, status Open. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (`ISS-2026-00001` created) |
+
+### TC-CP-05 — raise_issue Blocks Unowned Unit
+| | |
+|---|---|
+| **Use Case** | UC-27 |
+| **Steps** | Log in as a portal customer → call `raise_issue(...)` with a `property_unit` that belongs to a *different* customer |
+| **Expected** | Throws: "Selected unit does not belong to your account". No Issue created. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (tried `UNIT-0001`, owned by a different customer — correctly rejected) |
+
+### TC-CP-06 — Portal APIs Require Login
+| | |
+|---|---|
+| **Steps** | Call `customer_portal_get()` or `raise_issue()` as Guest |
+| **Expected** | Throws: "Please login". |
+| **Status** | ⏭ |
+
+---
+
+## Module: Payment Plan Auto-Invoicing
+
+### TC-PPB-01 — Due Milestone Auto-Invoiced
+| | |
+|---|---|
+| **Use Case** | UC-29 |
+| **Steps** | Submit a Property Booking (Payment Plan auto-generates) → manually run `payment_plan_billing.run_daily_payment_plan_billing()` on the day a milestone is due |
+| **Expected** | That milestone's Sales Invoice is auto-created; `payment_status` → Invoiced. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (PP-0009 "Token", due today, auto-invoiced as `ACC-SINV-2026-00007`) |
+
+### TC-PPB-02 — Future Milestones Untouched
+| | |
+|---|---|
+| **Use Case** | UC-29 |
+| **Steps** | Same run as TC-PPB-01 → check the other (not-yet-due) Payment Plan rows on the same booking |
+| **Expected** | Rows with a future due_date remain `payment_status = Pending`, no invoice. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (PP-0010/0011/0012 left Pending, invoice=NULL) |
+
+### TC-PPB-03 — Already-Invoiced Milestone Skipped
+| | |
+|---|---|
+| **Steps** | Run the scheduler twice in a row on the same due milestone |
+| **Expected** | Second run does not create a duplicate invoice (filtered out by `invoice in ["", None]`). |
+| **Status** | ⏭ |
+
+---
+
 ## Regression Checklist
 
 Run after every code change:
@@ -933,6 +1030,11 @@ Run after every code change:
 - [ ] TC-CE-04: Property-specific rule wins over global
 - [ ] TC-CS2-02: Submit settlement marks entries as Settled
 - [ ] TC-SD-01: Security deposit JE created correctly
+- [ ] TC-CRM-01: Opportunity saves with property/property_unit
+- [ ] TC-CP-01: Portal user auto-provisioned on booking
+- [ ] TC-CP-04: raise_issue creates Issue with property link
+- [ ] TC-CP-05: raise_issue blocks a unit that isn't the caller's
+- [ ] TC-PPB-01: Due Payment Plan milestone auto-invoiced
 
 ---
 
