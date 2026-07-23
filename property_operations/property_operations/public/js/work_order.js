@@ -1,8 +1,8 @@
 frappe.ui.form.on("Work Order", {
     refresh(frm) {
-        if (frm.doc.maintenance_request) {
-            frm.add_custom_button(__("Maintenance Request"), function () {
-                frappe.set_route("Form", "Maintenance Request", frm.doc.maintenance_request);
+        if (frm.doc.issue) {
+            frm.add_custom_button(__("Issue"), function () {
+                frappe.set_route("Form", "Issue", frm.doc.issue);
             }, __("View"));
         }
 

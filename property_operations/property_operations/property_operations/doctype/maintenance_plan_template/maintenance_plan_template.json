@@ -1,0 +1,97 @@
+{
+  "actions": [],
+  "autoname": "field:template_name",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "template_name",
+    "disabled",
+    "section_schedule",
+    "schedule",
+    "section_repeat",
+    "repeat_every_n_months",
+    "repeat_amount"
+  ],
+  "fields": [
+    {
+      "fieldname": "template_name",
+      "fieldtype": "Data",
+      "label": "Template Name",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "disabled",
+      "fieldtype": "Check",
+      "label": "Disabled",
+      "default": "0",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "section_schedule",
+      "fieldtype": "Section Break",
+      "label": "Monthly Charges"
+    },
+    {
+      "fieldname": "schedule",
+      "fieldtype": "Table",
+      "label": "Charges (Month-wise)",
+      "options": "Maintenance Schedule Row",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_repeat",
+      "fieldtype": "Section Break",
+      "label": "After Listed Months",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "repeat_every_n_months",
+      "fieldtype": "Int",
+      "label": "Repeat Every N Months",
+      "description": "0 = stop billing after the listed months run out"
+    },
+    {
+      "fieldname": "repeat_amount",
+      "fieldtype": "Currency",
+      "label": "Repeat Amount"
+    }
+  ],
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Operations",
+  "name": "Maintenance Plan Template",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Operations User",
+      "share": 1,
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

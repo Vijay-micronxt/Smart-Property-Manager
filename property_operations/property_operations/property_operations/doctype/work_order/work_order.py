@@ -5,8 +5,8 @@ from frappe.utils import today
 
 class WorkOrder(Document):
     def on_update(self):
-        if self.maintenance_request:
-            _sync_maintenance_request_status(self)
+        if self.issue:
+            _sync_issue_status(self)
 
     def validate(self):
         if self.completed_date and self.scheduled_date:
@@ -16,21 +16,17 @@ class WorkOrder(Document):
             self.completed_date = today()
 
 
-def _sync_maintenance_request_status(wo):
-    status_map = {
-        "Assigned": "Assigned",
-        "In Progress": "In Progress",
-        "Completed": "Resolved",
-        "Cancelled": "Open",
-    }
-    mr_status = status_map.get(wo.status)
-    if mr_status:
-        values = {"status": mr_status, "work_order": wo.name}
-        if mr_status in ("Resolved", "Closed"):
-            values["resolved_on"] = today()
+def _sync_issue_status(wo):
+    """Issue's own status (Open/Replied/On Hold/Resolved/Closed) doesn't map
+    cleanly onto Work Order's dispatch states (Assigned/In Progress/...) --
+    Work Order's own status already tracks that granularity for staff. Only
+    flip the linked Issue to Resolved once the work is actually Completed.
+    """
+    frappe.db.set_value("Issue", wo.issue, "work_order", wo.name, update_modified=False)
+    if wo.status == "Completed":
         frappe.db.set_value(
-            "Maintenance Request", wo.maintenance_request,
-            values,
+            "Issue", wo.issue,
+            {"status": "Resolved", "resolution_details": wo.description},
             update_modified=False,
         )
 

@@ -9,7 +9,7 @@ app_include_js = []
 app_include_css = []
 
 doctype_js = {
-    "Maintenance Request": "public/js/maintenance_request.js",
+    "Issue": "public/js/issue_work_order.js",
     "Work Order": "public/js/work_order.js",
     "Inspection Checklist": "public/js/inspection_checklist.js",
     "Utility Meter": "public/js/utility_meter.js",
@@ -21,6 +21,17 @@ doc_events = {
         "on_update": "property_operations.property_operations.doctype.work_order.work_order.on_update",
     },
 }
+
+scheduler_events = {
+    "daily": [
+        "property_operations.property_operations.utils.maintenance_billing.run_daily_maintenance_billing",
+    ]
+}
+
+after_migrate = [
+    "property_operations.property_operations.issue_links.sync_issue_link_fields",
+    "property_operations.property_operations.property_unit_links.sync_property_unit_link_fields",
+]
 
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", ["Operations User"]]]},

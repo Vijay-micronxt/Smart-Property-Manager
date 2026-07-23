@@ -6,7 +6,7 @@
   "engine": "InnoDB",
   "field_order": [
     "naming_series",
-    "maintenance_request",
+    "issue",
     "property_unit",
     "status",
     "description",
@@ -29,12 +29,13 @@
       "options": "WO-.####"
     },
     {
-      "fieldname": "maintenance_request",
+      "fieldname": "issue",
       "fieldtype": "Link",
-      "label": "Maintenance Request",
-      "options": "Maintenance Request",
+      "label": "Issue",
+      "options": "Issue",
       "in_list_view": 1,
-      "in_standard_filter": 1
+      "in_standard_filter": 1,
+      "description": "Optional -- link the customer query/complaint this work order resolves. Leave blank for internal/preventive work with no customer complaint behind it."
     },
     {
       "fieldname": "property_unit",
