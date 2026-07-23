@@ -125,6 +125,11 @@
       "group": "Units",
       "link_doctype": "Property Unit",
       "link_fieldname": "property"
+    },
+    {
+      "group": "CRM",
+      "link_doctype": "Opportunity",
+      "link_fieldname": "property"
     }
   ],
   "modified": "2024-01-01 00:00:00.000000",

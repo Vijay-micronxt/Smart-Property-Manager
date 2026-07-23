@@ -22,6 +22,7 @@ doctype_js = {
 scheduler_events = {
     "daily": [
         "property_core.property_core.utils.billing_engine.run_daily_billing",
+        "property_core.property_core.utils.payment_plan_billing.run_daily_payment_plan_billing",
     ]
 }
 
@@ -40,7 +41,10 @@ custom_fields = {
     "Customer": CUSTOMER_KYC_FIELDS,
 }
 
-after_migrate = "property_core.property_core.customer_kyc.sync_customer_kyc_fields"
+after_migrate = [
+    "property_core.property_core.customer_kyc.sync_customer_kyc_fields",
+    "property_core.property_core.crm_links.sync_crm_link_fields",
+]
 
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", [

@@ -6,12 +6,19 @@ from property_core.property_core.utils.availability_engine import (
     release_unit,
 )
 from property_core.property_core.utils.allocation_engine import generate_payment_plan
+from property_core.property_core.utils.portal_user import ensure_portal_user
 
 
 class PropertyBooking(Document):
     def validate(self):
         if self.is_new():
             assert_unit_available(self.property_unit)
+
+    def after_insert(self):
+        try:
+            ensure_portal_user(self.customer)
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"Portal User Provisioning: {self.name}")
 
     def before_submit(self):
         assert_unit_available(self.property_unit)
