@@ -11,6 +11,7 @@ app_include_css = []
 doctype_js = {
     "Issue": "public/js/issue_work_order.js",
     "Work Order": "public/js/work_order.js",
+    "Property Unit": "public/js/property_unit_maintenance.js",
     "Inspection Checklist": "public/js/inspection_checklist.js",
     "Utility Meter": "public/js/utility_meter.js",
     "Utility Bill": "public/js/utility_bill.js",

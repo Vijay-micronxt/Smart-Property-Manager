@@ -362,11 +362,13 @@ Reusable recurring monthly maintenance/society charge plan — unrelated to Issu
 | fixed_due_date | Date | Optional — bill on this exact date instead of a relative month |
 | item_code | Link → Item | Optional — overrides Property Core Settings' default Item for this row (e.g. a separate Item for a different charge type) |
 
-**Property Unit gets (custom fields, owned by property_operations):** `maintenance_plan_template` (Link), `maintenance_start_date` (Date), `pause_maintenance` (Check).
-**Property Core Settings gets (custom field, owned by property_operations):** `maintenance_item_code` (Link → Item) — the default Item used unless a row/repeat-cycle overrides it.
+**Property Unit gets (custom fields, owned by property_operations):** `maintenance_plan_template` (Link), `maintenance_start_date` (Date), `pause_maintenance` (Check), `maintenance_billing_history` (HTML, read-only).
+**Property Core Settings gets (custom field, owned by property_operations):** `maintenance_item_code` (Link → Item, mandatory) — the default Item used unless a row/repeat-cycle overrides it.
 **Sales Invoice gets (custom fields, owned by property_operations):** `property_unit`, `maintenance_period` (used to prevent double-billing the same period).
 
 **Automation:** daily scheduler (`maintenance_billing.run_daily_maintenance_billing`) creates + submits one Sales Invoice per newly-due period per enrolled unit. No reminder/notification logic — same standing decision as the Payment Plan billing in App 1.
+
+**UI — Maintenance Billing History (`public/js/property_unit_maintenance.js`):** when a unit has a Maintenance Plan Template assigned, its form shows a live table (Period / Due Date / Amount / Paid / Outstanding / Status, plus a Total Billed / Total Outstanding summary) built from the unit's own maintenance Sales Invoices via `frappe.client.get_list` — not stored data, always reflects the real invoices. Registered as a second `doctype_js` entry for Property Unit alongside property_core's own `property_unit.js`; Frappe merges both when multiple apps target the same doctype, so this stays fully additive and uninstall-safe (the HTML field is covered by the same `delete_property_unit_link_fields` cleanup as the other Maintenance fields).
 
 ---
 

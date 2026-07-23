@@ -35,6 +35,14 @@ PROPERTY_UNIT_FIELDS = [
         "insert_after": "maintenance_start_date",
         "depends_on": "eval:doc.maintenance_plan_template",
     },
+    {
+        "fieldname": "maintenance_billing_history",
+        "fieldtype": "HTML",
+        "label": "Maintenance Billing History",
+        "insert_after": "pause_maintenance",
+        "depends_on": "eval:doc.maintenance_plan_template",
+        "description": "Live list of auto-generated maintenance invoices for this unit -- period, amount, paid, outstanding, status. Not stored data; always reflects the actual Sales Invoices.",
+    },
 ]
 
 
