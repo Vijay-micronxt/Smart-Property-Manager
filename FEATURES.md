@@ -351,8 +351,7 @@ Reusable recurring monthly maintenance/society charge plan — unrelated to Issu
 | schedule | Table → Maintenance Schedule Row | Month-wise charge rows |
 | repeat_every_n_months | Int | 0 = stop billing after the listed months run out |
 | repeat_amount | Currency | Amount charged on the repeat cadence |
-| repeat_description | Data | Optional invoice-line text for repeat-cycle charges; defaults to "Maintenance charge - unit - period" |
-| repeat_item_code | Link → Item | Optional — overrides Property Core Settings' default Item for repeat-cycle charges |
+| repeat_item_code | Link → Item | Optional — overrides Property Core Settings' default Item for repeat-cycle charges. Invoice-line text for repeat charges always uses the default "Maintenance charge - unit - period" text (kept simple deliberately). |
 
 **Child table — Maintenance Schedule Row:**
 | Field | Type | Notes |

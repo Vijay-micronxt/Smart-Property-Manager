@@ -133,3 +133,15 @@ CUSTOMER_KYC_FIELDS = [
 def sync_customer_kyc_fields():
     from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
     create_custom_fields({"Customer": CUSTOMER_KYC_FIELDS}, ignore_validate=True, update=True)
+
+
+def delete_customer_kyc_fields():
+    """Runs on uninstall so ERPNext's Customer reverts cleanly -- these fields
+    live on Customer (ERPNext-native), not a property_core doctype, so
+    uninstalling this app doesn't remove them automatically."""
+    import frappe
+
+    frappe.db.delete(
+        "Custom Field",
+        {"dt": "Customer", "fieldname": ["in", [f["fieldname"] for f in CUSTOMER_KYC_FIELDS]]},
+    )

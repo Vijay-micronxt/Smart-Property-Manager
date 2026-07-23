@@ -33,6 +33,11 @@ after_migrate = [
     "property_operations.property_operations.property_unit_links.sync_property_unit_link_fields",
 ]
 
+before_uninstall = [
+    "property_operations.property_operations.issue_links.delete_issue_link_fields",
+    "property_operations.property_operations.property_unit_links.delete_property_unit_link_fields",
+]
+
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", ["Operations User"]]]},
 ]

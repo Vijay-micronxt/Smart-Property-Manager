@@ -46,6 +46,11 @@ after_migrate = [
     "property_core.property_core.crm_links.sync_crm_link_fields",
 ]
 
+before_uninstall = [
+    "property_core.property_core.customer_kyc.delete_customer_kyc_fields",
+    "property_core.property_core.crm_links.delete_crm_link_fields",
+]
+
 fixtures = [
     {"dt": "Role", "filters": [["name", "in", [
         "Property Manager",

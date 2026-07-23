@@ -77,7 +77,6 @@ def _bill_unit(unit, today_date):
             if (month - max_month) % repeat_n == 0:
                 amount = repeat_amt
                 row_item = repeat_item
-                row_desc = tpl.repeat_description
 
         if amount:
             due = getdate(add_months(start, month - 1))

@@ -45,7 +45,8 @@ SETTINGS_FIELDS = [
         "label": "Maintenance Item Code",
         "options": "Item",
         "insert_after": "rent_item_code",
-        "description": "ERPNext Item used when auto-generating recurring maintenance Sales Invoices (e.g. 'Maintenance Charge')",
+        "reqd": 1,
+        "description": "ERPNext Item used when auto-generating recurring maintenance Sales Invoices (e.g. 'Maintenance Charge'). Mandatory -- acts as the default whenever a Maintenance Plan Template row/repeat cycle doesn't specify its own Item.",
     },
 ]
 
@@ -76,3 +77,25 @@ def sync_property_unit_link_fields():
     create_custom_fields({"Property Unit": PROPERTY_UNIT_FIELDS}, ignore_validate=True, update=True)
     create_custom_fields({"Property Core Settings": SETTINGS_FIELDS}, ignore_validate=True, update=True)
     create_custom_fields({"Sales Invoice": SALES_INVOICE_FIELDS}, ignore_validate=True, update=True)
+
+
+def delete_property_unit_link_fields():
+    """Runs on uninstall so Property Unit / Property Core Settings / Sales
+    Invoice (all owned by property_core/ERPNext, not this app) revert cleanly
+    -- in particular Property Core Settings.maintenance_item_code is mandatory,
+    so leaving it behind after uninstall would permanently block saving that
+    Single doctype for a field that no longer means anything."""
+    import frappe
+
+    frappe.db.delete(
+        "Custom Field",
+        {"dt": "Property Unit", "fieldname": ["in", [f["fieldname"] for f in PROPERTY_UNIT_FIELDS]]},
+    )
+    frappe.db.delete(
+        "Custom Field",
+        {"dt": "Property Core Settings", "fieldname": ["in", [f["fieldname"] for f in SETTINGS_FIELDS]]},
+    )
+    frappe.db.delete(
+        "Custom Field",
+        {"dt": "Sales Invoice", "fieldname": ["in", [f["fieldname"] for f in SALES_INVOICE_FIELDS]]},
+    )

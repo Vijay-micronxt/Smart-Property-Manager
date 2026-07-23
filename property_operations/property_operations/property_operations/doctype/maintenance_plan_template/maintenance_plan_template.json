@@ -12,7 +12,6 @@
     "section_repeat",
     "repeat_every_n_months",
     "repeat_amount",
-    "repeat_description",
     "repeat_item_code"
   ],
   "fields": [
@@ -59,12 +58,6 @@
       "fieldname": "repeat_amount",
       "fieldtype": "Currency",
       "label": "Repeat Amount"
-    },
-    {
-      "fieldname": "repeat_description",
-      "fieldtype": "Data",
-      "label": "Repeat Charge Description",
-      "description": "Shown on the invoice line for repeat-cycle charges. Leave blank to default to 'Maintenance charge - <unit> - <period>'."
     },
     {
       "fieldname": "repeat_item_code",

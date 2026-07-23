@@ -53,3 +53,21 @@ def sync_crm_link_fields():
 
     create_custom_fields({"Opportunity": OPPORTUNITY_FIELDS}, ignore_validate=True, update=True)
     create_custom_fields({"Issue": ISSUE_FIELDS}, ignore_validate=True, update=True)
+
+
+def delete_crm_link_fields():
+    """Runs on uninstall so Opportunity/Issue (ERPNext-native) revert cleanly --
+    these fields live there, not on a property_core doctype, so uninstalling
+    this app doesn't remove them automatically. Only relevant once
+    property_operations/property_commissions have already been uninstalled
+    first -- they depend on Property/Property Unit existing."""
+    import frappe
+
+    frappe.db.delete(
+        "Custom Field",
+        {"dt": "Opportunity", "fieldname": ["in", [f["fieldname"] for f in OPPORTUNITY_FIELDS]]},
+    )
+    frappe.db.delete(
+        "Custom Field",
+        {"dt": "Issue", "fieldname": ["in", [f["fieldname"] for f in ISSUE_FIELDS]]},
+    )
