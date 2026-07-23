@@ -351,16 +351,20 @@ Reusable recurring monthly maintenance/society charge plan — unrelated to Issu
 | schedule | Table → Maintenance Schedule Row | Month-wise charge rows |
 | repeat_every_n_months | Int | 0 = stop billing after the listed months run out |
 | repeat_amount | Currency | Amount charged on the repeat cadence |
+| repeat_description | Data | Optional invoice-line text for repeat-cycle charges; defaults to "Maintenance charge - unit - period" |
+| repeat_item_code | Link → Item | Optional — overrides Property Core Settings' default Item for repeat-cycle charges |
 
 **Child table — Maintenance Schedule Row:**
 | Field | Type | Notes |
 |---|---|---|
 | month_no | Int | Months after the unit's plan start date |
+| description | Data | Optional invoice-line text (e.g. "Society Fee", "Water Charge"); defaults to "Maintenance charge - unit - period" |
 | amount | Currency | Required |
 | fixed_due_date | Date | Optional — bill on this exact date instead of a relative month |
+| item_code | Link → Item | Optional — overrides Property Core Settings' default Item for this row (e.g. a separate Item for a different charge type) |
 
 **Property Unit gets (custom fields, owned by property_operations):** `maintenance_plan_template` (Link), `maintenance_start_date` (Date), `pause_maintenance` (Check).
-**Property Core Settings gets (custom field, owned by property_operations):** `maintenance_item_code` (Link → Item).
+**Property Core Settings gets (custom field, owned by property_operations):** `maintenance_item_code` (Link → Item) — the default Item used unless a row/repeat-cycle overrides it.
 **Sales Invoice gets (custom fields, owned by property_operations):** `property_unit`, `maintenance_period` (used to prevent double-billing the same period).
 
 **Automation:** daily scheduler (`maintenance_billing.run_daily_maintenance_billing`) creates + submits one Sales Invoice per newly-due period per enrolled unit. No reminder/notification logic — same standing decision as the Payment Plan billing in App 1.

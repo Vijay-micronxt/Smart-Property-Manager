@@ -7,8 +7,10 @@
   "editable_grid": 1,
   "field_order": [
     "month_no",
+    "description",
     "amount",
-    "fixed_due_date"
+    "fixed_due_date",
+    "item_code"
   ],
   "fields": [
     {
@@ -17,6 +19,13 @@
       "label": "Month No.",
       "in_list_view": 1,
       "description": "Months after the unit's plan start date. Leave blank if using a Fixed Due Date instead."
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Data",
+      "label": "Description",
+      "in_list_view": 1,
+      "description": "e.g. 'Society Fee', 'Water Charge'. Shown on the invoice line. Leave blank to default to 'Maintenance charge - <unit> - <period>'."
     },
     {
       "fieldname": "amount",
@@ -31,6 +40,13 @@
       "label": "Fixed Due Date",
       "in_list_view": 1,
       "description": "Optional -- bill on this exact calendar date instead of Month No."
+    },
+    {
+      "fieldname": "item_code",
+      "fieldtype": "Link",
+      "label": "Item (override)",
+      "options": "Item",
+      "description": "Optional -- use a different Item than Property Core Settings' default Maintenance Item Code for this charge (e.g. a separate Item for Water Charge)."
     }
   ],
   "links": [],

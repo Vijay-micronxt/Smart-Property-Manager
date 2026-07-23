@@ -47,36 +47,50 @@ def _bill_unit(unit, today_date):
     if not item_code:
         frappe.throw(frappe._("Set 'Maintenance Item Code' in Property Core Settings before billing can run"))
 
-    amounts = {}
+    rows_by_month = {}
     max_month = 0
     for row in tpl.schedule:
         if row.fixed_due_date:
             due = getdate(row.fixed_due_date)
             if due <= today_date:
-                _create_invoice_if_new(unit, item_code, row.amount, due, str(due))
+                _create_invoice_if_new(
+                    unit, row.item_code or item_code, row.amount, due, str(due),
+                    row.description or f"Maintenance charge - {unit.name} - {due}",
+                )
         elif row.month_no:
-            amounts[row.month_no] = row.amount
+            rows_by_month[row.month_no] = row
             max_month = max(max_month, row.month_no)
 
     repeat_n = tpl.repeat_every_n_months or 0
     repeat_amt = tpl.repeat_amount or 0
+    repeat_item = tpl.repeat_item_code or item_code
     months_elapsed = (today_date.year - start.year) * 12 + (today_date.month - start.month) + 1
 
     month = 1
     while month <= months_elapsed:
-        amount = amounts.get(month)
+        row = rows_by_month.get(month)
+        amount = row.amount if row else None
+        row_item = row.item_code or item_code if row else item_code
+        row_desc = row.description if row else None
+
         if not amount and repeat_n and repeat_amt and month > max_month:
             if (month - max_month) % repeat_n == 0:
                 amount = repeat_amt
+                row_item = repeat_item
+                row_desc = tpl.repeat_description
+
         if amount:
             due = getdate(add_months(start, month - 1))
             if due <= today_date:
                 period = "{}-{:02d}".format(due.year, due.month)
-                _create_invoice_if_new(unit, item_code, amount, due, period)
+                _create_invoice_if_new(
+                    unit, row_item, amount, due, period,
+                    row_desc or f"Maintenance charge - {unit.name} - {period}",
+                )
         month += 1
 
 
-def _create_invoice_if_new(unit, item_code, amount, due, period):
+def _create_invoice_if_new(unit, item_code, amount, due, period, description):
     existing = frappe.db.exists(
         "Sales Invoice",
         {"property_unit": unit.name, "maintenance_period": period, "docstatus": ["<", 2]},
@@ -95,7 +109,7 @@ def _create_invoice_if_new(unit, item_code, amount, due, period):
         "item_code": item_code,
         "qty": 1,
         "rate": amount,
-        "description": f"Maintenance charge - {unit.name} - {period}",
+        "description": description,
     })
     invoice.insert(ignore_permissions=True)
     invoice.submit()
