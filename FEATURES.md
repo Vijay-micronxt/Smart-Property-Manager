@@ -1,6 +1,7 @@
 # Smart Property Manager — Feature List
 
-> **Last updated:** 2026-07-21 — Phase 2 & 3: property_operations (Maintenance, Work Order, Inspection, Utility) and property_commissions (Rule, Entry, Settlement) fully implemented
+> **Last updated:** 2026-07-23 — Architecture unification: Maintenance Request retired, Work Order now links directly to Issue, new Maintenance Plan Template recurring billing added
+> **2026-07-21:** Phase 2 & 3: property_operations (Maintenance, Work Order, Inspection, Utility) and property_commissions (Rule, Entry, Settlement) fully implemented
 > Update this file whenever a DocType, engine, or workflow is added, changed, or removed.
 
 ---
@@ -305,38 +306,27 @@ Daily scheduled job for recurring lease/rental invoicing and late fee enforcemen
 
 ### 2.1 DocTypes
 
-#### Maintenance Request
-Tenant or manager raises a maintenance issue for a unit.
+#### Issue (ERPNext native — the single complaint/query entry point)
+**Revised 2026-07-23:** there is no "Maintenance Request" doctype anymore. `Issue` (ERPNext's own ticketing doctype) is the one place any query or complaint gets raised, whether or not it turns out to need physical work — matches how JD's own live site works (it never had a separate Maintenance Request either). property_core adds `property_unit`; property_operations adds `work_order` on top when this optional app is installed.
 
 | Field | Type | Notes |
 |---|---|---|
-| naming_series | Select | MR-.#### |
-| property_unit | Link → Property Unit | Required |
-| customer | Link → Customer | |
-| subject | Data | Required |
-| priority | Select | Low / Medium / High / Urgent — default Medium |
-| status | Select | Open / Assigned / In Progress / Resolved / Closed — default Open |
-| raised_by | Data | Person reporting the issue |
-| raised_on | Date | Defaults to today |
-| assigned_to | Link → User | |
-| resolved_on | Date | Auto-filled on Resolved/Closed |
-| vendor | Link → Supplier | External contractor |
-| work_order | Link → Work Order | Read-only; set when WO is created |
-| description | Text | Required |
-| resolution_notes | Small Text | |
+| *(native)* subject, customer, raised_by, status, priority, issue_type, description, resolution_details, opening_date, via_customer_portal, SLA fields | — | Shipped by ERPNext — richer than a hand-rolled ticket doctype for free |
+| property_unit | Link → Property Unit | Custom field, owned by property_core |
+| work_order | Link → Work Order | Custom field, owned by property_operations; read-only, set once a Work Order is created |
 
-**Connections:** Work Orders
-**UI:** "Create Work Order" button (Actions); auto-fills customer from unit; colour-coded status banner
+**UI (when property_operations installed):** "Create Work Order" button (Actions) when a Work Order doesn't exist yet; "View Work Order" once it does.
+**Portal API:** `property_core.property_core.api.customer_portal.raise_issue(subject, description, property_unit)` — see App 1.
 
 ---
 
 #### Work Order
-Operational task assigned to resolve a maintenance issue.
+Operational task dispatched to resolve an Issue (or standalone internal/preventive work).
 
 | Field | Type | Notes |
 |---|---|---|
 | naming_series | Select | WO-.#### |
-| maintenance_request | Link → Maintenance Request | |
+| issue | Link → Issue | Optional — blank for internal/preventive work with no customer complaint behind it |
 | property_unit | Link → Property Unit | Required |
 | status | Select | Draft / Assigned / In Progress / Completed / Cancelled |
 | description | Text | Required |
@@ -347,7 +337,33 @@ Operational task assigned to resolve a maintenance issue.
 | estimated_cost | Currency | |
 | actual_cost | Currency | |
 
-**Automation on update:** Syncs parent Maintenance Request status (Assigned/In Progress/Resolved)
+**Automation on update:** when linked to an Issue, sets `Issue.work_order` always, and flips `Issue.status` → Resolved (with `resolution_details` from the Work Order's description) only once this Work Order is Completed — Work Order's own status already tracks the granular Assigned/In Progress dispatch state, not mirrored onto Issue.
+
+---
+
+#### Maintenance Plan Template *(new)*
+Reusable recurring monthly maintenance/society charge plan — unrelated to Issue/Work Order, this is proactive scheduled billing, not complaint-driven. Ported from JD's own live, proven pattern.
+
+| Field | Type | Notes |
+|---|---|---|
+| template_name | Data | Unique, required |
+| disabled | Check | |
+| schedule | Table → Maintenance Schedule Row | Month-wise charge rows |
+| repeat_every_n_months | Int | 0 = stop billing after the listed months run out |
+| repeat_amount | Currency | Amount charged on the repeat cadence |
+
+**Child table — Maintenance Schedule Row:**
+| Field | Type | Notes |
+|---|---|---|
+| month_no | Int | Months after the unit's plan start date |
+| amount | Currency | Required |
+| fixed_due_date | Date | Optional — bill on this exact date instead of a relative month |
+
+**Property Unit gets (custom fields, owned by property_operations):** `maintenance_plan_template` (Link), `maintenance_start_date` (Date), `pause_maintenance` (Check).
+**Property Core Settings gets (custom field, owned by property_operations):** `maintenance_item_code` (Link → Item).
+**Sales Invoice gets (custom fields, owned by property_operations):** `property_unit`, `maintenance_period` (used to prevent double-billing the same period).
+
+**Automation:** daily scheduler (`maintenance_billing.run_daily_maintenance_billing`) creates + submits one Sales Invoice per newly-due period per enrolled unit. No reminder/notification logic — same standing decision as the Payment Plan billing in App 1.
 
 ---
 
@@ -426,10 +442,10 @@ Records meter readings for a billing period and generates a Sales Invoice.
 | Role | Access |
 |---|---|
 | Property Manager | Full CRUD on all property_operations DocTypes |
-| Operations User | Read + Create + Write on Maintenance Request, Work Order, Inspection Checklist, Utility Meter, Utility Bill |
-| Tenant | Create + Read own Maintenance Requests; Read Utility Bills |
+| Operations User | Read + Create + Write on Issue, Work Order, Maintenance Plan Template, Inspection Checklist, Utility Meter, Utility Bill |
+| Tenant | Create + Read own Issues; Read Utility Bills |
 | Finance User | Read Utility Meter, Utility Bill |
-| Property Owner | Read Inspection Checklist, Maintenance Request |
+| Property Owner | Read Inspection Checklist, Issue |
 
 ---
 

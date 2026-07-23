@@ -1,6 +1,7 @@
 # Smart Property Manager — Test Cases
 
-> **Last updated:** 2026-07-23 — JD BRD gap-closing pass: added TC-CRM (Opportunity↔Property link), TC-CP (Customer Portal API), TC-PPB (automatic Payment Plan invoicing). Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md).
+> **Last updated:** 2026-07-23 (part 2) — Retired TC-MR-* (Maintenance Request deleted entirely); added TC-IWO (Issue↔Work Order, unified) and TC-MPT (Maintenance Plan Template recurring billing).
+> Previously same day — JD BRD gap-closing pass: added TC-CRM (Opportunity↔Property link), TC-CP (Customer Portal API), TC-PPB (automatic Payment Plan invoicing). Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md).
 > Previously: 2026-07-21 — Phase 1: added TC-AM (amenities), TC-PD (project documents), TC-LR (lease renewal), TC-LF (late fees), TC-RO (role permissions)
 > Add test cases for every new feature. Mark status after each test run.
 > Status: ✅ Pass | ❌ Fail | ⏭ Skip | 🔄 In Progress
@@ -650,43 +651,86 @@ Before running any test:
 
 ---
 
-## Module: Maintenance Request
+## Module: Issue & Work Order
 
-### TC-MR-01 — Raise Maintenance Request (Happy Path)
+> **Revised 2026-07-23:** Maintenance Request retired entirely (TC-MR-* removed) — Issue is now the single complaint/query entry point, Work Order links directly to Issue. See USE_CASES.md UC-17/UC-18.
+
+### TC-IWO-01 — Raise an Issue Linked to a Unit
 | | |
 |---|---|
 | **Use Case** | UC-17 |
-| **Steps** | New Maintenance Request → select property_unit, enter subject="Leaking tap", description, priority=High → Save |
-| **Expected** | Record created with status=Open. raised_on = today. |
+| **Steps** | New Issue → set Customer, Property Unit, Subject="Leaking tap", Priority → Save |
+| **Expected** | Record created with status=Open. |
 | **Status** | ⏭ |
 
-### TC-MR-02 — Customer Auto-Filled from Unit
-| | |
-|---|---|
-| **Steps** | Select property_unit that has a current customer → observe customer field |
-| **Expected** | Customer auto-populated from unit's customer field. |
-| **Status** | ⏭ |
-
-### TC-MR-03 — Create Work Order from Request
+### TC-IWO-02 — Create Work Order from Issue
 | | |
 |---|---|
 | **Use Case** | UC-18 |
-| **Steps** | Open saved Maintenance Request → Actions → Create Work Order |
-| **Expected** | New Work Order form opens with maintenance_request and property_unit pre-filled. |
-| **Status** | ⏭ |
+| **Steps** | Open the Issue → Actions → Create Work Order |
+| **Expected** | New Work Order form opens with `issue` and `property_unit` pre-filled. |
+| **Status** | ⏭ (button not checked in browser; underlying doc creation verified via console) |
 
-### TC-MR-04 — Work Order Completion Updates Request
+### TC-IWO-03 — Work Order Completion Resolves the Issue
 | | |
 |---|---|
-| **Steps** | Create Work Order linked to Maintenance Request → set WO status=Completed → Save |
-| **Expected** | Maintenance Request status → Resolved. work_order field populated. |
-| **Status** | ⏭ |
+| **Steps** | Create a Work Order linked to an Issue → set status=Completed → Save |
+| **Expected** | Linked Issue → status=Resolved, `resolution_details` filled from the Work Order description, `Issue.work_order` populated. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (`ISS-2026-00002` → Resolved after `WO-0003` completed) |
 
-### TC-MR-05 — Tenant Can Create Request
+### TC-IWO-04 — Work Order Status Not Forced Onto Issue Early
 | | |
 |---|---|
-| **Steps** | Login as Tenant user → New Maintenance Request |
-| **Expected** | Save succeeds. Tenant cannot edit status field. |
+| **Steps** | Create a Work Order linked to an Issue, set status=Assigned (not Completed) |
+| **Expected** | Issue's own `status` stays unchanged (still Open); only `work_order` backlink is set. Work Order's own status tracks the granular dispatch state, not mirrored onto Issue. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 |
+
+### TC-IWO-05 — Work Order Can Stand Alone (No Issue)
+| | |
+|---|---|
+| **Steps** | Create a Work Order with `issue` left blank (internal/preventive work) |
+| **Expected** | Saves fine; no error from the (optional) Issue sync. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Maintenance Plan Template (Recurring Billing)
+
+### TC-MPT-01 — Create Template With Month-wise Rows
+| | |
+|---|---|
+| **Use Case** | UC-32 |
+| **Steps** | New Maintenance Plan Template → add rows month_no=1 amount=2000, month_no=2 amount=2000 → set Repeat Every N Months=1, Repeat Amount=2000 → Save |
+| **Expected** | Saves without error. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 |
+
+### TC-MPT-02 — Row Needs Month No. or Fixed Due Date
+| | |
+|---|---|
+| **Steps** | Add a schedule row with both `month_no` and `fixed_due_date` blank → Save |
+| **Expected** | Throws: "Row N: set either Month No. or Fixed Due Date" |
+| **Status** | ⏭ |
+
+### TC-MPT-03 — Assign Template to a Unit and Auto-Bill
+| | |
+|---|---|
+| **Use Case** | UC-33 |
+| **Steps** | Set Property Core Settings → Maintenance Item Code. Set a Property Unit's Maintenance Plan Template + Maintenance Start Date (2 months ago) → run `maintenance_billing.run_daily_maintenance_billing()` |
+| **Expected** | One submitted Sales Invoice per elapsed period (month 1, month 2 from the template, month 3 from the repeat rule) — 3 invoices total for a 2-months-back start date. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 (3 invoices: 2026-05, 2026-06, 2026-07, ₹2000 each, all submitted) |
+
+### TC-MPT-04 — No Duplicate Invoice on Re-run
+| | |
+|---|---|
+| **Steps** | Run the scheduler again immediately after TC-MPT-03 |
+| **Expected** | No additional invoices created — same 3 as before. |
+| **Status** | ✅ Pass — verified via bench console on review.site, 2026-07-23 |
+
+### TC-MPT-05 — Paused Unit Not Billed
+| | |
+|---|---|
+| **Steps** | Set `Pause Maintenance Billing` on a unit with a template assigned → run the scheduler |
+| **Expected** | No invoice generated for that unit while paused. |
 | **Status** | ⏭ |
 
 ---
@@ -1021,8 +1065,10 @@ Run after every code change:
 - [ ] TC-LF-03: Late fee not applied twice
 - [ ] TC-RO-01: Property Owner has read-only access
 - [ ] TC-RO-03: Tenant can read Agreement
-- [ ] TC-MR-01: Maintenance Request created with status=Open
-- [ ] TC-MR-04: Work Order completion updates Maintenance Request
+- [ ] TC-IWO-01: Issue created with status=Open
+- [ ] TC-IWO-03: Work Order completion resolves the linked Issue
+- [ ] TC-MPT-03: Maintenance Plan Template auto-bills elapsed periods
+- [ ] TC-MPT-04: Re-running maintenance billing creates no duplicates
 - [ ] TC-INS-02: Load Default Items populates 12 checklist rows
 - [ ] TC-UB-01: Utility Bill calculates units and amount correctly
 - [ ] TC-UB-04: Generate Invoice creates Sales Invoice

@@ -1,7 +1,8 @@
 # Smart Property Manager — Use Cases
 
-> **Last updated:** 2026-07-23 — JD BRD gap-closing pass: UC-26 CRM↔Property link, UC-27 Raise Issue (portal API), UC-28 Customer Portal data API, UC-29 Automatic Payment Plan invoicing. Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md) and closed against JD's BRD (see BRD_GAP_ANALYSIS.md).
-> Previously: 2026-07-21 — Phase 2 & 3: UC-17 Raise Maintenance Request, UC-18 Work Order, UC-19 Inspection Checklist, UC-20 Utility Billing, UC-21 Commission Rule, UC-22 Commission Entry, UC-23 Commission Settlement
+> **Last updated:** 2026-07-23 (part 2) — Architecture unification: retired Maintenance Request entirely, Issue is now the single complaint/query entry point (UC-17 revised), Work Order links to Issue directly (UC-18 revised). Added recurring maintenance billing (UC-32, UC-33), ported from JD's proven live pattern.
+> Previously same day — JD BRD gap-closing pass: UC-26 CRM↔Property link, UC-27 Raise Issue (portal API), UC-28 Customer Portal data API, UC-29 Automatic Payment Plan invoicing. Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md) and closed against JD's BRD (see BRD_GAP_ANALYSIS.md).
+> Previously: 2026-07-21 — Phase 2 & 3: UC-19 Inspection Checklist, UC-20 Utility Billing, UC-21 Commission Rule, UC-22 Commission Entry, UC-23 Commission Settlement
 > Add a new use case whenever a new business workflow is implemented.
 
 ---
@@ -351,39 +352,44 @@
 
 ---
 
-## UC-17: Raise a Maintenance Request
+## UC-17: Raise a Complaint or Query (Issue)
 
-**Actor:** Tenant / Property Manager
-**Trigger:** A unit has a fault or maintenance need.
+**Actor:** Tenant / Customer (via portal API) / Property Manager
+**Trigger:** A unit has a fault, or the customer has any query/complaint.
 
-**Steps:**
-1. Go to Maintenance Request → New
-2. Select Property Unit (customer auto-filled from unit)
+> **Revised 2026-07-23:** there is no separate "Maintenance Request" doctype anymore — `Issue` (ERPNext's native ticketing doctype, already used for general queries) is now the single entry point for anything a customer or tenant raises, maintenance-related or not. This matches how JD's own live site works — it never had a separate Maintenance Request either.
+
+**Steps (Desk):**
+1. Go to Issue → New
+2. Select Customer, set Property Unit (optional but recommended)
 3. Enter Subject, Description, Priority
 4. Save
 
+**Steps (Portal API):** logged-in customer calls `property_core.property_core.api.customer_portal.raise_issue(subject, description, property_unit)` — see UC-27.
+
 **Outcome:**
-- Request created with status = Open
-- Property Manager and Operations User can now assign it
+- Issue created with status = Open
+- Property Manager / Operations User can now dispatch a Work Order against it if it needs physical work (UC-18)
 
 ---
 
-## UC-18: Create a Work Order for Maintenance
+## UC-18: Create a Work Order to Resolve an Issue
 
 **Actor:** Operations User / Property Manager
-**Trigger:** Maintenance Request is received; work needs to be scheduled.
+**Trigger:** An Issue needs a technician/vendor visit, not just a reply.
 
 **Steps:**
-1. Open a Maintenance Request
+1. Open the Issue
 2. Click Actions → **Create Work Order**
-3. New Work Order pre-fills property_unit and description
+3. New Work Order pre-fills `issue` and `property_unit`
 4. Add assigned_to or vendor, set scheduled_date → Save
 
 **Outcome:**
-- Work Order created and linked to Maintenance Request
-- Maintenance Request status → Assigned
-- As work progresses, update WO status (In Progress → Completed)
-- On Completed: Maintenance Request status → Resolved
+- Work Order created, linked back to the Issue (`Issue.work_order` set)
+- As work progresses, update the Work Order's own status (Assigned → In Progress → Completed) — Work Order tracks this granularity itself, it isn't mirrored onto the Issue
+- On Completed: Issue status → Resolved, `resolution_details` filled from the Work Order's description
+
+**Note:** the `issue` link on Work Order is optional — internal/preventive work with no customer complaint behind it can still create a standalone Work Order.
 
 ---
 
@@ -557,6 +563,42 @@
 
 ---
 
+## UC-32: Configure a Recurring Maintenance Plan for a Unit
+
+**Actor:** Operations User / Property Manager
+**Trigger:** A unit needs a recurring monthly society/upkeep charge, independent of any complaint.
+
+**Steps:**
+1. Go to Maintenance Plan Template → New
+2. Name the template, add month-wise charge rows (`month_no` + `amount`), or a `fixed_due_date` row for a one-off charge on a specific date
+3. Optionally set `Repeat Every N Months` + `Repeat Amount` so billing continues indefinitely after the listed months run out (0 = stop)
+4. Save
+5. Open the Property Unit → set `Maintenance Plan Template` + `Maintenance Start Date`
+6. Ensure `Maintenance Item Code` is set once in Property Core Settings
+
+**Outcome:** the unit is now enrolled in recurring maintenance billing (see UC-33).
+
+---
+
+## UC-33: Automatic Recurring Maintenance Invoicing
+
+**Actor:** ERPNext System (scheduled daily job)
+**Trigger:** A unit's maintenance schedule has a period due.
+
+**Pre-condition:** Property Unit has a Maintenance Plan Template + Start Date, `Pause Maintenance Billing` is unchecked, and `Maintenance Item Code` is configured in Property Core Settings.
+
+**Steps (automated):**
+1. Daily scheduler (`maintenance_billing.run_daily_maintenance_billing`) runs
+2. For each enrolled, non-paused unit, works out which billing periods (by month number, or a repeat rule after the listed months) have a due date on or before today
+3. Skips any period already invoiced (tracked via `Sales Invoice.maintenance_period`)
+4. Creates + submits one Sales Invoice per newly-due period
+
+**Outcome:** recurring maintenance charges are billed automatically, same automation level as the Lease/Rent (`billing_engine.py`) and Sale-side Payment Plan (`payment_plan_billing.py`) billing. No reminder/notification logic here either — same standing decision as UC-29.
+
+**Ported from:** JD's own live, proven `Plot Maintenance - Generate Invoices & Remind` pattern (month-wise schedule + repeat rule), confirmed via the JD site audit — minus its WhatsApp half.
+
+---
+
 ## Future Use Cases (Not Yet Implemented)
 
 | ID | Use Case | Notes |
@@ -565,4 +607,3 @@
 | UC-25 | Commission report by sales person and period | reporting |
 | UC-30 | WhatsApp/SMS notifications (payment reminders, follow-ups) | explicitly deferred — to be wired via Server Script, not app code |
 | UC-31 | Lead assignment rules (round-robin, auto-apply salesperson) | raised as a feature-flag-gated configuration item, not yet scoped |
-| UC-32 | Recurring maintenance billing (Maintenance Plan Template) for property_operations | property_operations tracks Maintenance Request/Work Order but has no recurring monthly billing yet |
