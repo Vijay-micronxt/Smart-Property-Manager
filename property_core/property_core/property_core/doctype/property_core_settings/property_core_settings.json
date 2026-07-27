@@ -12,7 +12,9 @@
     "enable_late_fees",
     "late_fee_grace_days",
     "late_fee_percentage",
-    "late_fee_item_code"
+    "late_fee_item_code",
+    "section_notifications",
+    "whatsapp_enabled"
   ],
   "fields": [
     {
@@ -72,6 +74,18 @@
       "label": "Late Fee Item Code",
       "options": "Item",
       "description": "ERPNext Item used when generating late fee Sales Invoices"
+    },
+    {
+      "fieldname": "section_notifications",
+      "fieldtype": "Section Break",
+      "label": "Notifications"
+    },
+    {
+      "fieldname": "whatsapp_enabled",
+      "fieldtype": "Check",
+      "label": "Enable WhatsApp OTP",
+      "default": 0,
+      "description": "Send password reset OTPs via WhatsApp Message DocType when customer mobile_no is available"
     }
   ],
   "issingle": 1,
