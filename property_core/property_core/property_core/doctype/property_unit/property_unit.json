@@ -1,0 +1,177 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "naming_series",
+    "property",
+    "unit_number",
+    "unit_type",
+    "availability_status",
+    "column_break_1",
+    "area",
+    "facing",
+    "floor",
+    "base_price",
+    "item_code",
+    "section_customer",
+    "customer",
+    "section_geo",
+    "geo_location"
+  ],
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "UNIT-.####"
+    },
+    {
+      "fieldname": "property",
+      "fieldtype": "Link",
+      "label": "Property",
+      "options": "Property",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "unit_number",
+      "fieldtype": "Data",
+      "label": "Unit Number",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "unit_type",
+      "fieldtype": "Select",
+      "label": "Unit Type",
+      "options": "Plot\nFlat\nVilla\nOffice\nWarehouse\nShop",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "availability_status",
+      "fieldtype": "Select",
+      "label": "Availability Status",
+      "options": "Available\nReserved\nBooked\nAllocated\nLeased\nMaintenance Blocked",
+      "default": "Available",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "area",
+      "fieldtype": "Float",
+      "label": "Area (sq ft)"
+    },
+    {
+      "fieldname": "facing",
+      "fieldtype": "Select",
+      "label": "Facing",
+      "options": "\nNorth\nSouth\nEast\nWest\nNorth-East\nNorth-West\nSouth-East\nSouth-West"
+    },
+    {
+      "fieldname": "floor",
+      "fieldtype": "Int",
+      "label": "Floor"
+    },
+    {
+      "fieldname": "base_price",
+      "fieldtype": "Currency",
+      "label": "Base Price"
+    },
+    {
+      "fieldname": "item_code",
+      "fieldtype": "Link",
+      "label": "ERPNext Item",
+      "options": "Item",
+      "description": "ERPNext Item used when generating Sales Invoices for this unit. Create an Item (e.g. 'Plot', 'Flat') and link it here."
+    },
+    {
+      "fieldname": "section_customer",
+      "fieldtype": "Section Break",
+      "label": "Customer"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_geo",
+      "fieldtype": "Section Break",
+      "label": "GIS Location",
+      "collapsible": 1,
+      "collapsed": 1
+    },
+    {
+      "fieldname": "geo_location",
+      "fieldtype": "Geolocation",
+      "label": "Geo Location"
+    }
+  ],
+  "links": [
+    {
+      "group": "Transactions",
+      "link_doctype": "Property Booking",
+      "link_fieldname": "property_unit"
+    },
+    {
+      "group": "Transactions",
+      "link_doctype": "Property Allocation",
+      "link_fieldname": "property_unit"
+    }
+  ],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Property Unit",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Sales User",
+      "share": 1
+    },
+    {
+      "read": 1,
+      "role": "Operations User"
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Property Owner"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

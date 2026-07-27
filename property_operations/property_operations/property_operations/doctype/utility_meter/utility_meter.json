@@ -1,0 +1,123 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "naming_series",
+    "property_unit",
+    "utility_type",
+    "meter_number",
+    "column_break_1",
+    "unit_of_measure",
+    "rate_per_unit",
+    "customer",
+    "utility_item_code"
+  ],
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "UMTR-.####"
+    },
+    {
+      "fieldname": "property_unit",
+      "fieldtype": "Link",
+      "label": "Property Unit",
+      "options": "Property Unit",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "utility_type",
+      "fieldtype": "Select",
+      "label": "Utility Type",
+      "options": "Electricity\nWater\nGas\nInternet",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "meter_number",
+      "fieldtype": "Data",
+      "label": "Meter Number",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "unit_of_measure",
+      "fieldtype": "Select",
+      "label": "Unit of Measure",
+      "options": "kWh\nLiters\nm³\nGB\nUnits"
+    },
+    {
+      "fieldname": "rate_per_unit",
+      "fieldtype": "Currency",
+      "label": "Rate per Unit",
+      "reqd": 1,
+      "description": "Billing rate per unit consumed (e.g. ₹8/kWh)"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer",
+      "description": "Customer to be invoiced for utility consumption"
+    },
+    {
+      "fieldname": "utility_item_code",
+      "fieldtype": "Link",
+      "label": "Utility Item Code",
+      "options": "Item",
+      "description": "ERPNext Item used when generating utility Sales Invoices"
+    }
+  ],
+  "links": [
+    {
+      "group": "Bills",
+      "link_doctype": "Utility Bill",
+      "link_fieldname": "utility_meter"
+    }
+  ],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Operations",
+  "name": "Utility Meter",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Operations User",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Finance User"
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

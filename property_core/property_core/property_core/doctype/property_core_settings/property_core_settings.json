@@ -1,0 +1,109 @@
+{
+  "actions": [],
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "default_company",
+    "section_accounts",
+    "security_deposit_account",
+    "rent_item_code",
+    "section_late_fees",
+    "enable_late_fees",
+    "late_fee_grace_days",
+    "late_fee_percentage",
+    "late_fee_item_code",
+    "section_notifications",
+    "whatsapp_enabled"
+  ],
+  "fields": [
+    {
+      "fieldname": "default_company",
+      "fieldtype": "Link",
+      "label": "Default Company",
+      "options": "Company",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_accounts",
+      "fieldtype": "Section Break",
+      "label": "Accounting Defaults"
+    },
+    {
+      "fieldname": "security_deposit_account",
+      "fieldtype": "Link",
+      "label": "Security Deposit Account",
+      "options": "Account",
+      "description": "Liability account where security deposits are held (e.g. 'Security Deposits Received')"
+    },
+    {
+      "fieldname": "rent_item_code",
+      "fieldtype": "Link",
+      "label": "Rent Item Code",
+      "options": "Item",
+      "description": "ERPNext Item used when auto-generating rent Sales Invoices (e.g. 'Monthly Rent')"
+    },
+    {
+      "fieldname": "section_late_fees",
+      "fieldtype": "Section Break",
+      "label": "Late Fee Settings"
+    },
+    {
+      "fieldname": "enable_late_fees",
+      "fieldtype": "Check",
+      "label": "Enable Late Fees",
+      "default": 0,
+      "description": "Automatically charge late fees on overdue Payment Plan milestones"
+    },
+    {
+      "fieldname": "late_fee_grace_days",
+      "fieldtype": "Int",
+      "label": "Grace Period (Days)",
+      "default": 5,
+      "description": "Days after due date before late fee is applied"
+    },
+    {
+      "fieldname": "late_fee_percentage",
+      "fieldtype": "Float",
+      "label": "Late Fee (%)",
+      "description": "Late fee as a percentage of the outstanding milestone amount"
+    },
+    {
+      "fieldname": "late_fee_item_code",
+      "fieldtype": "Link",
+      "label": "Late Fee Item Code",
+      "options": "Item",
+      "description": "ERPNext Item used when generating late fee Sales Invoices"
+    },
+    {
+      "fieldname": "section_notifications",
+      "fieldtype": "Section Break",
+      "label": "Notifications"
+    },
+    {
+      "fieldname": "whatsapp_enabled",
+      "fieldtype": "Check",
+      "label": "Enable WhatsApp OTP",
+      "default": 0,
+      "description": "Send password reset OTPs via WhatsApp Message DocType when customer mobile_no is available"
+    }
+  ],
+  "issingle": 1,
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Property Core Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Property Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

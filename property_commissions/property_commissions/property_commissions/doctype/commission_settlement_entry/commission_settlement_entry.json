@@ -1,0 +1,61 @@
+{
+  "actions": [],
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "commission_entry",
+    "booking",
+    "property_unit",
+    "commission_amount",
+    "commission_date"
+  ],
+  "fields": [
+    {
+      "fieldname": "commission_entry",
+      "fieldtype": "Link",
+      "label": "Commission Entry",
+      "options": "Commission Entry",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "booking",
+      "fieldtype": "Link",
+      "label": "Booking",
+      "options": "Property Booking",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "property_unit",
+      "fieldtype": "Link",
+      "label": "Property Unit",
+      "options": "Property Unit",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "commission_amount",
+      "fieldtype": "Currency",
+      "label": "Commission Amount",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "commission_date",
+      "fieldtype": "Date",
+      "label": "Commission Date",
+      "in_list_view": 1
+    }
+  ],
+  "istable": 1,
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Commissions",
+  "name": "Commission Settlement Entry",
+  "owner": "Administrator",
+  "permissions": [],
+  "sort_field": "modified",
+  "sort_order": "DESC"
+}

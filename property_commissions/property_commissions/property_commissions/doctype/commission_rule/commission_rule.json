@@ -1,0 +1,129 @@
+{
+  "actions": [],
+  "autoname": "field:rule_name",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "rule_name",
+    "property",
+    "sales_person",
+    "commission_type",
+    "commission_rate",
+    "column_break_1",
+    "effective_from",
+    "effective_to",
+    "is_active",
+    "section_notes",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "rule_name",
+      "fieldtype": "Data",
+      "label": "Rule Name",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "property",
+      "fieldtype": "Link",
+      "label": "Property",
+      "options": "Property",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Leave blank to apply to all properties"
+    },
+    {
+      "fieldname": "sales_person",
+      "fieldtype": "Link",
+      "label": "Sales Person",
+      "options": "Sales Person",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Leave blank to apply to all sales persons"
+    },
+    {
+      "fieldname": "commission_type",
+      "fieldtype": "Select",
+      "label": "Commission Type",
+      "options": "Percentage\nFlat",
+      "reqd": 1,
+      "default": "Percentage",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "commission_rate",
+      "fieldtype": "Float",
+      "label": "Commission Rate",
+      "reqd": 1,
+      "in_list_view": 1,
+      "description": "Percentage (0–100) or flat amount depending on Commission Type"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "effective_from",
+      "fieldtype": "Date",
+      "label": "Effective From"
+    },
+    {
+      "fieldname": "effective_to",
+      "fieldtype": "Date",
+      "label": "Effective To"
+    },
+    {
+      "fieldname": "is_active",
+      "fieldtype": "Check",
+      "label": "Active",
+      "default": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "section_notes",
+      "fieldtype": "Section Break",
+      "label": "Notes"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Text",
+      "label": "Notes"
+    }
+  ],
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Commissions",
+  "name": "Commission Rule",
+  "naming_rule": "By fieldname",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Commission Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

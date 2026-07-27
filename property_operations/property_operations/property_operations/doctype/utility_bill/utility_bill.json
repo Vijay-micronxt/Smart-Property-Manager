@@ -1,0 +1,178 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "naming_series",
+    "utility_meter",
+    "property_unit",
+    "customer",
+    "status",
+    "column_break_1",
+    "billing_period_start",
+    "billing_period_end",
+    "section_readings",
+    "previous_reading",
+    "current_reading",
+    "units_consumed",
+    "column_break_readings",
+    "rate_per_unit",
+    "amount",
+    "section_invoice",
+    "invoice"
+  ],
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "UBIL-.####"
+    },
+    {
+      "fieldname": "utility_meter",
+      "fieldtype": "Link",
+      "label": "Utility Meter",
+      "options": "Utility Meter",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "property_unit",
+      "fieldtype": "Link",
+      "label": "Property Unit",
+      "options": "Property Unit",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer",
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Draft\nInvoiced\nPaid",
+      "default": "Draft",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "billing_period_start",
+      "fieldtype": "Date",
+      "label": "Period Start",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "billing_period_end",
+      "fieldtype": "Date",
+      "label": "Period End",
+      "reqd": 1
+    },
+    {
+      "fieldname": "section_readings",
+      "fieldtype": "Section Break",
+      "label": "Meter Readings"
+    },
+    {
+      "fieldname": "previous_reading",
+      "fieldtype": "Float",
+      "label": "Previous Reading",
+      "reqd": 1
+    },
+    {
+      "fieldname": "current_reading",
+      "fieldtype": "Float",
+      "label": "Current Reading",
+      "reqd": 1
+    },
+    {
+      "fieldname": "units_consumed",
+      "fieldtype": "Float",
+      "label": "Units Consumed",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "column_break_readings",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "rate_per_unit",
+      "fieldtype": "Currency",
+      "label": "Rate per Unit",
+      "read_only": 1
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "label": "Amount",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "section_invoice",
+      "fieldtype": "Section Break",
+      "label": "Invoice"
+    },
+    {
+      "fieldname": "invoice",
+      "fieldtype": "Link",
+      "label": "Sales Invoice",
+      "options": "Sales Invoice",
+      "read_only": 1
+    }
+  ],
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Operations",
+  "name": "Utility Bill",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Operations User",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Finance User"
+    },
+    {
+      "read": 1,
+      "print": 1,
+      "role": "Tenant"
+    }
+  ],
+  "sort_field": "billing_period_start",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

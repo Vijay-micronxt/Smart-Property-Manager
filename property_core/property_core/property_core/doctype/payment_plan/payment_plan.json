@@ -1,0 +1,144 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2024-01-01 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "naming_series",
+    "booking",
+    "milestone",
+    "due_date",
+    "amount",
+    "column_break_1",
+    "invoice",
+    "payment_status",
+    "section_late_fee",
+    "late_fee_applied",
+    "late_fee_amount",
+    "late_fee_invoice"
+  ],
+  "fields": [
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "PP-.####"
+    },
+    {
+      "fieldname": "booking",
+      "fieldtype": "Link",
+      "label": "Property Booking",
+      "options": "Property Booking",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "milestone",
+      "fieldtype": "Data",
+      "label": "Milestone",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "due_date",
+      "fieldtype": "Date",
+      "label": "Due Date",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "label": "Amount",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "invoice",
+      "fieldtype": "Link",
+      "label": "Sales Invoice",
+      "options": "Sales Invoice",
+      "read_only": 1
+    },
+    {
+      "fieldname": "payment_status",
+      "fieldtype": "Select",
+      "label": "Payment Status",
+      "options": "Pending\nInvoiced\nPaid\nOverdue",
+      "default": "Pending",
+      "in_list_view": 1,
+      "in_standard_filter": 1
+    },
+    {
+      "fieldname": "section_late_fee",
+      "fieldtype": "Section Break",
+      "label": "Late Fee",
+      "collapsible": 1,
+      "collapsed": 1
+    },
+    {
+      "fieldname": "late_fee_applied",
+      "fieldtype": "Check",
+      "label": "Late Fee Applied",
+      "read_only": 1
+    },
+    {
+      "fieldname": "late_fee_amount",
+      "fieldtype": "Currency",
+      "label": "Late Fee Amount",
+      "read_only": 1
+    },
+    {
+      "fieldname": "late_fee_invoice",
+      "fieldtype": "Link",
+      "label": "Late Fee Invoice",
+      "options": "Sales Invoice",
+      "read_only": 1
+    }
+  ],
+  "links": [],
+  "modified": "2024-01-01 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Payment Plan",
+  "naming_rule": "By \"Naming Series\" field",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "export": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Property Manager",
+      "share": 1,
+      "write": 1
+    },
+    {
+      "read": 1,
+      "report": 1,
+      "role": "Finance User"
+    },
+    {
+      "read": 1,
+      "role": "Sales User"
+    },
+    {
+      "read": 1,
+      "print": 1,
+      "role": "Tenant"
+    }
+  ],
+  "sort_field": "due_date",
+  "sort_order": "ASC",
+  "states": [],
+  "track_changes": 1
+}
