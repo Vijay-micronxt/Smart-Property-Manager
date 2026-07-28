@@ -1,34 +1,54 @@
 #!/usr/bin/env bash
-# Smart Property Manager — full installation script
-# Usage: bash install.sh <site-name>
-# Example: bash install.sh mysite.local
+# Smart Property Manager — install all three Frappe apps
 #
-# Run this from inside your frappe-bench directory:
+# Usage (run as frappe user or with sudo from inside frappe-bench):
 #   cd /home/frappe/frappe-bench
-#   bash apps/Smart-Property-Manager/install.sh mysite.local
+#   sudo bash /tmp/spm_install.sh mysite.local
+#
+# Or one-liner (run as frappe user):
+#   curl -s https://raw.githubusercontent.com/Vijay-micronxt/Smart-Property-Manager/fix/property-manager-bugs/install.sh -o /tmp/spm_install.sh
+#   sudo bash /tmp/spm_install.sh mysite.local
 
 set -euo pipefail
 
 SITE="${1:-}"
 if [ -z "$SITE" ]; then
     echo "Usage: bash install.sh <site-name>"
-    echo "Example: bash install.sh mysite.local"
+    echo "Example: sudo bash install.sh mysite.local"
     exit 1
 fi
 
-BENCH_DIR="$(pwd)"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Auto-detect bench directory (default: /home/frappe/frappe-bench)
+BENCH_DIR="${BENCH_DIR:-/home/frappe/frappe-bench}"
+BRANCH="${BRANCH:-fix/property-manager-bugs}"
+REPO_URL="https://github.com/Vijay-micronxt/Smart-Property-Manager.git"
+SRC_DIR="/tmp/smart-property-manager-src"
 
-echo "==> Installing property_core ..."
-bench get-app "$REPO_DIR/property_core"
+PYTHON="$BENCH_DIR/env/bin/python"
+PIP="$BENCH_DIR/env/bin/pip"
 
-echo "==> Installing property_operations ..."
-bench get-app "$REPO_DIR/property_operations"
+echo "==> Cloning Smart-Property-Manager ..."
+rm -rf "$SRC_DIR"
+git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$SRC_DIR"
 
-echo "==> Installing property_commissions ..."
-bench get-app "$REPO_DIR/property_commissions"
+for APP in property_core property_operations property_commissions; do
+    echo "==> Setting up $APP ..."
 
-echo "==> Installing apps on site: $SITE"
+    # Remove any previous failed install
+    rm -rf "$BENCH_DIR/apps/$APP"
+
+    # Copy the app folder into bench's apps directory
+    cp -r "$SRC_DIR/$APP" "$BENCH_DIR/apps/$APP"
+
+    # Install the Python package into bench's virtualenv
+    "$PIP" install --quiet --upgrade -e "$BENCH_DIR/apps/$APP"
+done
+
+echo "==> Building frontend assets ..."
+cd "$BENCH_DIR"
+bench build
+
+echo "==> Installing apps on site: $SITE ..."
 bench --site "$SITE" install-app property_core
 bench --site "$SITE" install-app property_operations
 bench --site "$SITE" install-app property_commissions
@@ -37,4 +57,5 @@ echo "==> Running migrations ..."
 bench --site "$SITE" migrate
 
 echo ""
-echo "✓ Smart Property Manager installed successfully on $SITE"
+echo "Smart Property Manager installed on $SITE"
+rm -rf "$SRC_DIR"

@@ -6,58 +6,62 @@ Plain-language walkthrough of the day-to-day flow across the 3 apps, current as 
 
 ## 0. Installation
 
-This is a **mono-repo** containing three separate Frappe apps (`property_core`, `property_operations`, `property_commissions`). Each must be installed individually. Running `bench get-app` directly on the repo URL installs only `property_core` — use one of the methods below to install all three.
+This is a **mono-repo** with three separate Frappe apps (`property_core`, `property_operations`, `property_commissions`). `bench get-app <URL>` on the root URL **does not work** — bench's build system requires the app directory to sit at the correct depth, and the mono-repo root is one level too shallow. Use the script or manual steps below instead.
 
-### Option A — One-liner script (recommended)
+> **Clean up any failed previous attempts first:**
+> ```bash
+> rm -rf /home/frappe/frappe-bench/apps/property_core \
+>         /home/frappe/frappe-bench/apps/property_operations \
+>         /home/frappe/frappe-bench/apps/property_commissions
+> ```
+
+### Option A — Install script (recommended)
 
 ```bash
+# Download the script
+curl -s https://raw.githubusercontent.com/Vijay-micronxt/Smart-Property-Manager/fix/property-manager-bugs/install.sh \
+    -o /tmp/spm_install.sh
+
+# Run it (replace mysite.local with your site name)
 cd /home/frappe/frappe-bench
-
-# Clone the repo once
-git clone --branch fix/property-manager-bugs \
-    https://github.com/Vijay-micronxt/Smart-Property-Manager.git \
-    apps/Smart-Property-Manager
-
-# Run the install script (replace 'mysite.local' with your site name)
-bash apps/Smart-Property-Manager/install.sh mysite.local
+sudo bash /tmp/spm_install.sh mysite.local
 ```
 
-The script does all of the steps in Option B automatically.
+The script clones the repo, copies each app into bench's `apps/` directory, installs the Python packages, builds assets, and runs migrations.
 
 ### Option B — Manual step-by-step
 
 ```bash
-cd /home/frappe/frappe-bench
+BENCH="/home/frappe/frappe-bench"
+SRC="/tmp/smart-property-manager-src"
 
-# 1. Clone the repo
-git clone --branch fix/property-manager-bugs \
-    https://github.com/Vijay-micronxt/Smart-Property-Manager.git \
-    apps/Smart-Property-Manager
+# 1. Clone to a temp location
+git clone --branch fix/property-manager-bugs --depth 1 \
+    https://github.com/Vijay-micronxt/Smart-Property-Manager.git "$SRC"
 
-# 2. Register each app with bench
-bench get-app apps/Smart-Property-Manager/property_core
-bench get-app apps/Smart-Property-Manager/property_operations
-bench get-app apps/Smart-Property-Manager/property_commissions
+# 2. Copy each app into bench's apps dir
+for APP in property_core property_operations property_commissions; do
+    rm -rf "$BENCH/apps/$APP"
+    cp -r "$SRC/$APP" "$BENCH/apps/$APP"
+    "$BENCH/env/bin/pip" install --quiet -e "$BENCH/apps/$APP"
+done
 
-# 3. Install on your site
+# 3. Build frontend assets
+cd "$BENCH" && bench build
+
+# 4. Install on your site
 bench --site mysite.local install-app property_core
 bench --site mysite.local install-app property_operations
 bench --site mysite.local install-app property_commissions
-
-# 4. Run migrations
 bench --site mysite.local migrate
+
+# 5. Cleanup
+rm -rf "$SRC"
 ```
 
-### Installing only property_core (minimum)
+### Why `bench get-app <URL>` doesn't work here
 
-```bash
-cd /home/frappe/frappe-bench
-bench get-app https://github.com/Vijay-micronxt/Smart-Property-Manager.git --branch fix/property-manager-bugs
-bench --site mysite.local install-app property_core
-bench --site mysite.local migrate
-```
-
-> **Why the single `bench get-app <url>` command fails:** `bench get-app` expects the repository root to contain one Frappe app. Since this repo has three apps in subdirectories, bench can't find a root-level `setup.py` for all of them at once. The steps above clone first, then install each app from its subdirectory.
+`bench get-app` only supports git URLs and GitHub shorthands — it doesn't handle local filesystem paths or mono-repos. It also expects the cloned directory to contain exactly one Frappe app at the top level. The script above bypasses `bench get-app` by copying the app directories directly and installing the Python packages via pip.
 
 ---
 

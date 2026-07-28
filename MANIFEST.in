@@ -1,3 +1,0 @@
-recursive-include property_core *.json *.js *.html *.css *.md *.py
-recursive-include property_operations *.json *.js *.html *.css *.md *.py
-recursive-include property_commissions *.json *.js *.html *.css *.md *.py
