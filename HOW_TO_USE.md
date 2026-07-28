@@ -6,14 +6,16 @@ Plain-language walkthrough of the day-to-day flow across the 3 apps, current as 
 
 ## 0. Installation
 
-This is a **mono-repo** containing three separate Frappe apps (`property_core`, `property_operations`, `property_commissions`). Each must be installed individually using one of the methods below.
+This is a **mono-repo** with three separate Frappe apps (`property_core`, `property_operations`, `property_commissions`). `bench get-app <URL>` on the root URL **does not work** — bench's build system requires the app directory to sit at the correct depth, and the mono-repo root is one level too shallow. Use the script or manual steps below instead.
 
-> **Before re-installing:** If a previous install attempt left a stale `apps/property_core` directory, remove it first:
+> **Clean up any failed previous attempts first:**
 > ```bash
-> rm -rf /home/frappe/frappe-bench/apps/property_core
+> rm -rf /home/frappe/frappe-bench/apps/property_core \
+>         /home/frappe/frappe-bench/apps/property_operations \
+>         /home/frappe/frappe-bench/apps/property_commissions
 > ```
 
-### Option A — One-liner install script (recommended)
+### Option A — Install script (recommended)
 
 ```bash
 cd /home/frappe/frappe-bench
@@ -21,30 +23,38 @@ cd /home/frappe/frappe-bench
 bash <(curl -s https://raw.githubusercontent.com/Vijay-micronxt/Smart-Property-Manager/fix/property-manager-bugs/install.sh) mysite.local
 ```
 
+The script clones the repo to a temp directory and installs each app from its subdirectory so bench sees the correct structure.
+
 ### Option B — Manual step-by-step
 
 ```bash
 cd /home/frappe/frappe-bench
 
-# 1. Install property_core — bench will clone the repo and rename the dir to apps/property_core/
-bench get-app https://github.com/Vijay-micronxt/Smart-Property-Manager.git --branch fix/property-manager-bugs
+# 1. Clone repo to a temp location (NOT inside apps/)
+git clone --branch fix/property-manager-bugs --depth 1 \
+    https://github.com/Vijay-micronxt/Smart-Property-Manager.git \
+    /tmp/smart-property-manager-src
 
-# 2. Install the other two apps from inside the already-cloned mono-repo
-bench get-app /home/frappe/frappe-bench/apps/property_core/property_operations
-bench get-app /home/frappe/frappe-bench/apps/property_core/property_commissions
+# 2. Install each app from its subdirectory
+bench get-app /tmp/smart-property-manager-src/property_core
+bench get-app /tmp/smart-property-manager-src/property_operations
+bench get-app /tmp/smart-property-manager-src/property_commissions
 
-# 3. Install all three on your site
+# 3. Install on your site
 bench --site mysite.local install-app property_core
 bench --site mysite.local install-app property_operations
 bench --site mysite.local install-app property_commissions
 
 # 4. Run migrations
 bench --site mysite.local migrate
+
+# 5. Optional cleanup
+rm -rf /tmp/smart-property-manager-src
 ```
 
-### How bench handles this mono-repo
+### Why `bench get-app <URL>` on the root doesn't work
 
-`bench get-app <url>` clones the repo as `apps/Smart-Property-Manager/`, reads the root `setup.py` (which says `name="property_core"`), and renames the directory to `apps/property_core/`. After that the entire mono-repo lives at `apps/property_core/`, so the other two apps are reachable at `apps/property_core/property_operations/` and `apps/property_core/property_commissions/` — each with their own `setup.py` that `bench get-app <local-path>` can read directly.
+`bench get-app` clones the repo and expects the directory structure to be `apps/{app_name}/{app_name}/hooks.py`. When pointed at the mono-repo root, it places the outer container folder at `apps/{app_name}/`, putting `hooks.py` and `public/` one level too deep — which breaks the asset build. Cloning first and running `bench get-app` on each subdirectory gives bench the correct structure directly.
 
 ---
 

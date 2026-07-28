@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Smart Property Manager — full installation script
+# Smart Property Manager — install all three Frappe apps
+#
 # Run from inside your frappe-bench directory:
 #   cd /home/frappe/frappe-bench
 #   bash <(curl -s https://raw.githubusercontent.com/Vijay-micronxt/Smart-Property-Manager/fix/property-manager-bugs/install.sh) mysite.local
@@ -15,24 +16,29 @@ fi
 
 BRANCH="${BRANCH:-fix/property-manager-bugs}"
 REPO_URL="https://github.com/Vijay-micronxt/Smart-Property-Manager.git"
+SRC_DIR="/tmp/smart-property-manager-src"
 
-echo "==> Step 1: Install property_core (clones repo, renames dir to apps/property_core/)"
-bench get-app "$REPO_URL" --branch "$BRANCH"
-# bench renames apps/Smart-Property-Manager → apps/property_core after reading setup.py
+echo "==> Cloning Smart-Property-Manager to $SRC_DIR ..."
+rm -rf "$SRC_DIR"
+git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$SRC_DIR"
 
-echo "==> Step 2: Install property_operations from the cloned mono-repo"
-bench get-app "$(pwd)/apps/property_core/property_operations"
+echo "==> Installing property_core ..."
+bench get-app "$SRC_DIR/property_core"
 
-echo "==> Step 3: Install property_commissions from the cloned mono-repo"
-bench get-app "$(pwd)/apps/property_core/property_commissions"
+echo "==> Installing property_operations ..."
+bench get-app "$SRC_DIR/property_operations"
 
-echo "==> Step 4: Install all three apps on site: $SITE"
+echo "==> Installing property_commissions ..."
+bench get-app "$SRC_DIR/property_commissions"
+
+echo "==> Installing apps on site: $SITE"
 bench --site "$SITE" install-app property_core
 bench --site "$SITE" install-app property_operations
 bench --site "$SITE" install-app property_commissions
 
-echo "==> Step 5: Run migrations"
+echo "==> Running migrations ..."
 bench --site "$SITE" migrate
 
 echo ""
-echo "Smart Property Manager installed successfully on $SITE"
+echo "Smart Property Manager installed on $SITE"
+echo "You can remove the source clone: rm -rf $SRC_DIR"
