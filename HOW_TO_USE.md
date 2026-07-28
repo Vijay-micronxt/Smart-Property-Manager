@@ -4,6 +4,63 @@ Plain-language walkthrough of the day-to-day flow across the 3 apps, current as 
 
 ---
 
+## 0. Installation
+
+This is a **mono-repo** containing three separate Frappe apps (`property_core`, `property_operations`, `property_commissions`). Each must be installed individually. Running `bench get-app` directly on the repo URL installs only `property_core` — use one of the methods below to install all three.
+
+### Option A — One-liner script (recommended)
+
+```bash
+cd /home/frappe/frappe-bench
+
+# Clone the repo once
+git clone --branch fix/property-manager-bugs \
+    https://github.com/Vijay-micronxt/Smart-Property-Manager.git \
+    apps/Smart-Property-Manager
+
+# Run the install script (replace 'mysite.local' with your site name)
+bash apps/Smart-Property-Manager/install.sh mysite.local
+```
+
+The script does all of the steps in Option B automatically.
+
+### Option B — Manual step-by-step
+
+```bash
+cd /home/frappe/frappe-bench
+
+# 1. Clone the repo
+git clone --branch fix/property-manager-bugs \
+    https://github.com/Vijay-micronxt/Smart-Property-Manager.git \
+    apps/Smart-Property-Manager
+
+# 2. Register each app with bench
+bench get-app apps/Smart-Property-Manager/property_core
+bench get-app apps/Smart-Property-Manager/property_operations
+bench get-app apps/Smart-Property-Manager/property_commissions
+
+# 3. Install on your site
+bench --site mysite.local install-app property_core
+bench --site mysite.local install-app property_operations
+bench --site mysite.local install-app property_commissions
+
+# 4. Run migrations
+bench --site mysite.local migrate
+```
+
+### Installing only property_core (minimum)
+
+```bash
+cd /home/frappe/frappe-bench
+bench get-app https://github.com/Vijay-micronxt/Smart-Property-Manager.git --branch fix/property-manager-bugs
+bench --site mysite.local install-app property_core
+bench --site mysite.local migrate
+```
+
+> **Why the single `bench get-app <url>` command fails:** `bench get-app` expects the repository root to contain one Frappe app. Since this repo has three apps in subdirectories, bench can't find a root-level `setup.py` for all of them at once. The steps above clone first, then install each app from its subdirectory.
+
+---
+
 ## 1. The 3 apps, in one line each
 
 - **property_core** — mandatory foundation. Property, Property Unit, Property Booking, CRM links (Lead/Opportunity → Property/Unit), Payment Plan billing, Customer Portal APIs.
