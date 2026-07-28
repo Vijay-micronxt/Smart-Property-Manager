@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 # Smart Property Manager — full installation script
-# Usage: bash install.sh <site-name>
-# Example: bash install.sh mysite.local
-#
-# Run this from inside your frappe-bench directory:
+# Run from inside your frappe-bench directory:
 #   cd /home/frappe/frappe-bench
-#   bash apps/Smart-Property-Manager/install.sh mysite.local
+#   bash <(curl -s https://raw.githubusercontent.com/Vijay-micronxt/Smart-Property-Manager/fix/property-manager-bugs/install.sh) mysite.local
 
 set -euo pipefail
 
@@ -16,25 +13,26 @@ if [ -z "$SITE" ]; then
     exit 1
 fi
 
-BENCH_DIR="$(pwd)"
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BRANCH="${BRANCH:-fix/property-manager-bugs}"
+REPO_URL="https://github.com/Vijay-micronxt/Smart-Property-Manager.git"
 
-echo "==> Installing property_core ..."
-bench get-app "$REPO_DIR/property_core"
+echo "==> Step 1: Install property_core (clones repo, renames dir to apps/property_core/)"
+bench get-app "$REPO_URL" --branch "$BRANCH"
+# bench renames apps/Smart-Property-Manager → apps/property_core after reading setup.py
 
-echo "==> Installing property_operations ..."
-bench get-app "$REPO_DIR/property_operations"
+echo "==> Step 2: Install property_operations from the cloned mono-repo"
+bench get-app "$(pwd)/apps/property_core/property_operations"
 
-echo "==> Installing property_commissions ..."
-bench get-app "$REPO_DIR/property_commissions"
+echo "==> Step 3: Install property_commissions from the cloned mono-repo"
+bench get-app "$(pwd)/apps/property_core/property_commissions"
 
-echo "==> Installing apps on site: $SITE"
+echo "==> Step 4: Install all three apps on site: $SITE"
 bench --site "$SITE" install-app property_core
 bench --site "$SITE" install-app property_operations
 bench --site "$SITE" install-app property_commissions
 
-echo "==> Running migrations ..."
+echo "==> Step 5: Run migrations"
 bench --site "$SITE" migrate
 
 echo ""
-echo "✓ Smart Property Manager installed successfully on $SITE"
+echo "Smart Property Manager installed successfully on $SITE"
