@@ -1,0 +1,236 @@
+{
+ "charts": [],
+ "content": "[]",
+ "developer_mode_only": 0,
+ "disable_user_customization": 0,
+ "doctype": "Workspace",
+ "icon": "home",
+ "is_hidden": 0,
+ "label": "Property Core",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property",
+   "link_count": 0,
+   "link_to": "Property",
+   "link_type": "DocType",
+   "name": "pc-link-property",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Unit",
+   "link_count": 0,
+   "link_to": "Property Unit",
+   "link_type": "DocType",
+   "name": "pc-link-property-unit",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Booking",
+   "link_count": 0,
+   "link_to": "Property Booking",
+   "link_type": "DocType",
+   "name": "pc-link-property-booking",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Allocation",
+   "link_count": 0,
+   "link_to": "Property Allocation",
+   "link_type": "DocType",
+   "name": "pc-link-property-allocation",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Agreement",
+   "link_count": 0,
+   "link_to": "Property Agreement",
+   "link_type": "DocType",
+   "name": "pc-link-property-agreement",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Payment Plan Template",
+   "link_count": 0,
+   "link_to": "Payment Plan Template",
+   "link_type": "DocType",
+   "name": "pc-link-payment-plan-template",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Payment Plan",
+   "link_count": 0,
+   "link_to": "Payment Plan",
+   "link_type": "DocType",
+   "name": "pc-link-payment-plan",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Document",
+   "link_count": 0,
+   "link_to": "Property Document",
+   "link_type": "DocType",
+   "name": "pc-link-property-document",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "label": "Settings",
+   "type": "Card Break",
+   "name": "pc-break-settings",
+   "hidden": 0
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Core Settings",
+   "link_count": 0,
+   "link_to": "Property Core Settings",
+   "link_type": "DocType",
+   "name": "pc-link-core-settings",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Razorpay Settings",
+   "link_count": 0,
+   "link_to": "Razorpay Settings",
+   "link_type": "DocType",
+   "name": "pc-link-razorpay-settings",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Mswipe Settings",
+   "link_count": 0,
+   "link_to": "Mswipe Settings",
+   "link_type": "DocType",
+   "name": "pc-link-mswipe-settings",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Paytm Settings",
+   "link_count": 0,
+   "link_to": "Paytm Settings",
+   "link_type": "DocType",
+   "name": "pc-link-paytm-settings",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "label": "Payment Transactions",
+   "type": "Card Break",
+   "name": "pc-break-payment-txns",
+   "hidden": 0
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Razorpay Payment Entry",
+   "link_count": 0,
+   "link_to": "Razorpay Payment Entry",
+   "link_type": "DocType",
+   "name": "pc-link-razorpay-pe",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Razorpay Transaction Log",
+   "link_count": 0,
+   "link_to": "Razorpay Transaction Log",
+   "link_type": "DocType",
+   "name": "pc-link-razorpay-log",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Mswipe Payment Entry",
+   "link_count": 0,
+   "link_to": "Mswipe Payment Entry",
+   "link_type": "DocType",
+   "name": "pc-link-mswipe-pe",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "module": "Property Core",
+ "name": "Property Core",
+ "public": 1,
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "format": "{} Properties",
+   "label": "Property",
+   "link_to": "Property",
+   "name": "pc-sc-property",
+   "stats_filter": "{}",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "format": "{} Bookings",
+   "label": "Property Booking",
+   "link_to": "Property Booking",
+   "name": "pc-sc-booking",
+   "stats_filter": "{}",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Razorpay Settings",
+   "link_to": "Razorpay Settings",
+   "name": "pc-sc-razorpay",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Mswipe Settings",
+   "link_to": "Mswipe Settings",
+   "name": "pc-sc-mswipe",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Paytm Settings",
+   "link_to": "Paytm Settings",
+   "name": "pc-sc-paytm",
+   "type": "DocType"
+  }
+ ],
+ "title": "Property Core"
+}
