@@ -106,6 +106,7 @@ No manual trigger is needed — all three are idempotent (safe to re-run, never 
 |---|---|
 | [FEATURES.md](FEATURES.md) | Full field-by-field reference for every DocType |
 | [HOW_TO_USE.md](HOW_TO_USE.md) | Day-to-day workflow walkthrough |
+| [PAYMENT_INTEGRATION.md](PAYMENT_INTEGRATION.md) | Razorpay / mSwipe / Paytm Pay-by-Link — endpoint reference and curl examples |
 | [USE_CASES.md](USE_CASES.md) | End-user scenarios |
 | [TEST_CASES.md](TEST_CASES.md) | Step-by-step QA test scripts |
 
