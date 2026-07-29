@@ -18,7 +18,7 @@ def handle_razorpay_webhook():
         signature = frappe.request.headers.get("X-Razorpay-Signature", "")
 
         settings = frappe.get_single("Razorpay Settings")
-        webhook_secret = settings.get_password("webhook_secret") if settings.webhook_secret else None
+        webhook_secret = settings.get_password("webhook_secret") if getattr(settings, "webhook_secret", None) else None
 
         if webhook_secret:
             expected = hmac.new(
