@@ -1,0 +1,15 @@
+{
+ "doctype": "DocType",
+ "module": "Property Core",
+ "name": "Mswipe Settings",
+ "is_single": 1,
+ "fields": [
+  {"fieldname": "base_url", "fieldtype": "Data", "label": "Base URL"},
+  {"fieldname": "cust_code", "fieldtype": "Data", "label": "Customer Code"},
+  {"fieldname": "user_id", "fieldtype": "Data", "label": "User ID"},
+  {"fieldname": "client_id", "fieldtype": "Data", "label": "Client ID"},
+  {"fieldname": "password", "fieldtype": "Password", "label": "Password"},
+  {"fieldname": "system_user", "fieldtype": "Link", "label": "System User", "options": "User"}
+ ],
+ "permissions": [{"role": "System Manager", "read": 1, "write": 1}]
+}

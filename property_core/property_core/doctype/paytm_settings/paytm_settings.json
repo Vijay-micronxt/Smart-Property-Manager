@@ -1,0 +1,14 @@
+{
+ "doctype": "DocType",
+ "module": "Property Core",
+ "name": "Paytm Settings",
+ "is_single": 1,
+ "fields": [
+  {"fieldname": "merchant_id", "fieldtype": "Data", "label": "Merchant ID"},
+  {"fieldname": "merchant_key", "fieldtype": "Password", "label": "Merchant Key"},
+  {"fieldname": "payment_account", "fieldtype": "Link", "label": "Payment Account", "options": "Account"},
+  {"fieldname": "mode_of_payment", "fieldtype": "Data", "label": "Mode of Payment", "default": "Paytm"},
+  {"fieldname": "staging", "fieldtype": "Check", "label": "Staging Mode"}
+ ],
+ "permissions": [{"role": "System Manager", "read": 1, "write": 1}]
+}

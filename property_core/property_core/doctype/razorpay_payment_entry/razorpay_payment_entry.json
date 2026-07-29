@@ -1,0 +1,25 @@
+{
+ "doctype": "DocType",
+ "module": "Property Core",
+ "name": "Razorpay Payment Entry",
+ "fields": [
+  {"fieldname": "sales_invoice", "fieldtype": "Link", "label": "Sales Invoice", "options": "Sales Invoice"},
+  {"fieldname": "customer", "fieldtype": "Link", "label": "Customer", "options": "Customer"},
+  {"fieldname": "razorpay_order_id", "fieldtype": "Data", "label": "Razorpay Order ID"},
+  {"fieldname": "razorpay_payment_id", "fieldtype": "Data", "label": "Razorpay Payment ID"},
+  {"fieldname": "razorpay_link_id", "fieldtype": "Data", "label": "Razorpay Link ID"},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Amount"},
+  {"fieldname": "currency", "fieldtype": "Select", "label": "Currency", "options": "INR\nUSD"},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status",
+   "options": "INITIATED\nAUTHORIZED\nCAPTURED\nCOMPLETED\nFAILED", "default": "INITIATED"},
+  {"fieldname": "verified", "fieldtype": "Check", "label": "Verified"},
+  {"fieldname": "payment_method", "fieldtype": "Select", "label": "Payment Method", "options": "razorpay"},
+  {"fieldname": "payment_entry", "fieldtype": "Link", "label": "Payment Entry", "options": "Payment Entry"},
+  {"fieldname": "razorpay_response", "fieldtype": "Code", "label": "Razorpay Response"},
+  {"fieldname": "notes", "fieldtype": "Text", "label": "Notes"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1},
+  {"role": "Property Manager", "read": 1, "write": 1, "create": 1}
+ ]
+}
