@@ -1,3 +1,0 @@
-include property_core/templates/*.html
-include property_core/public/js/*.js
-recursive-include property_core *.json *.js *.html *.css *.md

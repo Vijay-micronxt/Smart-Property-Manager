@@ -6,7 +6,7 @@ with open("requirements.txt") as f:
 setup(
     name="property_core",
     version="0.0.1",
-    description="Property Lifecycle Core App for ERPNext",
+    description="Property Lifecycle Management App for ERPNext",
     author="Smart Property Manager",
     author_email="admin@smartproperty.com",
     packages=find_packages(),
