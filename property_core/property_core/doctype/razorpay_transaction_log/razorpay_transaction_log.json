@@ -1,19 +1,43 @@
 {
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2024-01-01 00:00:00.000000",
  "doctype": "DocType",
- "module": "Property Core",
- "name": "Razorpay Transaction Log",
+ "engine": "InnoDB",
+ "field_order": [
+  "order_id",
+  "razorpay_link_id",
+  "razorpay_payment_id",
+  "razorpay_order_id",
+  "amount",
+  "currency",
+  "status",
+  "verified",
+  "response_json"
+ ],
  "fields": [
-  {"fieldname": "order_id", "fieldtype": "Data", "label": "Order ID"},
+  {"fieldname": "order_id", "fieldtype": "Data", "label": "Order ID", "in_list_view": 1},
   {"fieldname": "razorpay_link_id", "fieldtype": "Data", "label": "Razorpay Link ID"},
-  {"fieldname": "razorpay_payment_id", "fieldtype": "Data", "label": "Razorpay Payment ID"},
+  {"fieldname": "razorpay_payment_id", "fieldtype": "Data", "label": "Razorpay Payment ID", "in_list_view": 1},
   {"fieldname": "razorpay_order_id", "fieldtype": "Data", "label": "Razorpay Order ID"},
-  {"fieldname": "amount", "fieldtype": "Currency", "label": "Amount"},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Amount", "in_list_view": 1},
   {"fieldname": "currency", "fieldtype": "Data", "label": "Currency"},
-  {"fieldname": "status", "fieldtype": "Data", "label": "Status"},
+  {"fieldname": "status", "fieldtype": "Data", "label": "Status", "in_list_view": 1},
   {"fieldname": "verified", "fieldtype": "Check", "label": "Verified"},
   {"fieldname": "response_json", "fieldtype": "Code", "label": "Response JSON"}
  ],
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Property Core",
+ "name": "Razorpay Transaction Log",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
  "permissions": [
   {"role": "System Manager", "read": 1, "write": 1, "create": 1}
- ]
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

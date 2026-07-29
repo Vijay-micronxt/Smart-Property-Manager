@@ -1,26 +1,34 @@
 {
+ "actions": [],
+ "creation": "2024-01-01 00:00:00.000000",
  "doctype": "DocType",
- "module": "Property Core",
- "name": "Razorpay Settings",
- "is_single": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "api_key",
+  "api_secret",
+  "webhook_secret",
+  "system_user"
+ ],
  "fields": [
   {
    "fieldname": "api_key",
    "fieldtype": "Data",
    "label": "API Key (Key ID)",
+   "reqd": 1,
    "description": "Razorpay Key ID from Dashboard → Settings → API Keys. Starts with 'rzp_live_' or 'rzp_test_'."
   },
   {
    "fieldname": "api_secret",
    "fieldtype": "Password",
    "label": "API Secret (Key Secret)",
+   "reqd": 1,
    "description": "Razorpay Key Secret generated alongside the Key ID. Keep this confidential."
   },
   {
    "fieldname": "webhook_secret",
    "fieldtype": "Password",
    "label": "Webhook Secret",
-   "description": "Secret string set when registering the webhook in the Razorpay Dashboard. Used to verify incoming webhook signatures."
+   "description": "Secret set when registering the webhook in the Razorpay Dashboard. Used to verify incoming webhook signatures."
   },
   {
    "fieldname": "system_user",
@@ -30,5 +38,23 @@
    "description": "ERPNext user under whose name Payment Entries will be created."
   }
  ],
- "permissions": [{"role": "System Manager", "read": 1, "write": 1}]
+ "is_single": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Property Core",
+ "name": "Razorpay Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }
