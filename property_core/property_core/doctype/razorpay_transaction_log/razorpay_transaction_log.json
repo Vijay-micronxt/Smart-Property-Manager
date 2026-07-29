@@ -1,0 +1,19 @@
+{
+ "doctype": "DocType",
+ "module": "Property Core",
+ "name": "Razorpay Transaction Log",
+ "fields": [
+  {"fieldname": "order_id", "fieldtype": "Data", "label": "Order ID"},
+  {"fieldname": "razorpay_link_id", "fieldtype": "Data", "label": "Razorpay Link ID"},
+  {"fieldname": "razorpay_payment_id", "fieldtype": "Data", "label": "Razorpay Payment ID"},
+  {"fieldname": "razorpay_order_id", "fieldtype": "Data", "label": "Razorpay Order ID"},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Amount"},
+  {"fieldname": "currency", "fieldtype": "Data", "label": "Currency"},
+  {"fieldname": "status", "fieldtype": "Data", "label": "Status"},
+  {"fieldname": "verified", "fieldtype": "Check", "label": "Verified"},
+  {"fieldname": "response_json", "fieldtype": "Code", "label": "Response JSON"}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1}
+ ]
+}
