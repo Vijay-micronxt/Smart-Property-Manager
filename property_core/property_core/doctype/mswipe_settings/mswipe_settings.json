@@ -1,15 +1,76 @@
 {
+ "actions": [],
+ "creation": "2024-01-01 00:00:00.000000",
  "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "base_url",
+  "cust_code",
+  "user_id",
+  "client_id",
+  "password",
+  "system_user"
+ ],
+ "fields": [
+  {
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "label": "API Base URL",
+   "description": "Mswipe PBL API endpoint. Leave blank to use the default production URL."
+  },
+  {
+   "fieldname": "cust_code",
+   "fieldtype": "Data",
+   "label": "Customer Code",
+   "reqd": 1,
+   "description": "Mswipe-assigned customer/merchant code provided during onboarding."
+  },
+  {
+   "fieldname": "user_id",
+   "fieldtype": "Data",
+   "label": "Mswipe API User ID",
+   "reqd": 1,
+   "description": "API user ID issued by Mswipe for the Pay-by-Link service — not your ERPNext login."
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID",
+   "reqd": 1,
+   "description": "Client / application ID provided by Mswipe."
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Password",
+   "label": "Mswipe API Password",
+   "reqd": 1,
+   "description": "API password issued by Mswipe for the Pay-by-Link service — not your ERPNext login."
+  },
+  {
+   "fieldname": "system_user",
+   "fieldtype": "Link",
+   "label": "System User",
+   "options": "User",
+   "description": "ERPNext user under whose name Payment Entries will be created."
+  }
+ ],
+ "is_single": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Mswipe Settings",
- "is_single": 1,
- "fields": [
-  {"fieldname": "base_url", "fieldtype": "Data", "label": "Base URL"},
-  {"fieldname": "cust_code", "fieldtype": "Data", "label": "Customer Code"},
-  {"fieldname": "user_id", "fieldtype": "Data", "label": "User ID"},
-  {"fieldname": "client_id", "fieldtype": "Data", "label": "Client ID"},
-  {"fieldname": "password", "fieldtype": "Password", "label": "Password"},
-  {"fieldname": "system_user", "fieldtype": "Link", "label": "System User", "options": "User"}
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
  ],
- "permissions": [{"role": "System Manager", "read": 1, "write": 1}]
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

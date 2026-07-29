@@ -21,6 +21,9 @@ doctype_js = {
     "Property Allocation": "public/js/property_allocation.js",
     "Property Agreement": "public/js/property_agreement.js",
     "Customer": "public/js/customer_kyc.js",
+    "Razorpay Settings": "public/js/razorpay_settings.js",
+    "Mswipe Settings": "public/js/mswipe_settings.js",
+    "Paytm Settings": "public/js/paytm_settings.js",
     # property_operations module
     "Issue": "public/js/issue_work_order.js",
     "Work Order": "public/js/work_order.js",

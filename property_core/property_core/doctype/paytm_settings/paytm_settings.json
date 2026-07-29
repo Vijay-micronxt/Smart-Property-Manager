@@ -1,14 +1,68 @@
 {
+ "actions": [],
+ "creation": "2024-01-01 00:00:00.000000",
  "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "merchant_id",
+  "merchant_key",
+  "payment_account",
+  "mode_of_payment",
+  "staging"
+ ],
+ "fields": [
+  {
+   "fieldname": "merchant_id",
+   "fieldtype": "Data",
+   "label": "Merchant ID (MID)",
+   "reqd": 1,
+   "description": "Paytm Merchant ID from your Paytm Business Dashboard. Identifies your merchant account."
+  },
+  {
+   "fieldname": "merchant_key",
+   "fieldtype": "Password",
+   "label": "Merchant Key (Secret)",
+   "reqd": 1,
+   "description": "Paytm Merchant Key from the Business Dashboard. Used to sign API requests — keep this confidential."
+  },
+  {
+   "fieldname": "payment_account",
+   "fieldtype": "Link",
+   "label": "Payment Account",
+   "options": "Account",
+   "description": "ERPNext bank/cash account to which Paytm settlements will be credited."
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Data",
+   "label": "Mode of Payment",
+   "default": "Paytm",
+   "description": "ERPNext Mode of Payment used when creating Payment Entries (default: Paytm)."
+  },
+  {
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging / Test Mode",
+   "description": "Enable to route all API calls to Paytm's staging environment. Disable in production."
+  }
+ ],
+ "is_single": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Paytm Settings",
- "is_single": 1,
- "fields": [
-  {"fieldname": "merchant_id", "fieldtype": "Data", "label": "Merchant ID"},
-  {"fieldname": "merchant_key", "fieldtype": "Password", "label": "Merchant Key"},
-  {"fieldname": "payment_account", "fieldtype": "Link", "label": "Payment Account", "options": "Account"},
-  {"fieldname": "mode_of_payment", "fieldtype": "Data", "label": "Mode of Payment", "default": "Paytm"},
-  {"fieldname": "staging", "fieldtype": "Check", "label": "Staging Mode"}
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1
+  }
  ],
- "permissions": [{"role": "System Manager", "read": 1, "write": 1}]
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }
