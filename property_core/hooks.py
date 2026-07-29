@@ -110,4 +110,9 @@ fixtures = [
         "address_proof_type",
         "address_proof_document",
     ]]]},
+    {"dt": "Workspace", "filters": [["name", "in", [
+        "Property Core",
+        "Property Operations",
+        "Property Commissions",
+    ]]]},
 ]

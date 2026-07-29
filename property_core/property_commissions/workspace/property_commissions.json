@@ -1,0 +1,62 @@
+{
+ "charts": [],
+ "content": "[]",
+ "developer_mode_only": 0,
+ "disable_user_customization": 0,
+ "doctype": "Workspace",
+ "icon": "percentage",
+ "is_hidden": 0,
+ "label": "Property Commissions",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Commission Rule",
+   "link_count": 0,
+   "link_to": "Commission Rule",
+   "link_type": "DocType",
+   "name": "pcom-link-rule",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Commission Entry",
+   "link_count": 0,
+   "link_to": "Commission Entry",
+   "link_type": "DocType",
+   "name": "pcom-link-entry",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Commission Settlement",
+   "link_count": 0,
+   "link_to": "Commission Settlement",
+   "link_type": "DocType",
+   "name": "pcom-link-settlement",
+   "onboard": 1,
+   "type": "Link"
+  }
+ ],
+ "module": "Property Commissions",
+ "name": "Property Commissions",
+ "public": 1,
+ "roles": [],
+ "sequence_id": 3.0,
+ "shortcuts": [
+  {
+   "color": "Green",
+   "format": "{} Pending Commissions",
+   "label": "Commission Entry",
+   "link_to": "Commission Entry",
+   "name": "pcom-sc-entry",
+   "stats_filter": "{}",
+   "type": "DocType"
+  }
+ ],
+ "title": "Property Commissions"
+}

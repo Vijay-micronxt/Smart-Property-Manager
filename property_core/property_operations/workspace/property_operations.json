@@ -1,0 +1,122 @@
+{
+ "charts": [],
+ "content": "[]",
+ "developer_mode_only": 0,
+ "disable_user_customization": 0,
+ "doctype": "Workspace",
+ "icon": "tools",
+ "is_hidden": 0,
+ "label": "Property Operations",
+ "links": [
+  {
+   "label": "Maintenance & Complaints",
+   "type": "Card Break",
+   "name": "po-break-maintenance",
+   "hidden": 0
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Issue",
+   "link_count": 0,
+   "link_to": "Issue",
+   "link_type": "DocType",
+   "name": "po-link-issue",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Work Order",
+   "link_count": 0,
+   "link_to": "Work Order",
+   "link_type": "DocType",
+   "name": "po-link-work-order",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Maintenance Plan Template",
+   "link_count": 0,
+   "link_to": "Maintenance Plan Template",
+   "link_type": "DocType",
+   "name": "po-link-mpt",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "label": "Inspections",
+   "type": "Card Break",
+   "name": "po-break-inspections",
+   "hidden": 0
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Inspection Checklist",
+   "link_count": 0,
+   "link_to": "Inspection Checklist",
+   "link_type": "DocType",
+   "name": "po-link-inspection",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "label": "Utilities",
+   "type": "Card Break",
+   "name": "po-break-utilities",
+   "hidden": 0
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Utility Meter",
+   "link_count": 0,
+   "link_to": "Utility Meter",
+   "link_type": "DocType",
+   "name": "po-link-utility-meter",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Utility Bill",
+   "link_count": 0,
+   "link_to": "Utility Bill",
+   "link_type": "DocType",
+   "name": "po-link-utility-bill",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "module": "Property Operations",
+ "name": "Property Operations",
+ "public": 1,
+ "roles": [],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "color": "Red",
+   "format": "{} Open Issues",
+   "label": "Issue",
+   "link_to": "Issue",
+   "name": "po-sc-issue",
+   "stats_filter": "{\"status\": \"Open\"}",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
+   "format": "{} Work Orders",
+   "label": "Work Order",
+   "link_to": "Work Order",
+   "name": "po-sc-work-order",
+   "stats_filter": "{}",
+   "type": "DocType"
+  }
+ ],
+ "title": "Property Operations"
+}
