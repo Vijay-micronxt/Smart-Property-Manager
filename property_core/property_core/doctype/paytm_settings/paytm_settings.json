@@ -4,11 +4,38 @@
  "name": "Paytm Settings",
  "is_single": 1,
  "fields": [
-  {"fieldname": "merchant_id", "fieldtype": "Data", "label": "Merchant ID"},
-  {"fieldname": "merchant_key", "fieldtype": "Password", "label": "Merchant Key"},
-  {"fieldname": "payment_account", "fieldtype": "Link", "label": "Payment Account", "options": "Account"},
-  {"fieldname": "mode_of_payment", "fieldtype": "Data", "label": "Mode of Payment", "default": "Paytm"},
-  {"fieldname": "staging", "fieldtype": "Check", "label": "Staging Mode"}
+  {
+   "fieldname": "merchant_id",
+   "fieldtype": "Data",
+   "label": "Merchant ID (MID)",
+   "description": "Paytm Merchant ID provided in your Paytm Business Dashboard. Used to identify your merchant account."
+  },
+  {
+   "fieldname": "merchant_key",
+   "fieldtype": "Password",
+   "label": "Merchant Key (Secret)",
+   "description": "Paytm Merchant Key from the Business Dashboard. Used to sign API requests — keep this confidential."
+  },
+  {
+   "fieldname": "payment_account",
+   "fieldtype": "Link",
+   "label": "Payment Account",
+   "options": "Account",
+   "description": "ERPNext bank/cash account to which Paytm settlements will be credited."
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Data",
+   "label": "Mode of Payment",
+   "default": "Paytm",
+   "description": "ERPNext Mode of Payment to use when creating Payment Entries (default: Paytm)."
+  },
+  {
+   "fieldname": "staging",
+   "fieldtype": "Check",
+   "label": "Staging / Test Mode",
+   "description": "Enable to route all API calls to Paytm's staging environment. Disable in production."
+  }
  ],
  "permissions": [{"role": "System Manager", "read": 1, "write": 1}]
 }

@@ -4,10 +4,31 @@
  "name": "Razorpay Settings",
  "is_single": 1,
  "fields": [
-  {"fieldname": "api_key", "fieldtype": "Data", "label": "API Key", "reqd": 0},
-  {"fieldname": "api_secret", "fieldtype": "Password", "label": "API Secret"},
-  {"fieldname": "webhook_secret", "fieldtype": "Password", "label": "Webhook Secret"},
-  {"fieldname": "system_user", "fieldtype": "Link", "label": "System User", "options": "User"}
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Data",
+   "label": "API Key (Key ID)",
+   "description": "Razorpay Key ID from Dashboard → Settings → API Keys. Starts with 'rzp_live_' or 'rzp_test_'."
+  },
+  {
+   "fieldname": "api_secret",
+   "fieldtype": "Password",
+   "label": "API Secret (Key Secret)",
+   "description": "Razorpay Key Secret generated alongside the Key ID. Keep this confidential."
+  },
+  {
+   "fieldname": "webhook_secret",
+   "fieldtype": "Password",
+   "label": "Webhook Secret",
+   "description": "Secret string set when registering the webhook in the Razorpay Dashboard. Used to verify incoming webhook signatures."
+  },
+  {
+   "fieldname": "system_user",
+   "fieldtype": "Link",
+   "label": "System User",
+   "options": "User",
+   "description": "ERPNext user under whose name Payment Entries will be created."
+  }
  ],
  "permissions": [{"role": "System Manager", "read": 1, "write": 1}]
 }
