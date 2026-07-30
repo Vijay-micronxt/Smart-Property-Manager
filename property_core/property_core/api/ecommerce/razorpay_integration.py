@@ -106,6 +106,7 @@ class RazorpayGateway:
 
     def _log_transaction(self, **kwargs):
         doc = frappe.new_doc("Razorpay Transaction Log")
+        doc.name = frappe.generate_hash(length=10)
         for k, v in kwargs.items():
             doc.set(k, v)
         doc.insert(ignore_permissions=True)
@@ -230,6 +231,7 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
         order_doc = frappe.get_doc(_get_doctype(original_order_id), original_order_id)
 
         rpe = frappe.new_doc("Razorpay Payment Entry")
+        rpe.name = frappe.generate_hash(length=10)
         rpe.sales_invoice = si_name
         rpe.customer = getattr(order_doc, "customer", None)
         rpe.razorpay_order_id = rz_order_id
@@ -384,6 +386,7 @@ def _ensure_razorpay_payment_entry(rz_order_id, order_doc, amount):
     if frappe.db.exists("Razorpay Payment Entry", {"razorpay_order_id": rz_order_id}):
         return
     rpe = frappe.new_doc("Razorpay Payment Entry")
+    rpe.name = frappe.generate_hash(length=10)
     rpe.customer = getattr(order_doc, "customer", None)
     rpe.razorpay_order_id = rz_order_id
     rpe.amount = float(amount) / 100  # paise → rupees for Frappe Currency field

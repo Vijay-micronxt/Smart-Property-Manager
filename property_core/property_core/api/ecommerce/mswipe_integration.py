@@ -158,6 +158,7 @@ class MswipeGateway:
             entry = frappe.get_doc("Mswipe Payment Entry", existing_name)
         else:
             entry = frappe.new_doc("Mswipe Payment Entry")
+            entry.name = frappe.generate_hash(length=10)
             entry.mswipe_order_id = order_id
 
         entry.mswipe_txn_id = mswipe_txn_id or entry.mswipe_txn_id
