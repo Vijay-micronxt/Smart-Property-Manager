@@ -114,7 +114,7 @@ class RazorpayGateway:
 
 # ─── Whitelisted endpoints ────────────────────────────────────────────────────
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def order_payment(order_id, amount, store_id=None, owner_id=None, payment_provider_id=None):
     try:
         gateway = RazorpayGateway()
@@ -147,7 +147,7 @@ def order_payment(order_id, amount, store_id=None, owner_id=None, payment_provid
         return {"status": 400, "error": str(e)}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_signature):
     gateway = RazorpayGateway()
     if not gateway.verify_payment(razorpay_payment_id, razorpay_order_id, razorpay_signature):
@@ -173,7 +173,7 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
     }
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def capture_payment(order_id, payment_token, store_id=None, party=None,
                     payment_provider_id=None, transaction_id=None, owner_id=None):
     try:

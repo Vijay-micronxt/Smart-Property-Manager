@@ -191,7 +191,7 @@ class MswipeGateway:
 
 # ─── Whitelisted endpoint ─────────────────────────────────────────────────────
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def order_payment(order_id, amount, mobileno=None, email=None,
                   store_id=None, owner_id=None, return_url=None):
     try:
