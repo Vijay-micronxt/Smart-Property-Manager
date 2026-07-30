@@ -21,7 +21,7 @@ class RazorpayGateway:
 
     def create_order(self, amount, currency, order_id, customer_email=None,
                      customer_phone=None, notes=None):
-        amount_paise = int(float(amount) * 100)
+        amount_paise = int(float(amount))  # caller passes paise already
         payload = {
             "amount": amount_paise,
             "currency": currency or "INR",
@@ -41,7 +41,7 @@ class RazorpayGateway:
 
     def create_payment_link(self, amount, currency, customer_email, customer_phone,
                              description, order_id, callback_url=None, expires_by=None):
-        amount_paise = int(float(amount) * 100)
+        amount_paise = int(float(amount))  # caller passes paise already
         payload = {
             "amount": amount_paise,
             "currency": currency or "INR",
@@ -114,7 +114,7 @@ class RazorpayGateway:
 
 # ─── Whitelisted endpoints ────────────────────────────────────────────────────
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def order_payment(order_id, amount, store_id=None, owner_id=None, payment_provider_id=None):
     try:
         gateway = RazorpayGateway()
@@ -147,7 +147,7 @@ def order_payment(order_id, amount, store_id=None, owner_id=None, payment_provid
         return {"status": 400, "error": str(e)}
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_signature):
     gateway = RazorpayGateway()
     if not gateway.verify_payment(razorpay_payment_id, razorpay_order_id, razorpay_signature):
@@ -173,7 +173,7 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
     }
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist()
 def capture_payment(order_id, payment_token, store_id=None, party=None,
                     payment_provider_id=None, transaction_id=None, owner_id=None):
     try:
@@ -386,7 +386,7 @@ def _ensure_razorpay_payment_entry(rz_order_id, order_doc, amount):
     rpe = frappe.new_doc("Razorpay Payment Entry")
     rpe.customer = getattr(order_doc, "customer", None)
     rpe.razorpay_order_id = rz_order_id
-    rpe.amount = float(amount)
+    rpe.amount = float(amount) / 100  # paise → rupees for Frappe Currency field
     rpe.currency = "INR"
     rpe.status = "INITIATED"
     rpe.payment_method = "razorpay"
