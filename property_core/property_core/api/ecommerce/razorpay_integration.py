@@ -21,7 +21,7 @@ class RazorpayGateway:
 
     def create_order(self, amount, currency, order_id, customer_email=None,
                      customer_phone=None, notes=None):
-        amount_paise = int(float(amount) * 100)
+        amount_paise = int(float(amount))  # caller passes paise already
         payload = {
             "amount": amount_paise,
             "currency": currency or "INR",
@@ -41,7 +41,7 @@ class RazorpayGateway:
 
     def create_payment_link(self, amount, currency, customer_email, customer_phone,
                              description, order_id, callback_url=None, expires_by=None):
-        amount_paise = int(float(amount) * 100)
+        amount_paise = int(float(amount))  # caller passes paise already
         payload = {
             "amount": amount_paise,
             "currency": currency or "INR",
@@ -386,7 +386,7 @@ def _ensure_razorpay_payment_entry(rz_order_id, order_doc, amount):
     rpe = frappe.new_doc("Razorpay Payment Entry")
     rpe.customer = getattr(order_doc, "customer", None)
     rpe.razorpay_order_id = rz_order_id
-    rpe.amount = float(amount)
+    rpe.amount = float(amount) / 100  # paise → rupees for Frappe Currency field
     rpe.currency = "INR"
     rpe.status = "INITIATED"
     rpe.payment_method = "razorpay"
