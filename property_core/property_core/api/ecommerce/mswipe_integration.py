@@ -11,6 +11,12 @@ MSWIPE_RETURN_URL_CACHE_PREFIX = "mswipe_ecom_return_url:"
 
 class MswipeGateway:
     def __init__(self):
+        if not frappe.db.exists("DocType", "Mswipe Settings"):
+            frappe.throw(
+                _("Mswipe Settings doctype not found in the database. "
+                  "Run `bench migrate` on the server to install it, "
+                  "then fill in the credentials at /app/mswipe-settings.")
+            )
         settings = frappe.get_single("Mswipe Settings")
         missing = []
         self.base_url = settings.base_url

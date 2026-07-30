@@ -9,6 +9,12 @@ from frappe import _
 
 class RazorpayGateway:
     def __init__(self):
+        if not frappe.db.exists("DocType", "Razorpay Settings"):
+            frappe.throw(
+                _("Razorpay Settings doctype not found in the database. "
+                  "Run `bench migrate` on the server to install it, "
+                  "then fill in the credentials at /app/razorpay-settings.")
+            )
         settings = frappe.get_single("Razorpay Settings")
         self.key_id = settings.api_key
         self.key_secret = settings.get_password("api_secret") if settings.api_secret else None

@@ -139,6 +139,12 @@ def generate_ecommerce_payment_link(so_name, amount=None, allow_partial=0, min_p
     if so.billing_status == "Fully Billed":
         frappe.throw(_("Sales Order is already fully billed"))
 
+    if not frappe.db.exists("DocType", "Paytm Settings"):
+        frappe.throw(
+            _("Paytm Settings doctype not found in the database. "
+              "Run `bench migrate` on the server to install it, "
+              "then fill in the credentials at /app/paytm-settings.")
+        )
     settings = frappe.get_single("Paytm Settings")
     merchant_id = settings.merchant_id
     merchant_key = _get_merchant_key(settings)
