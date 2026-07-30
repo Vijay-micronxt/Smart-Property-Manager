@@ -1,6 +1,7 @@
 # Smart Property Manager — Test Cases
 
-> **Last updated:** 2026-07-23 (part 2) — Retired TC-MR-* (Maintenance Request deleted entirely); added TC-IWO (Issue↔Work Order, unified) and TC-MPT (Maintenance Plan Template recurring billing).
+> **Last updated:** 2026-07-30 — Added TC-RZP (Razorpay), TC-MSW (Mswipe), TC-PTM (Paytm) gateway test suites covering order creation, webhooks/callbacks, SI+PE flow, HMAC signature verification, amount convention (paise), authentication enforcement, and idempotency. Added TC-CPR (Customer Portal Reports) for the 7 new portal API endpoints (get_maintenance_requests, get_utility_bills, get_outstanding_dues, get_payment_history, get_unit_details, get_inspection_reports, get_rent_history).
+> Previously: 2026-07-23 (part 2) — Retired TC-MR-* (Maintenance Request deleted entirely); added TC-IWO (Issue↔Work Order, unified) and TC-MPT (Maintenance Plan Template recurring billing).
 > Previously same day — JD BRD gap-closing pass: added TC-CRM (Opportunity↔Property link), TC-CP (Customer Portal API), TC-PPB (automatic Payment Plan invoicing). Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md).
 > Previously: 2026-07-21 — Phase 1: added TC-AM (amenities), TC-PD (project documents), TC-LR (lease renewal), TC-LF (late fees), TC-RO (role permissions)
 > Add test cases for every new feature. Mark status after each test run.
@@ -1045,6 +1046,341 @@ Before running any test:
 
 ---
 
+## Module: Razorpay Payment Gateway
+
+> **Amount convention throughout:** all amounts are in **paise** (1 rupee = 100 paise). The API accepts paise, passes them directly to Razorpay, and stores rupees (paise ÷ 100) in ERPNext Currency fields.
+
+### TC-RZP-01 — order_payment Creates Razorpay Order (Happy Path)
+| | |
+|---|---|
+| **Use Case** | UC-34 |
+| **Pre-condition** | Razorpay Settings configured with valid api_key/api_secret. bench migrate run. |
+| **Steps** | `POST /api/method/.../order_payment` with `Authorization: token <key>:<secret>`, body `{"amount": 46000, "customer": "CUST-0001", "order_id": "SO-0001", "currency": "INR"}` |
+| **Expected** | HTTP 200. Response contains `razorpay_order_id`. Razorpay Transaction Log record created. Razorpay Payment Entry record created with `amount = 460.0` (paise ÷ 100). |
+| **Status** | ⏭ |
+
+### TC-RZP-02 — order_payment Blocked Without Auth Token
+| | |
+|---|---|
+| **Use Case** | UC-34 |
+| **Steps** | `POST /api/method/.../order_payment` with no `Authorization` header (or as Guest) |
+| **Expected** | HTTP 403 / `{"exc_type": "PermissionError"}` — "Function is not whitelisted". No Razorpay order created. |
+| **Status** | ⏭ |
+
+### TC-RZP-03 — Amount Not Doubled (No ×100 Conversion)
+| | |
+|---|---|
+| **Pre-condition** | Razorpay Settings configured. |
+| **Steps** | Call `order_payment(amount=46000, ...)` — 46000 paise = ₹460 |
+| **Expected** | Razorpay order created for exactly 46000 paise (₹460). NOT 4,600,000 paise (₹46,000). Razorpay API returns no "Amount exceeds maximum" error. |
+| **Status** | ⏭ |
+
+### TC-RZP-04 — Webhook payment.captured Creates SI + PE
+| | |
+|---|---|
+| **Use Case** | UC-35 |
+| **Pre-condition** | Razorpay Payment Entry exists for order. Razorpay Transaction Log has `order_id` = SO name. |
+| **Steps** | POST `{"event": "payment.captured", "payload": {"payment": {"entity": {"order_id": "order_XXXX", "id": "pay_YYYY"}}}}` to webhook endpoint |
+| **Expected** | Sales Invoice created from SO. Razorpay Payment Entry `sales_invoice` set. Payment Entry (ERPNext) created with `reference_no = pay_YYYY`. RPE `status = CAPTURED`. |
+| **Status** | ⏭ |
+
+### TC-RZP-05 — Webhook Signature Mismatch Rejected
+| | |
+|---|---|
+| **Pre-condition** | `webhook_secret` configured in Razorpay Settings. |
+| **Steps** | POST webhook payload with invalid `X-Razorpay-Signature` header |
+| **Expected** | `{"status": "error", "message": "Invalid signature"}`. Frappe Error Log entry "Razorpay Webhook - Invalid Signature". No SI or PE created. |
+| **Status** | ⏭ |
+
+### TC-RZP-06 — Webhook Missing Secret — Warning Logged, Not Crash
+| | |
+|---|---|
+| **Pre-condition** | `webhook_secret` field blank / not configured in Razorpay Settings. |
+| **Steps** | POST any valid webhook event |
+| **Expected** | Warning logged: "webhook_secret not configured in Razorpay Settings — skipping signature check". Event still processed normally. No AttributeError crash. |
+| **Status** | ⏭ |
+
+### TC-RZP-07 — Webhook Idempotency (Duplicate Event)
+| | |
+|---|---|
+| **Steps** | Fire `payment.captured` webhook twice for the same Razorpay order |
+| **Expected** | Second call finds `rpe.payment_entry` already set → skips PE creation. Only one Payment Entry exists. |
+| **Status** | ⏭ |
+
+### TC-RZP-08 — Razorpay Settings Form Not Blank
+| | |
+|---|---|
+| **Pre-condition** | bench migrate run. |
+| **Steps** | Navigate to `/app/razorpay-settings` |
+| **Expected** | Form renders with all fields: API Key, API Secret, Webhook Secret, Payment Account, Mode of Payment, Company. No blank page. |
+| **Status** | ⏭ |
+
+### TC-RZP-09 — Settings Fields Do Not Trigger Browser Autofill
+| | |
+|---|---|
+| **Steps** | Open Razorpay Settings form in Chrome |
+| **Expected** | `api_key` field has `autocomplete="off"`. `api_secret` and `webhook_secret` have `autocomplete="new-password"`. Browser does not suggest saved passwords. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Mswipe Payment Gateway
+
+### TC-MSW-01 — order_payment Initiates Mswipe Transaction (Happy Path)
+| | |
+|---|---|
+| **Use Case** | UC-36 |
+| **Pre-condition** | Mswipe Settings configured (user_id, password, client_id, cust_code). |
+| **Steps** | Authenticated call to `order_payment(amount, customer, order_id, return_url)` |
+| **Expected** | Mswipe API called. Mswipe Payment Entry tracking record created. Redirect URL returned. |
+| **Status** | ⏭ |
+
+### TC-MSW-02 — order_payment Blocked Without Auth
+| | |
+|---|---|
+| **Steps** | Call `order_payment` without `Authorization` header |
+| **Expected** | HTTP 403 / PermissionError — same as TC-RZP-02. |
+| **Status** | ⏭ |
+
+### TC-MSW-03 — Mswipe Settings Fields Not Autofilled by Browser
+| | |
+|---|---|
+| **Steps** | Open `/app/mswipe-settings` in Chrome |
+| **Expected** | `user_id`, `client_id`, `cust_code` fields have `autocomplete="off"`. `password` field has `autocomplete="new-password"`. Labels read "Mswipe API User ID" / "Mswipe API Password" — NOT "Username"/"Password". |
+| **Status** | ⏭ |
+
+### TC-MSW-04 — Callback Server-to-Server Check (TXN_SUCCESS)
+| | |
+|---|---|
+| **Use Case** | UC-37 |
+| **Pre-condition** | Valid Mswipe Payment Entry exists. Mswipe API returns Payment_Status=1 for the trans_id. |
+| **Steps** | GET/POST to callback URL with `encIpgId=<trans_id>` |
+| **Expected** | Server-to-server status check performed. SI created from order. Mswipe Payment Entry updated (status=SUCCESS). Payment Entry created and submitted. Browser redirected to `return_url?status=TXN_SUCCESS`. |
+| **Status** | ⏭ |
+
+### TC-MSW-05 — Callback with Payment Failure
+| | |
+|---|---|
+| **Steps** | Callback fires with `encIpgId` where server check returns `Payment_Status=0` |
+| **Expected** | Mswipe Payment Entry `status = FAILED`. No SI or PE created. Redirect to `return_url?status=TXN_FAILURE`. |
+| **Status** | ⏭ |
+
+### TC-MSW-06 — Callback Idempotency (Duplicate Callback)
+| | |
+|---|---|
+| **Steps** | Same successful callback fires twice (Mswipe retry) |
+| **Expected** | Second call finds `mswipe_entry.payment_entry` already set with docstatus=1 → returns `TXN_SUCCESS` with `is_duplicate=True`. No second Payment Entry created. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Paytm Payment Gateway
+
+### TC-PTM-01 — generate_ecommerce_payment_link Creates FIXED Link (Happy Path)
+| | |
+|---|---|
+| **Use Case** | UC-39 |
+| **Pre-condition** | Paytm Settings configured. Sales Order submitted and not fully billed. |
+| **Steps** | Authenticated call: `generate_ecommerce_payment_link(so_name="SAL-ORD-2026-00001")` (no `amount` param, no `allow_partial`) |
+| **Expected** | Paytm link created with `linkType = FIXED` for SO `grand_total`. Response: `{"link": "https://...", "amount": ..., "order_id": "EC...", "message": "..."}`. |
+| **Status** | ⏭ |
+
+### TC-PTM-02 — Partial Payment Creates PARTIAL Link
+| | |
+|---|---|
+| **Use Case** | UC-39 |
+| **Steps** | `generate_ecommerce_payment_link(so_name, amount=100000, allow_partial=1, min_partial_amount=25000)` |
+| **Expected** | Paytm link created with `linkType = PARTIAL` and `minPaymentAmount = "25000.00"`. Customer can pay any amount ≥ ₹25,000. |
+| **Status** | ⏭ |
+
+### TC-PTM-03 — Amount Exceeds SO Total — Blocked
+| | |
+|---|---|
+| **Steps** | `generate_ecommerce_payment_link(so_name, amount=9999999)` where SO grand_total < 9999999 |
+| **Expected** | Error: "Amount X exceeds Sales Order total Y". No Paytm order created. |
+| **Status** | ⏭ |
+
+### TC-PTM-04 — handle_link_payment Creates SI + PE (ecommerce flow)
+| | |
+|---|---|
+| **Use Case** | UC-40 |
+| **Pre-condition** | Paytm order cached in Redis with `flow=ecommerce`. Paytm server status returns TXN_SUCCESS. |
+| **Steps** | Paytm POSTs to `handle_link_payment` with `body.orderId` matching a cached order |
+| **Expected** | Sales Invoice created from SO. Payment Entry created with `reference_no = txn_id`. Response `{"status": "ok", "sales_invoice": "...", "payment_entry": "..."}`. |
+| **Status** | ⏭ |
+
+### TC-PTM-05 — handle_link_payment Idempotency
+| | |
+|---|---|
+| **Steps** | Same Paytm callback fires twice with same `txn_id` |
+| **Expected** | Second call: `frappe.db.exists("Payment Entry", {"reference_no": txn_id})` → true → returns `{"status": "ok", "reason": "already_processed"}`. No duplicate PE. |
+| **Status** | ⏭ |
+
+### TC-PTM-06 — generate_payment_link Resolves Customer by Phone (WhatsApp Flow)
+| | |
+|---|---|
+| **Use Case** | UC-38 |
+| **Steps** | POST `{"phone": "9876543210"}` to `generate_payment_link` (guest endpoint) where customer has outstanding invoices |
+| **Expected** | Customer found by last 10 digits. Total outstanding computed. Paytm PARTIAL link created. Response: `{"status": "ok", "link": "...", "amount": ..., "message": "💳 *Payment Link*..."}`. |
+| **Status** | ⏭ |
+
+### TC-PTM-07 — No Outstanding Dues Returns Info Message
+| | |
+|---|---|
+| **Steps** | Call `generate_payment_link` with phone of a customer with zero outstanding invoices |
+| **Expected** | `{"status": "ok", "amount": 0, "message": "No outstanding dues for customer ..."}`. No Paytm order created. |
+| **Status** | ⏭ |
+
+### TC-PTM-08 — Invalid Signature Rejected
+| | |
+|---|---|
+| **Pre-condition** | Paytm posts callback with `head.signature` set. |
+| **Steps** | Callback with corrupted/wrong signature |
+| **Expected** | `{"status": "error", "reason": "invalid_signature"}`. Frappe Error Log entry. No PE created. |
+| **Status** | ⏭ |
+
+### TC-PTM-09 — Paytm Settings Form Not Blank
+| | |
+|---|---|
+| **Steps** | Navigate to `/app/paytm-settings` |
+| **Expected** | Form renders with: Merchant ID, Merchant Key (Secret), Staging/Test Mode, Payment Account, Mode of Payment, Company. No blank page. |
+| **Status** | ⏭ |
+
+### TC-PTM-10 — Non-TXN_SUCCESS Status Not Processed
+| | |
+|---|---|
+| **Steps** | Paytm callback where server-side check returns `resultStatus = PENDING` |
+| **Expected** | `{"status": "pending", "txn_status": "PENDING", "message": "..."}`. No SI or PE created. |
+| **Status** | ⏭ |
+
+---
+
+## Module: Customer Portal Report APIs
+
+> All endpoints below resolve the customer from the session user. They reject Guest calls and reject requests for data belonging to a different customer.
+
+### TC-CPR-01 — get_maintenance_requests Returns Customer's Issues with Work Orders
+| | |
+|---|---|
+| **Use Case** | UC-41 |
+| **Steps** | Log in as a portal customer with 2 Issues (one with a linked Work Order) → call `get_maintenance_requests()` |
+| **Expected** | Returns both issues scoped to this customer. Issue with WO has `work_orders` array with `scheduled_date`, `status`, `estimated_cost`. Issue without WO has `work_orders = []`. |
+| **Status** | ⏭ |
+
+### TC-CPR-02 — get_maintenance_requests Filtered by property_unit
+| | |
+|---|---|
+| **Steps** | Customer has Issues on UNIT-A and UNIT-B (both owned). Call `get_maintenance_requests(property_unit="UNIT-A")` |
+| **Expected** | Only Issues for UNIT-A returned. |
+| **Status** | ⏭ |
+
+### TC-CPR-03 — get_maintenance_requests Blocks Unowned Unit
+| | |
+|---|---|
+| **Steps** | Call `get_maintenance_requests(property_unit="UNIT-XYZ")` where UNIT-XYZ belongs to another customer |
+| **Expected** | Error: "Selected unit does not belong to your account". No data returned. |
+| **Status** | ⏭ |
+
+### TC-CPR-04 — get_utility_bills Returns Bills with Meter Info
+| | |
+|---|---|
+| **Use Case** | UC-42 |
+| **Steps** | Customer has 2 Utility Bills. Call `get_utility_bills()` |
+| **Expected** | Both bills returned with `meter.meter_number`, `meter.utility_type`, `meter.unit_of_measure` embedded. Date fields as strings. |
+| **Status** | ⏭ |
+
+### TC-CPR-05 — get_outstanding_dues Returns Unpaid SIs with is_overdue Flag
+| | |
+|---|---|
+| **Use Case** | UC-43 |
+| **Steps** | Customer has 2 SIs: one past due date, one upcoming. Call `get_outstanding_dues()` |
+| **Expected** | Past-due SI: `is_overdue = true`. Upcoming SI: `is_overdue = false`. Both appear in `invoices` array. |
+| **Status** | ⏭ |
+
+### TC-CPR-06 — get_outstanding_dues Summary Totals Correct
+| | |
+|---|---|
+| **Steps** | Customer has overdue SI of ₹5,000 and upcoming SI of ₹3,000. Call `get_outstanding_dues()` |
+| **Expected** | `total_outstanding = 8000`. `total_overdue = 5000`. `invoice_count = 2`. |
+| **Status** | ⏭ |
+
+### TC-CPR-07 — get_outstanding_dues Returns Empty for Clean Account
+| | |
+|---|---|
+| **Steps** | Customer with no outstanding invoices. Call `get_outstanding_dues()` |
+| **Expected** | `{"invoices": [], "total_outstanding": 0.0, "total_overdue": 0.0, "invoice_count": 0}`. |
+| **Status** | ⏭ |
+
+### TC-CPR-08 — get_payment_history Returns Payment Entries + Gateway Logs
+| | |
+|---|---|
+| **Use Case** | UC-44 |
+| **Steps** | Customer has 1 Payment Entry and 1 Razorpay Payment Entry. Call `get_payment_history()` |
+| **Expected** | `payments` array contains the PE with `invoices` sub-array (allocated references). `gateway_logs.razorpay` contains the RPE row (razorpay_order_id, payment_id, status). |
+| **Status** | ⏭ |
+
+### TC-CPR-09 — get_unit_details Returns Full Unit Info (Happy Path)
+| | |
+|---|---|
+| **Use Case** | UC-45 |
+| **Pre-condition** | Customer owns UNIT-0004 via Booking or Allocation. Unit's property has amenities. |
+| **Steps** | Call `get_unit_details("UNIT-0004")` |
+| **Expected** | Response has `unit` (number, type, area, floor, facing, price, status), `property` (name, type, address, `amenities` list), `allocation` (type, start/end dates, rent_amount), `agreement` (type, status, dates). |
+| **Status** | ⏭ |
+
+### TC-CPR-10 — get_unit_details Blocks Unowned Unit
+| | |
+|---|---|
+| **Steps** | Call `get_unit_details("UNIT-0001")` where UNIT-0001 belongs to another customer |
+| **Expected** | Error: "Selected unit does not belong to your account". |
+| **Status** | ⏭ |
+
+### TC-CPR-11 — get_inspection_reports Returns Checklists with Items
+| | |
+|---|---|
+| **Use Case** | UC-46 |
+| **Steps** | Customer owns a unit with a completed Move-In inspection (12 checklist items). Call `get_inspection_reports()` |
+| **Expected** | Inspection record returned with `items` array of 12 rows (item_name, category, condition, remarks). `inspection_date` as string. |
+| **Status** | ⏭ |
+
+### TC-CPR-12 — get_inspection_reports All Units (No Filter)
+| | |
+|---|---|
+| **Steps** | Customer owns 2 units via Allocation; each has 1 inspection. Call `get_inspection_reports()` (no property_unit filter) |
+| **Expected** | Reports for both units returned. |
+| **Status** | ⏭ |
+
+### TC-CPR-13 — get_rent_history Returns Rent Logs with Invoice Details
+| | |
+|---|---|
+| **Use Case** | UC-47 |
+| **Steps** | Customer has an active Lease Allocation with 3 Rent Invoice Log entries. Call `get_rent_history()` |
+| **Expected** | 3 log rows returned, newest first. Each paid log has `invoice_details.grand_total`, `invoice_details.outstanding_amount`, `invoice_details.status` embedded. |
+| **Status** | ⏭ |
+
+### TC-CPR-14 — get_rent_history No Allocations Returns Empty
+| | |
+|---|---|
+| **Steps** | Call `get_rent_history()` for a customer with no Allocations |
+| **Expected** | `{"rent_history": [], "total": 0}`. |
+| **Status** | ⏭ |
+
+### TC-CPR-15 — All Report APIs Require Login (Guest Blocked)
+| | |
+|---|---|
+| **Steps** | Call any report API (`get_maintenance_requests`, `get_utility_bills`, `get_outstanding_dues`, `get_payment_history`, `get_unit_details`, `get_inspection_reports`, `get_rent_history`) without authentication |
+| **Expected** | Each throws: "Please login". No data returned. |
+| **Status** | ⏭ |
+
+### TC-CPR-16 — Report APIs Scope to Calling Customer Only
+| | |
+|---|---|
+| **Steps** | Log in as Customer A. Customer B has Issues, Bills, Invoices. Call all 7 report APIs. |
+| **Expected** | All responses contain only Customer A's data. Customer B's records never appear even if `customer` is passed as a query parameter. |
+| **Status** | ⏭ |
+
+---
+
 ## Regression Checklist
 
 Run after every code change:
@@ -1081,6 +1417,23 @@ Run after every code change:
 - [ ] TC-CP-04: raise_issue creates Issue with property link
 - [ ] TC-CP-05: raise_issue blocks a unit that isn't the caller's
 - [ ] TC-PPB-01: Due Payment Plan milestone auto-invoiced
+- [ ] TC-RZP-02: order_payment blocked without auth token
+- [ ] TC-RZP-03: amount in paise not doubled (₹460 = 46000 paise, not 4,600,000)
+- [ ] TC-RZP-04: payment.captured webhook creates SI + PE
+- [ ] TC-RZP-06: missing webhook_secret logs warning, not crash
+- [ ] TC-RZP-07: duplicate payment.captured → no second PE
+- [ ] TC-MSW-04: Mswipe callback creates SI + PE on TXN_SUCCESS
+- [ ] TC-MSW-06: duplicate Mswipe callback → is_duplicate=True, no second PE
+- [ ] TC-PTM-01: generate_ecommerce_payment_link returns FIXED Paytm link
+- [ ] TC-PTM-02: allow_partial=1 returns PARTIAL link with minPaymentAmount
+- [ ] TC-PTM-03: amount exceeding SO total is blocked
+- [ ] TC-PTM-05: duplicate Paytm callback → already_processed, no second PE
+- [ ] TC-CPR-03: get_maintenance_requests blocks unowned unit
+- [ ] TC-CPR-05: get_outstanding_dues flags overdue invoices correctly
+- [ ] TC-CPR-06: get_outstanding_dues summary totals are correct
+- [ ] TC-CPR-10: get_unit_details blocks unowned unit
+- [ ] TC-CPR-15: all report APIs require login (Guest blocked)
+- [ ] TC-CPR-16: report APIs scope to calling customer only
 
 ---
 
