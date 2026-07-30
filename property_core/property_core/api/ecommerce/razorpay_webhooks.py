@@ -8,6 +8,7 @@ from frappe import _
 from property_core.property_core.api.ecommerce.razorpay_integration import (
     RazorpayGateway,
     create_payment_entry_from_razorpay,
+    create_sales_invoice_from_order,
 )
 
 
@@ -90,7 +91,34 @@ def _handle_payment_captured(payload):
     rpe.razorpay_response = json.dumps(payment_entity)
     rpe.save(ignore_permissions=True)
 
-    if not rpe.payment_entry:
+    # Create Sales Invoice if not already linked
+    if not rpe.sales_invoice:
+        # The original order_id (SO name) is stored in the Transaction Log receipt
+        original_order_id = frappe.db.get_value(
+            "Razorpay Transaction Log", {"razorpay_order_id": rz_order_id}, "order_id"
+        )
+        if not original_order_id:
+            # Fallback: Razorpay stores order_id in the receipt field of the order notes
+            notes = payment_entity.get("notes") or {}
+            original_order_id = notes.get("order_id")
+
+        if original_order_id:
+            try:
+                si_name = create_sales_invoice_from_order(original_order_id)
+                rpe.db_set("sales_invoice", si_name)
+                rpe.sales_invoice = si_name
+            except Exception:
+                frappe.log_error(
+                    frappe.get_traceback(),
+                    f"Razorpay webhook - SI creation failed for order {original_order_id}",
+                )
+        else:
+            frappe.log_error(
+                f"Cannot create SI: original order_id not found for Razorpay order {rz_order_id}",
+                "Razorpay Webhook - Missing order_id",
+            )
+
+    if not rpe.payment_entry and rpe.sales_invoice:
         create_payment_entry_from_razorpay(rpe)
 
 
