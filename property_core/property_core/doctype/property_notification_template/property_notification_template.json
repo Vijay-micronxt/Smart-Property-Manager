@@ -1,0 +1,127 @@
+{
+  "actions": [],
+  "autoname": "field:title",
+  "creation": "2026-07-31 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "title",
+    "event",
+    "channel",
+    "column_break_head",
+    "enabled",
+    "is_default",
+    "section_content",
+    "subject",
+    "message",
+    "section_help",
+    "help_html"
+  ],
+  "fields": [
+    {
+      "fieldname": "title",
+      "fieldtype": "Data",
+      "label": "Title",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "event",
+      "fieldtype": "Select",
+      "label": "Event",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "options": "Sales Invoice\nPayment Reminder\nPayment Receipt\nLead Follow Up"
+    },
+    {
+      "fieldname": "channel",
+      "fieldtype": "Select",
+      "label": "Channel",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "options": "Email\nWhatsApp"
+    },
+    {
+      "fieldname": "column_break_head",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "label": "Enabled",
+      "default": "1",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "is_default",
+      "fieldtype": "Check",
+      "label": "Default for this Event + Channel",
+      "default": "0",
+      "description": "Exactly one template per event and channel should be the default. It is the one the engine picks."
+    },
+    {
+      "fieldname": "section_content",
+      "fieldtype": "Section Break",
+      "label": "Content"
+    },
+    {
+      "fieldname": "subject",
+      "fieldtype": "Data",
+      "label": "Subject",
+      "depends_on": "eval:doc.channel=='Email'",
+      "description": "Jinja allowed."
+    },
+    {
+      "fieldname": "message",
+      "fieldtype": "Code",
+      "label": "Message",
+      "options": "Jinja",
+      "reqd": 1,
+      "description": "Jinja template. Email messages may contain HTML; WhatsApp messages should be plain text."
+    },
+    {
+      "fieldname": "section_help",
+      "fieldtype": "Section Break",
+      "label": "Available Variables",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "help_html",
+      "fieldtype": "HTML",
+      "options": "<div class=\"text-muted small\"><p>Every template gets <code>doc</code> (the source document), <code>recipient_name</code>, <code>company</code>, <code>portal_link</code> and the standard Frappe jinja helpers (<code>frappe</code>, <code>frappe.utils</code>).</p><ul><li><b>Sales Invoice</b> / <b>Payment Reminder</b>: <code>doc</code> is the Sales Invoice. Also <code>outstanding</code>, <code>due_date</code>, <code>days_overdue</code>, <code>rule_label</code>, <code>property_unit</code>.</li><li><b>Payment Receipt</b>: <code>doc</code> is the Payment Entry. Also <code>allocated_invoices</code> (list of dicts with <code>invoice</code>, <code>allocated_amount</code>, <code>outstanding</code>).</li><li><b>Lead Follow Up</b>: <code>doc</code> is the Lead. Also <code>follow_up_date</code>, <code>days_overdue</code>, <code>lead_link</code>.</li></ul></div>"
+    }
+  ],
+  "links": [],
+  "modified": "2026-07-31 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Property Notification Template",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "write": 1,
+      "role": "System Manager",
+      "report": 1,
+      "export": 1,
+      "share": 1,
+      "print": 1,
+      "email": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "write": 1,
+      "role": "Property Manager",
+      "report": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}
