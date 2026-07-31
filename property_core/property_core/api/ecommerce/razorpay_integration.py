@@ -104,10 +104,10 @@ class RazorpayGateway:
                 err = e.response.json()
             except Exception:
                 err = e.response.text
-            frappe.log_error(str(err), "Razorpay API Error")
+            frappe.log_error(title="Razorpay API Error", message=str(err))
             frappe.throw(_("Razorpay API error: {0}").format(str(err)))
         except requests.exceptions.RequestException as e:
-            frappe.log_error(str(e), "Razorpay Request Error")
+            frappe.log_error(title="Razorpay Request Error", message=str(e))
             frappe.throw(_("Razorpay connection error: {0}").format(str(e)))
 
     def _log_transaction(self, **kwargs):
@@ -150,7 +150,7 @@ def order_payment(order_id, amount, store_id=None, owner_id=None, payment_provid
             "key": gateway.key_id,
         }
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Razorpay order_payment error")
+        frappe.log_error(title="Razorpay order_payment error", message=frappe.get_traceback())
         return {"status": 400, "error": str(e)}
 
 
@@ -168,7 +168,30 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
     )
     if entry_name and payment_status in ("CAPTURED", "AUTHORIZED"):
         rpe = frappe.get_doc("Razorpay Payment Entry", entry_name)
-        if not rpe.payment_entry:
+
+        if not rpe.sales_invoice:
+            original_order_id = frappe.db.get_value(
+                "Razorpay Transaction Log", {"razorpay_order_id": razorpay_order_id}, "order_id"
+            )
+            if not original_order_id:
+                original_order_id = (payment.get("notes") or {}).get("order_id")
+            if original_order_id:
+                try:
+                    si_name = create_sales_invoice_from_order(original_order_id)
+                    rpe.db_set("sales_invoice", si_name)
+                    rpe.reload()
+                except Exception:
+                    frappe.log_error(
+                        title=f"verify_payment_signature - SI creation failed for {original_order_id}",
+                        message=frappe.get_traceback(),
+                    )
+            else:
+                frappe.log_error(
+                    title="verify_payment_signature - original order_id not found",
+                    message=f"razorpay_order_id={razorpay_order_id} razorpay_payment_id={razorpay_payment_id}",
+                )
+
+        if not rpe.payment_entry and rpe.sales_invoice:
             create_payment_entry_from_razorpay(rpe)
 
     return {
@@ -265,7 +288,7 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
             },
         }
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Razorpay capture_payment error")
+        frappe.log_error(title="Razorpay capture_payment error", message=frappe.get_traceback())
         return {"status": 400, "error": str(e)}
 
 

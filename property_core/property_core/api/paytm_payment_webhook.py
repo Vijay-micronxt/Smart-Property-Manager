@@ -32,7 +32,7 @@ def _verify_signature(body_dict, signature, merchant_key):
         expected = hashlib.sha256((body_string + "|" + salt).encode()).hexdigest()
         return recovered_hash == expected
     except Exception:
-        frappe.log_error(frappe.get_traceback(), "Paytm Signature Verification Error")
+        frappe.log_error(title="Paytm Signature Verification Error", message=frappe.get_traceback())
         return False
 
 
@@ -174,7 +174,7 @@ def handle_link_payment():
         signature = head.get("signature")
 
         if not order_id:
-            frappe.log_error(str(data), "Paytm handle_link_payment - missing orderId")
+            frappe.log_error(title="Paytm handle_link_payment - missing orderId", message=str(data))
             frappe.response["message"] = {"status": "error", "reason": "missing_order_id"}
             return
 
@@ -188,7 +188,7 @@ def handle_link_payment():
 
         if signature:
             if not _verify_signature(body, signature, merchant_key):
-                frappe.log_error(str(data), "Paytm handle_link_payment - invalid signature")
+                frappe.log_error(title="Paytm handle_link_payment - invalid signature", message=str(data))
                 frappe.response["message"] = {"status": "error", "reason": "invalid_signature"}
                 return
 
@@ -215,7 +215,8 @@ def handle_link_payment():
         cached = frappe.cache().get_value(f"paytm_order:{order_id}")
         if not cached:
             frappe.log_error(
-                f"paytm_order:{order_id} not in cache", "Paytm handle_link_payment - cache miss"
+                title="Paytm handle_link_payment - cache miss",
+                message=f"paytm_order:{order_id} not in cache",
             )
             frappe.response["message"] = {"status": "error", "reason": "order_not_found"}
             return
@@ -227,11 +228,11 @@ def handle_link_payment():
             result = _handle_dealer_dues(cached, txn_amount, txn_id, order_id, settings)
 
         frappe.log_error(
-            f"Paytm payment processed — order_id={order_id} txn_id={txn_id} result={result}",
-            "Paytm handle_link_payment - Success",
+            title="Paytm handle_link_payment - Success",
+            message=f"order_id={order_id} txn_id={txn_id} result={result}",
         )
         frappe.response["message"] = {"status": "ok", **result}
 
     except Exception:
-        frappe.log_error(frappe.get_traceback(), "Paytm handle_link_payment error")
+        frappe.log_error(title="Paytm handle_link_payment error", message=frappe.get_traceback())
         frappe.response["message"] = {"status": "error"}
