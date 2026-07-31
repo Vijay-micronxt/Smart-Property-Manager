@@ -166,15 +166,24 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
     entry_name = frappe.db.get_value(
         "Razorpay Payment Entry", {"razorpay_order_id": razorpay_order_id}, "name"
     )
+
+    si_name = None
+    pe_name = None
+    pe_error = None
+
     if entry_name and payment_status in ("CAPTURED", "AUTHORIZED"):
         rpe = frappe.get_doc("Razorpay Payment Entry", entry_name)
 
+        # Stamp the actual payment ID + status immediately so PE gets correct reference_no
+        if not rpe.razorpay_payment_id:
+            rpe.db_set("razorpay_payment_id", razorpay_payment_id)
+            rpe.db_set("status", "CAPTURED")
+            rpe.reload()
+
         if not rpe.sales_invoice:
-            original_order_id = frappe.db.get_value(
-                "Razorpay Transaction Log", {"razorpay_order_id": razorpay_order_id}, "order_id"
+            original_order_id = _resolve_original_order_id(
+                razorpay_order_id, payment, gateway
             )
-            if not original_order_id:
-                original_order_id = (payment.get("notes") or {}).get("order_id")
             if original_order_id:
                 try:
                     si_name = create_sales_invoice_from_order(original_order_id)
@@ -190,9 +199,21 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
                     title="verify_payment_signature - original order_id not found",
                     message=f"razorpay_order_id={razorpay_order_id} razorpay_payment_id={razorpay_payment_id}",
                 )
+        else:
+            si_name = rpe.sales_invoice
 
         if not rpe.payment_entry and rpe.sales_invoice:
-            create_payment_entry_from_razorpay(rpe)
+            try:
+                create_payment_entry_from_razorpay(rpe)
+                pe_name = rpe.payment_entry
+            except Exception:
+                pe_error = frappe.get_traceback()
+                frappe.log_error(
+                    title="verify_payment_signature - PE creation failed",
+                    message=pe_error,
+                )
+        else:
+            pe_name = rpe.payment_entry
 
     return {
         "success": True,
@@ -200,7 +221,30 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
         "payment_status": payment_status,
         "razorpay_payment_id": razorpay_payment_id,
         "razorpay_order_id": razorpay_order_id,
+        "sales_invoice": si_name,
+        "payment_entry": pe_name,
+        **({"pe_error": "Payment Entry creation failed — check Error Log"} if pe_error else {}),
     }
+
+
+def _resolve_original_order_id(razorpay_order_id, payment, gateway):
+    """Find the ERPNext SO/document name from three sources in priority order."""
+    # 1. Our own Transaction Log (stored at order_payment time)
+    original = frappe.db.get_value(
+        "Razorpay Transaction Log", {"razorpay_order_id": razorpay_order_id}, "order_id"
+    )
+    if original:
+        return original
+    # 2. Razorpay order receipt — set to SO name in create_order payload (most authoritative)
+    try:
+        rz_order = gateway.fetch_order(razorpay_order_id)
+        original = rz_order.get("receipt") or (rz_order.get("notes") or {}).get("order_id")
+        if original:
+            return original
+    except Exception:
+        pass
+    # 3. Payment entity notes (Razorpay copies order notes onto payments)
+    return (payment.get("notes") or {}).get("order_id")
 
 
 @frappe.whitelist()
