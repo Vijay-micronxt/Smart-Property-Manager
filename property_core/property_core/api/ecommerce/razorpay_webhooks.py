@@ -9,6 +9,7 @@ from property_core.property_core.api.ecommerce.razorpay_integration import (
     RazorpayGateway,
     create_payment_entry_from_razorpay,
     create_sales_invoice_from_order,
+    _resolve_original_order_id,
 )
 
 
@@ -94,14 +95,8 @@ def _handle_payment_captured(payload):
 
     # Create Sales Invoice if not already linked
     if not rpe.sales_invoice:
-        # The original order_id (SO name) is stored in the Transaction Log receipt
-        original_order_id = frappe.db.get_value(
-            "Razorpay Transaction Log", {"razorpay_order_id": rz_order_id}, "order_id"
-        )
-        if not original_order_id:
-            # Fallback: Razorpay stores order_id in the receipt field of the order notes
-            notes = payment_entity.get("notes") or {}
-            original_order_id = notes.get("order_id")
+        gateway = RazorpayGateway()
+        original_order_id = _resolve_original_order_id(rz_order_id, payment_entity, gateway)
 
         if original_order_id:
             try:
