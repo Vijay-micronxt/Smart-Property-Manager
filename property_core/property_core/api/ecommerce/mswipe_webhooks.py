@@ -41,7 +41,7 @@ def handle_mswipe_callback():
         trans_id = frappe.local.form_dict.get("encIpgId") or frappe.local.form_dict.get("TransID")
 
         if not trans_id:
-            frappe.log_error("encIpgId missing in Mswipe callback", "Mswipe Callback Error")
+            frappe.log_error(title="Mswipe Callback Error", message="encIpgId missing in Mswipe callback")
             return _respond(None, "error", message="Missing transaction ID")
 
         # Look up order_id
@@ -54,7 +54,7 @@ def handle_mswipe_callback():
             )
 
         if not order_id:
-            frappe.log_error(f"No order found for trans_id {trans_id}", "Mswipe Callback Error")
+            frappe.log_error(title="Mswipe Callback Error", message=f"No order found for trans_id {trans_id}")
             return _respond(None, "error", message="Order not found")
 
         # Look up return_url
@@ -71,7 +71,8 @@ def handle_mswipe_callback():
         )
         if not entry_name:
             frappe.log_error(
-                f"Mswipe Payment Entry not found for order {order_id}", "Mswipe Callback Error"
+                title="Mswipe Callback Error",
+                message=f"Mswipe Payment Entry not found for order {order_id}",
             )
             return _respond(return_url, "error", order_id=order_id, message="Entry not found")
 
@@ -87,8 +88,8 @@ def handle_mswipe_callback():
             status_map = {0: "TXN_FAILURE", 2: "PENDING"}
             label = status_map.get(payment_status, "UNKNOWN")
             frappe.log_error(
-                f"Mswipe payment not successful for trans_id {trans_id}: status={payment_status}",
-                "Mswipe Callback - Non-success",
+                title="Mswipe Callback - Non-success",
+                message=f"Mswipe payment not successful for trans_id {trans_id}: status={payment_status}",
             )
             mswipe_entry.db_set("status", "FAILED" if payment_status == 0 else "PENDING")
             return _respond(return_url, label, order_id=order_id)
@@ -96,9 +97,8 @@ def handle_mswipe_callback():
         txn_id = row.get("IPG_ID")
         if not txn_id:
             frappe.log_error(
-                f"IPG_ID missing in Mswipe status response for trans_id {trans_id}; "
-                f"falling back to stored txn_id",
-                "Mswipe Callback Warning",
+                title="Mswipe Callback Warning",
+                message=f"IPG_ID missing in Mswipe status response for trans_id {trans_id}; falling back to stored txn_id",
             )
             txn_id = mswipe_entry.mswipe_txn_id
 
@@ -151,5 +151,5 @@ def handle_mswipe_callback():
         )
 
     except Exception:
-        frappe.log_error(frappe.get_traceback(), "Mswipe Callback Fatal Error")
+        frappe.log_error(title="Mswipe Callback Fatal Error", message=frappe.get_traceback())
         return _respond(return_url, "error", order_id=order_id, message="Internal error")

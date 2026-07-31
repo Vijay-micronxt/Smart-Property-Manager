@@ -123,7 +123,17 @@ def _create_paytm_link(merchant_id, merchant_key, order_id, amount, customer,
     body = response_data.get("body", {})
     link_url = body.get("link") or body.get("shortUrl")
     if not link_url:
-        frappe.log_error(json.dumps(response_data), "Paytm Link Creation Failed")
+        result_info = body.get("resultInfo", {})
+        err_code = result_info.get("resultCode", "")
+        err_msg = result_info.get("resultMessage", "")
+        frappe.log_error(
+            title="Paytm Link Creation Failed",
+            message=json.dumps(response_data),
+        )
+        if err_code or err_msg:
+            frappe.throw(
+                _("Paytm payment link creation failed (code {0}): {1}").format(err_code, err_msg)
+            )
         frappe.throw(_("Paytm did not return a payment link. Check Error Log for details."))
 
     return link_url
@@ -292,7 +302,7 @@ def generate_payment_link():
         }
 
     except Exception:
-        frappe.log_error(frappe.get_traceback(), "generate_payment_link error")
+        frappe.log_error(title="generate_payment_link error", message=frappe.get_traceback())
         frappe.response["message"] = {"status": "error", "message": "Failed to generate link"}
 
 

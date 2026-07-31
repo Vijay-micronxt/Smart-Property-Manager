@@ -26,12 +26,12 @@ def handle_razorpay_webhook():
                 webhook_secret.encode(), raw_body.encode(), hashlib.sha256
             ).hexdigest()
             if not hmac.compare_digest(expected, signature):
-                frappe.log_error("Signature mismatch", "Razorpay Webhook - Invalid Signature")
+                frappe.log_error(title="Razorpay Webhook - Invalid Signature", message="Signature mismatch")
                 return {"status": "error", "message": "Invalid signature"}
         else:
             frappe.log_error(
-                "webhook_secret not configured in Razorpay Settings — skipping signature check",
-                "Razorpay Webhook Warning",
+                title="Razorpay Webhook Warning",
+                message="webhook_secret not configured in Razorpay Settings — skipping signature check",
             )
 
         event = json.loads(raw_body)
@@ -46,13 +46,14 @@ def handle_razorpay_webhook():
             _handle_payment_failed(payload)
         elif event_type in ("refund.created", "refund.processed"):
             frappe.log_error(
-                json.dumps(payload), f"Razorpay Webhook - {event_type} (log only)"
+                title=f"Razorpay Webhook - {event_type} (log only)",
+                message=json.dumps(payload),
             )
 
         return {"status": "success"}
 
     except Exception:
-        frappe.log_error(frappe.get_traceback(), "Razorpay Webhook Error")
+        frappe.log_error(title="Razorpay Webhook Error", message=frappe.get_traceback())
         return {"status": "error"}
 
 
@@ -109,13 +110,13 @@ def _handle_payment_captured(payload):
                 rpe.sales_invoice = si_name
             except Exception:
                 frappe.log_error(
-                    frappe.get_traceback(),
-                    f"Razorpay webhook - SI creation failed for order {original_order_id}",
+                    title=f"Razorpay webhook - SI creation failed for order {original_order_id}",
+                    message=frappe.get_traceback(),
                 )
         else:
             frappe.log_error(
-                f"Cannot create SI: original order_id not found for Razorpay order {rz_order_id}",
-                "Razorpay Webhook - Missing order_id",
+                title="Razorpay Webhook - Missing order_id",
+                message=f"Cannot create SI: original order_id not found for Razorpay order {rz_order_id}",
             )
 
     if not rpe.payment_entry and rpe.sales_invoice:

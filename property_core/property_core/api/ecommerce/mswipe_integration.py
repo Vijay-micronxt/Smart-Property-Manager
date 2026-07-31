@@ -17,7 +17,14 @@ class MswipeGateway:
                   "Run `bench migrate` on the server to install it, "
                   "then fill in the credentials at /app/mswipe-settings.")
             )
-        settings = frappe.get_single("Mswipe Settings")
+        try:
+            settings = frappe.get_single("Mswipe Settings")
+        except Exception:
+            frappe.throw(
+                _("Mswipe Settings could not be loaded. "
+                  "Please open /app/mswipe-settings, fill in the credentials, and Save. "
+                  "If the page is blank, run `bench migrate` first.")
+            )
         missing = []
         self.base_url = settings.base_url
         self.cust_code = settings.cust_code
@@ -152,7 +159,7 @@ class MswipeGateway:
                     err_detail = e.response.json()
                 except Exception:
                     err_detail = e.response.text
-            frappe.log_error(str(err_detail or e), "Mswipe Request Error")
+            frappe.log_error(title="Mswipe Request Error", message=str(err_detail or e))
             frappe.throw(_("Mswipe connection error: {0}").format(str(e)))
 
     def _log_transaction(self, order_id, mswipe_order_id, mswipe_txn_id, mswipe_trans_id,
@@ -183,7 +190,7 @@ class MswipeGateway:
                 entry.insert(ignore_permissions=True)
             frappe.db.commit()
         except Exception:
-            frappe.log_error(frappe.get_traceback(), "Mswipe _log_transaction error")
+            frappe.log_error(title="Mswipe _log_transaction error", message=frappe.get_traceback())
             raise
 
     @staticmethod
@@ -255,7 +262,7 @@ def order_payment(order_id, amount, mobileno=None, email=None,
             },
         }
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Mswipe order_payment error")
+        frappe.log_error(title="Mswipe order_payment error", message=frappe.get_traceback())
         return {"status": 400, "error": str(e)}
 
 
