@@ -11,6 +11,7 @@ import frappe
 
 
 def execute():
-    frappe.reload_doc("property_core", "doctype", "mswipe_settings", force=True)
-    frappe.clear_cache(doctype="Mswipe Settings")
+    # tabDocType uses 'issingle' (old Frappe naming without underscore)
+    frappe.db.sql("UPDATE `tabDocType` SET `issingle` = 1 WHERE `name` = 'Mswipe Settings'")
     frappe.db.commit()
+    frappe.clear_cache(doctype="Mswipe Settings")
