@@ -349,12 +349,14 @@ def create_payment_entry_from_mswipe(mswipe_payment_entry, system_user=None, mod
 
     pe.owner = effective_user
     pe.flags.ignore_permissions = True
-    pe.flags.ignore_validate = True
     pe.insert()
     pe.submit()
 
     mswipe_payment_entry.db_set("payment_entry", pe.name)
     mswipe_payment_entry.db_set("status", "COMPLETED")
+
+    from property_core.property_core.api.ecommerce.razorpay_integration import mark_payment_plan_paid
+    mark_payment_plan_paid(si_name)
 
 
 # ─── Internal utilities ───────────────────────────────────────────────────────

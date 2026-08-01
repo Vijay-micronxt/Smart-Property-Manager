@@ -131,9 +131,13 @@ def _build_payment_entry(customer, amount, txn_id, order_id, settings, si_name=N
 
     pe.owner = effective_user
     pe.flags.ignore_permissions = True
-    pe.flags.ignore_validate = True
     pe.insert()
     pe.submit()
+
+    if si_name:
+        from property_core.property_core.api.ecommerce.razorpay_integration import mark_payment_plan_paid
+        mark_payment_plan_paid(si_name)
+
     return pe.name
 
 
