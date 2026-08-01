@@ -38,9 +38,9 @@ def _verify_signature(body_dict, signature, merchant_key):
 
 def _get_merchant_key(settings):
     try:
-        return settings.get_password("merchant_key")
+        return (settings.get_password("merchant_key") or "").strip()
     except Exception:
-        return frappe.db.get_value("Paytm Settings", None, "merchant_key")
+        return (frappe.db.get_value("Paytm Settings", "Paytm Settings", "merchant_key") or "").strip()
 
 
 def _confirm_order_status(merchant_id, merchant_key, order_id, base_url):
@@ -52,7 +52,12 @@ def _confirm_order_status(merchant_id, merchant_key, order_id, base_url):
         "body": request_body,
         "head": {"tokenType": "AES", "signature": signature},
     }
-    resp = requests.post(f"{base_url}/v3/order/status", json=payload, timeout=30)
+    resp = requests.post(
+        f"{base_url}/v3/order/status",
+        data=json.dumps(payload, separators=(",", ":")),
+        headers={"Content-Type": "application/json"},
+        timeout=30,
+    )
     resp.raise_for_status()
     return resp.json().get("body", {})
 
@@ -204,7 +209,10 @@ def handle_link_payment():
             }
             return
 
-        txn_amount = float(status_body.get("txnAmount", 0))
+        txn_amount_raw = status_body.get("txnAmount", 0)
+        txn_amount = float(
+            txn_amount_raw.get("value", 0) if isinstance(txn_amount_raw, dict) else (txn_amount_raw or 0)
+        )
         txn_id = status_body.get("txnId") or status_body.get("txnToken")
 
         # Idempotency: check by reference_no
