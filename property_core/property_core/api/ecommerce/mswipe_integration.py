@@ -9,22 +9,44 @@ MSWIPE_ATTEMPT_BY_TRANSID_PREFIX = "mswipe_ecom_attempt:"
 MSWIPE_RETURN_URL_CACHE_PREFIX = "mswipe_ecom_return_url:"
 
 
+def _load_mswipe_settings():
+    """Load Mswipe Settings handling both singleton and list-doctype variants.
+
+    The doctype is defined as is_single=1 but on some installs bench migrate
+    hasn't run yet, so the record lives in tabMswipe Settings with an auto-name
+    rather than in tabSingles. Try singleton first; fall back to the first row.
+    """
+    if not frappe.db.exists("DocType", "Mswipe Settings"):
+        frappe.throw(
+            _("Mswipe Settings doctype not found. "
+              "Run `bench migrate` on the server, then fill in credentials at /app/mswipe-settings.")
+        )
+
+    # Try singleton path (correct setup after bench migrate)
+    try:
+        s = frappe.get_single("Mswipe Settings")
+        if s.cust_code or s.user_id:
+            return s
+    except Exception:
+        pass
+
+    # Fallback: doctype stored as a regular list record (bench migrate pending)
+    name = frappe.db.get_value("Mswipe Settings", {}, "name")
+    if name:
+        try:
+            return frappe.get_doc("Mswipe Settings", name)
+        except Exception:
+            pass
+
+    frappe.throw(
+        _("Mswipe Settings could not be loaded. "
+          "Please open /app/mswipe-settings, fill in credentials, and Save.")
+    )
+
+
 class MswipeGateway:
     def __init__(self):
-        if not frappe.db.exists("DocType", "Mswipe Settings"):
-            frappe.throw(
-                _("Mswipe Settings doctype not found in the database. "
-                  "Run `bench migrate` on the server to install it, "
-                  "then fill in the credentials at /app/mswipe-settings.")
-            )
-        try:
-            settings = frappe.get_single("Mswipe Settings")
-        except Exception:
-            frappe.throw(
-                _("Mswipe Settings could not be loaded. "
-                  "Please open /app/mswipe-settings, fill in the credentials, and Save. "
-                  "If the page is blank, run `bench migrate` first.")
-            )
+        settings = _load_mswipe_settings()
         missing = []
         self.base_url = settings.base_url
         self.cust_code = settings.cust_code
