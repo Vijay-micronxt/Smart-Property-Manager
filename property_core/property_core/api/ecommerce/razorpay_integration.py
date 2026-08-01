@@ -424,8 +424,8 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None,
     pe.target_exchange_rate = 1.0
     pe.paid_amount = razorpay_payment_entry.amount
     pe.received_amount = razorpay_payment_entry.amount
-    pe.paid_amount_in_company_currency = float(razorpay_payment_entry.amount)
-    pe.received_amount_in_company_currency = float(razorpay_payment_entry.amount)
+    pe.base_paid_amount = float(razorpay_payment_entry.amount)
+    pe.base_received_amount = float(razorpay_payment_entry.amount)
     pe.reference_no = (
         razorpay_payment_entry.razorpay_payment_id
         or razorpay_payment_entry.razorpay_order_id
