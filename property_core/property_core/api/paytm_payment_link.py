@@ -116,7 +116,12 @@ def _create_paytm_link(merchant_id, merchant_key, order_id, amount, customer,
         "head": {"tokenType": "AES", "signature": signature},
     }
 
-    resp = requests.post(f"{base_url}/link/create", json=payload, timeout=30)
+    resp = requests.post(
+        f"{base_url}/link/create",
+        data=json.dumps(payload, separators=(",", ":")),
+        headers={"Content-Type": "application/json"},
+        timeout=30,
+    )
     resp.raise_for_status()
     response_data = resp.json()
 
@@ -310,6 +315,6 @@ def generate_payment_link():
 
 def _get_merchant_key(settings):
     try:
-        return settings.get_password("merchant_key")
+        return (settings.get_password("merchant_key") or "").strip()
     except Exception:
-        return frappe.db.get_value("Paytm Settings", None, "merchant_key")
+        return (frappe.db.get_value("Paytm Settings", None, "merchant_key") or "").strip()
