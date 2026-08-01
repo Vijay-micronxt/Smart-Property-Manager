@@ -86,29 +86,25 @@ def _find_customer_by_phone(phone_key):
 # ─── Internal link creator (shared) ───────────────────────────────────────────
 
 def _create_paytm_link(merchant_id, merchant_key, order_id, amount, customer,
-                        callback_url, is_staging, allow_partial=False, min_partial_amount=None):
+                        callback_url, is_staging):
     base_url = (
         "https://securestage.paytmpayments.com" if is_staging else "https://securegw.paytm.com"
     )
 
     link_name = re.sub(r"[^A-Za-z0-9]", "", customer)[:50] or "Customer"
     link_description = f"Order - {customer}"[:30]
-    link_type = "PARTIAL" if allow_partial else "FIXED"
 
     request_body = {
         "mid": merchant_id,
         "orderId": order_id,
         "amount": f"{float(amount):.2f}",
-        "linkType": link_type,
+        "linkType": "FIXED",
         "linkDescription": link_description,
         "linkName": link_name,
         "callbackUrl": callback_url,
         "sendSms": False,
         "sendEmail": False,
     }
-
-    if allow_partial and min_partial_amount is not None:
-        request_body["minPaymentAmount"] = f"{float(min_partial_amount):.2f}"
 
     signature = generate_paytm_signature(request_body, merchant_key)
     payload = {
@@ -147,7 +143,7 @@ def _create_paytm_link(merchant_id, merchant_key, order_id, amount, customer,
 # ─── Whitelisted function 1: ecommerce checkout ───────────────────────────────
 
 @frappe.whitelist()
-def generate_ecommerce_payment_link(so_name, amount=None, allow_partial=0, min_partial_amount=None):
+def generate_ecommerce_payment_link(so_name, amount=None):
     so = frappe.get_doc("Sales Order", so_name)
     if so.docstatus != 1:
         frappe.throw(_("Sales Order must be submitted before generating a payment link"))
@@ -165,7 +161,6 @@ def generate_ecommerce_payment_link(so_name, amount=None, allow_partial=0, min_p
     merchant_key = _get_merchant_key(settings)
     is_staging = bool(settings.staging)
 
-    # Use caller-supplied amount (e.g. an instalment); fall back to SO grand total
     link_amount = float(amount) if amount else float(so.grand_total)
     if link_amount <= 0:
         frappe.throw(_("Amount must be greater than zero"))
@@ -174,20 +169,13 @@ def generate_ecommerce_payment_link(so_name, amount=None, allow_partial=0, min_p
             _("Amount {0} exceeds Sales Order total {1}").format(link_amount, so.grand_total)
         )
 
-    allow_partial = bool(int(allow_partial or 0))
     customer = so.customer
     so_clean = re.sub(r"[^A-Za-z0-9]", "", so_name)[:16]
     order_id = "EC" + so_clean + datetime.now().strftime("%Y%m%d%H%M%S")
 
     frappe.cache().set_value(
         f"paytm_order:{order_id}",
-        {
-            "flow": "ecommerce",
-            "so_name": so_name,
-            "customer": customer,
-            "amount": link_amount,
-            "allow_partial": allow_partial,
-        },
+        {"flow": "ecommerce", "so_name": so_name, "customer": customer, "amount": link_amount},
         expires_in_sec=7 * 24 * 3600,
     )
 
@@ -203,15 +191,12 @@ def generate_ecommerce_payment_link(so_name, amount=None, allow_partial=0, min_p
         customer=customer,
         callback_url=callback_url,
         is_staging=is_staging,
-        allow_partial=allow_partial,
-        min_partial_amount=float(min_partial_amount) if min_partial_amount else None,
     )
 
     message = (
         f"💳 *Payment Link*\n"
         f"Order: {so_name}\n"
-        f"Amount: ₹{link_amount:,.2f}"
-        + (" (partial accepted)" if allow_partial else "") + "\n\n"
+        f"Amount: ₹{link_amount:,.2f}\n\n"
         f"Pay securely here:\n{link_url}\n\n"
         f"This link is valid for a limited time."
     )
@@ -288,7 +273,6 @@ def generate_payment_link():
             customer=customer,
             callback_url=callback_url,
             is_staging=is_staging,
-            allow_partial=True,  # dealer dues: customer may pay any portion
         )
 
         message = (
