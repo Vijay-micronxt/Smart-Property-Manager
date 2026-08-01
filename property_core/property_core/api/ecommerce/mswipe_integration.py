@@ -54,6 +54,7 @@ class MswipeGateway:
         self.client_id = settings.client_id
         self.password = settings.get_password("password") if settings.password else None
         self.system_user = settings.system_user
+        self.mode_of_payment = getattr(settings, "mode_of_payment", None) or "Mswipe"
 
         for field in ("base_url", "cust_code", "user_id", "client_id", "password"):
             if not getattr(self, field):
@@ -290,7 +291,7 @@ def order_payment(order_id, amount, mobileno=None, email=None,
 
 # ─── Shared payment entry creator (non-whitelisted) ──────────────────────────
 
-def create_payment_entry_from_mswipe(mswipe_payment_entry):
+def create_payment_entry_from_mswipe(mswipe_payment_entry, system_user=None, mode_of_payment=None):
     si_name = mswipe_payment_entry.sales_invoice
     if not si_name:
         frappe.throw(_("Mswipe Payment Entry has no linked Sales Invoice"))
@@ -298,28 +299,39 @@ def create_payment_entry_from_mswipe(mswipe_payment_entry):
     si = frappe.get_doc("Sales Invoice", si_name)
     company = si.company
 
+    mop = mode_of_payment or "Mswipe"
     mop_account = frappe.db.get_value(
         "Mode of Payment Account",
-        {"parent": "Mswipe", "company": company},
+        {"parent": mop, "company": company},
         "default_account",
     )
     if not mop_account:
         frappe.throw(
-            _("Configure default account for 'Mswipe' Mode of Payment for company {0}").format(company)
+            _("Configure default account for '{0}' Mode of Payment for company {1}").format(mop, company)
         )
 
     paid_from = frappe.get_cached_value("Company", company, "default_receivable_account")
+    company_currency = frappe.get_cached_value("Company", company, "default_currency") or "INR"
+    paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
+    paid_to_currency = frappe.db.get_value("Account", mop_account, "account_currency") or company_currency
 
+    effective_user = system_user or "Administrator"
     pe = frappe.new_doc("Payment Entry")
     pe.payment_type = "Receive"
     pe.party_type = "Customer"
     pe.party = si.customer
     pe.company = company
-    pe.mode_of_payment = "Mswipe"
+    pe.mode_of_payment = mop
     pe.paid_from = paid_from
     pe.paid_to = mop_account
+    pe.paid_from_account_currency = paid_from_currency
+    pe.paid_to_account_currency = paid_to_currency
+    pe.source_exchange_rate = 1.0
+    pe.target_exchange_rate = 1.0
     pe.paid_amount = mswipe_payment_entry.amount
     pe.received_amount = mswipe_payment_entry.amount
+    pe.base_paid_amount = float(mswipe_payment_entry.amount)
+    pe.base_received_amount = float(mswipe_payment_entry.amount)
     pe.reference_no = mswipe_payment_entry.mswipe_txn_id or mswipe_payment_entry.mswipe_order_id
     pe.reference_date = frappe.utils.today()
     pe.append(
@@ -335,6 +347,7 @@ def create_payment_entry_from_mswipe(mswipe_payment_entry):
     if frappe.db.has_column("Payment Entry", "custom_mswipe_order_id"):
         pe.custom_mswipe_order_id = mswipe_payment_entry.mswipe_order_id
 
+    pe.owner = effective_user
     pe.flags.ignore_permissions = True
     pe.flags.ignore_validate = True
     pe.insert()
