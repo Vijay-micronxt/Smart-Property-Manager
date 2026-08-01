@@ -357,11 +357,16 @@ def create_sales_invoice_from_order(order_name):
             so.submit()
             so_name = so.name
 
-    existing_si = frappe.db.get_value(
-        "Sales Invoice", {"sales_order": so_name, "docstatus": ["!=", 2]}, "name"
+    # Sales Invoice has no top-level sales_order field; the link is in the items child table
+    result = frappe.db.sql(
+        """SELECT sii.parent FROM `tabSales Invoice Item` sii
+           JOIN `tabSales Invoice` si ON si.name = sii.parent
+           WHERE sii.sales_order = %s AND si.docstatus != 2
+           LIMIT 1""",
+        so_name,
     )
-    if existing_si:
-        return existing_si
+    if result:
+        return result[0][0]
 
     from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
     si_doc = frappe.get_doc(make_sales_invoice(so_name))
