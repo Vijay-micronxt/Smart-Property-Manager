@@ -20,7 +20,7 @@ class RazorpayGateway:
         self.key_secret = settings.get_password("api_secret") if settings.api_secret else None
         self.webhook_secret = settings.get_password("webhook_secret") if getattr(settings, "webhook_secret", None) else None
         self.system_user = settings.system_user
-        self.mode_of_payment = settings.mode_of_payment or "Razorpay"
+        self.mode_of_payment = getattr(settings, "mode_of_payment", None) or "Razorpay"
         self.base_url = "https://api.razorpay.com/v1"
 
         if not self.key_id or not self.key_secret:
