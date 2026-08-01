@@ -8,14 +8,10 @@ unconditionally so the settings page behaves exactly like Razorpay Settings
 and Paytm Settings.
 """
 
-# Stub — superseded by force_mswipe_settings_is_single_v3.py
+import frappe
+
 
 def execute():
-    pass
-
-
-def _execute_original():
-    import frappe
     # 1. Detect the actual column name — old Frappe uses 'issingle', new uses 'is_single'
     columns = {row["Field"] for row in frappe.db.sql("SHOW COLUMNS FROM `tabDocType`", as_dict=True)}
     if "is_single" in columns:

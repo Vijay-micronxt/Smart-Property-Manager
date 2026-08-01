@@ -1,3 +1,4 @@
 property_core.property_core.patches.migrate_mswipe_settings_to_single
 property_core.property_core.patches.force_mswipe_settings_is_single
 property_core.property_core.patches.force_mswipe_settings_is_single_v2
+property_core.property_core.patches.force_mswipe_settings_is_single_v3
