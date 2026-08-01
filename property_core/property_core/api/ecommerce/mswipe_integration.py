@@ -349,7 +349,6 @@ def create_payment_entry_from_mswipe(mswipe_payment_entry, system_user=None, mod
 
     pe.owner = effective_user
     pe.flags.ignore_permissions = True
-    pe.flags.ignore_validate = True
     pe.insert()
     pe.submit()
 

@@ -446,7 +446,6 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None,
 
     pe.owner = effective_user
     pe.flags.ignore_permissions = True
-    pe.flags.ignore_validate = True
     pe.insert()
     pe.submit()
 

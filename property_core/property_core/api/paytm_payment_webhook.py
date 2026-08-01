@@ -131,7 +131,6 @@ def _build_payment_entry(customer, amount, txn_id, order_id, settings, si_name=N
 
     pe.owner = effective_user
     pe.flags.ignore_permissions = True
-    pe.flags.ignore_validate = True
     pe.insert()
     pe.submit()
     return pe.name
