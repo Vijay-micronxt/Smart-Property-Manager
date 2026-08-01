@@ -186,7 +186,7 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
             )
             if original_order_id:
                 try:
-                    si_name = create_sales_invoice_from_order(original_order_id)
+                    si_name = create_sales_invoice_from_order(original_order_id, system_user=gateway.system_user)
                     rpe.db_set("sales_invoice", si_name)
                     rpe.reload()
                 except Exception:
@@ -204,7 +204,7 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
 
         if not rpe.payment_entry and rpe.sales_invoice:
             try:
-                create_payment_entry_from_razorpay(rpe)
+                create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user)
                 pe_name = rpe.payment_entry
             except Exception:
                 pe_error = frappe.get_traceback()
@@ -285,7 +285,7 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
                         "sales_invoice": rpe.sales_invoice,
                     },
                 }
-            create_payment_entry_from_razorpay(rpe)
+            create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user)
             return {
                 "status": 200,
                 "is_duplicate": False,
@@ -300,7 +300,7 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
                 },
             }
 
-        si_name = create_sales_invoice_from_order(original_order_id)
+        si_name = create_sales_invoice_from_order(original_order_id, system_user=gateway.system_user)
         order_doc = frappe.get_doc(_get_doctype(original_order_id), original_order_id)
 
         rpe = frappe.new_doc("Razorpay Payment Entry")
@@ -316,7 +316,7 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
         rpe.razorpay_response = json.dumps(payment)
         rpe.insert(ignore_permissions=True)
 
-        create_payment_entry_from_razorpay(rpe)
+        create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user)
 
         return {
             "status": 200,
@@ -338,10 +338,12 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
 
 # ─── Shared (non-whitelisted) helpers ─────────────────────────────────────────
 
-def create_sales_invoice_from_order(order_name):
+def create_sales_invoice_from_order(order_name, system_user=None):
     """Gateway-agnostic. Imported by mswipe_webhooks too."""
     doctype = _get_doctype(order_name)
     so_name = order_name
+    effective_user = system_user or "Administrator"
+    prev_user = frappe.session.user
 
     if doctype == "Quotation":
         existing_so = frappe.db.get_value(
@@ -351,11 +353,14 @@ def create_sales_invoice_from_order(order_name):
             so_name = existing_so
         else:
             from erpnext.selling.doctype.quotation.quotation import make_sales_order
-            so = frappe.get_doc(make_sales_order(order_name))
-            so.flags.ignore_permissions = True
-            so.insert()
-            so.submit()
-            so_name = so.name
+            try:
+                frappe.set_user(effective_user)
+                so = frappe.get_doc(make_sales_order(order_name))
+                so.insert()
+                so.submit()
+                so_name = so.name
+            finally:
+                frappe.set_user(prev_user)
 
     # Sales Invoice has no top-level sales_order field; the link is in the items child table
     result = frappe.db.sql(
@@ -369,23 +374,22 @@ def create_sales_invoice_from_order(order_name):
         return result[0][0]
 
     from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
-    si_doc = frappe.get_doc(make_sales_invoice(so_name))
-    si_doc.flags.ignore_permissions = True
     try:
-        gateway = RazorpayGateway()
-        si_doc.owner = gateway.system_user or frappe.session.user
-    except Exception:
-        si_doc.owner = frappe.session.user
-    si_doc.insert()
-    si_doc.submit()
+        frappe.set_user(effective_user)
+        si_doc = frappe.get_doc(make_sales_invoice(so_name))
+        si_doc.insert()
+        si_doc.submit()
+        si_name = si_doc.name
+    finally:
+        frappe.set_user(prev_user)
 
     if frappe.db.has_column("Sales Order", "custom_link_sales_invoice"):
-        frappe.db.set_value("Sales Order", so_name, "custom_link_sales_invoice", si_doc.name)
+        frappe.db.set_value("Sales Order", so_name, "custom_link_sales_invoice", si_name)
 
-    return si_doc.name
+    return si_name
 
 
-def create_payment_entry_from_razorpay(razorpay_payment_entry):
+def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None):
     si_name = razorpay_payment_entry.sales_invoice
     if not si_name:
         frappe.throw(_("Razorpay Payment Entry has no linked Sales Invoice"))
@@ -405,44 +409,43 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry):
 
     paid_from = frappe.get_cached_value("Company", company, "default_receivable_account")
 
-    pe = frappe.new_doc("Payment Entry")
-    pe.payment_type = "Receive"
-    pe.party_type = "Customer"
-    pe.party = si.customer
-    pe.company = company
-    pe.mode_of_payment = "Razorpay"
-    pe.paid_from = paid_from
-    pe.paid_to = mop_account
-    pe.paid_amount = razorpay_payment_entry.amount
-    pe.received_amount = razorpay_payment_entry.amount
-    pe.reference_no = (
-        razorpay_payment_entry.razorpay_payment_id
-        or razorpay_payment_entry.razorpay_order_id
-    )
-    pe.reference_date = frappe.utils.today()
-    pe.append(
-        "references",
-        {
-            "reference_doctype": "Sales Invoice",
-            "reference_name": si_name,
-            "allocated_amount": razorpay_payment_entry.amount,
-        },
-    )
-    if frappe.db.has_column("Payment Entry", "custom_razorpay_payment_id"):
-        pe.custom_razorpay_payment_id = razorpay_payment_entry.razorpay_payment_id
-    if frappe.db.has_column("Payment Entry", "custom_razorpay_order_id"):
-        pe.custom_razorpay_order_id = razorpay_payment_entry.razorpay_order_id
-
-    pe.flags.ignore_permissions = True
-    pe.flags.ignore_validate = True
-    pe.insert()
-    pe.submit()
-
+    effective_user = system_user or "Administrator"
+    prev_user = frappe.session.user
     try:
-        gateway = RazorpayGateway()
-        frappe.db.set_value("Payment Entry", pe.name, "owner", gateway.system_user)
-    except Exception:
-        pass
+        frappe.set_user(effective_user)
+        pe = frappe.new_doc("Payment Entry")
+        pe.payment_type = "Receive"
+        pe.party_type = "Customer"
+        pe.party = si.customer
+        pe.company = company
+        pe.mode_of_payment = "Razorpay"
+        pe.paid_from = paid_from
+        pe.paid_to = mop_account
+        pe.paid_amount = razorpay_payment_entry.amount
+        pe.received_amount = razorpay_payment_entry.amount
+        pe.reference_no = (
+            razorpay_payment_entry.razorpay_payment_id
+            or razorpay_payment_entry.razorpay_order_id
+        )
+        pe.reference_date = frappe.utils.today()
+        pe.append(
+            "references",
+            {
+                "reference_doctype": "Sales Invoice",
+                "reference_name": si_name,
+                "allocated_amount": razorpay_payment_entry.amount,
+            },
+        )
+        if frappe.db.has_column("Payment Entry", "custom_razorpay_payment_id"):
+            pe.custom_razorpay_payment_id = razorpay_payment_entry.razorpay_payment_id
+        if frappe.db.has_column("Payment Entry", "custom_razorpay_order_id"):
+            pe.custom_razorpay_order_id = razorpay_payment_entry.razorpay_order_id
+
+        pe.flags.ignore_validate = True
+        pe.insert()
+        pe.submit()
+    finally:
+        frappe.set_user(prev_user)
 
     razorpay_payment_entry.db_set("payment_entry", pe.name)
     razorpay_payment_entry.db_set("status", "COMPLETED")

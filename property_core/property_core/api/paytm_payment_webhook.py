@@ -64,7 +64,7 @@ def _confirm_order_status(merchant_id, merchant_key, order_id, base_url):
 
 # ─── Payment Entry builder ────────────────────────────────────────────────────
 
-def _build_payment_entry(customer, amount, txn_id, order_id, settings, si_name=None):
+def _build_payment_entry(customer, amount, txn_id, order_id, settings, si_name=None, system_user=None):
     payment_account = settings.payment_account
     if not payment_account:
         frappe.throw(_("Paytm Settings: payment_account is required"))
@@ -73,56 +73,61 @@ def _build_payment_entry(customer, amount, txn_id, order_id, settings, si_name=N
     company = frappe.db.get_value("Account", payment_account, "company")
     paid_from = frappe.get_cached_value("Company", company, "default_receivable_account")
 
-    pe = frappe.new_doc("Payment Entry")
-    pe.payment_type = "Receive"
-    pe.party_type = "Customer"
-    pe.party = customer
-    pe.company = company
-    pe.mode_of_payment = mode_of_payment
-    pe.paid_from = paid_from
-    pe.paid_to = payment_account
-    pe.paid_amount = float(amount)
-    pe.received_amount = float(amount)
-    pe.reference_no = txn_id
-    pe.reference_date = frappe.utils.today()
-    pe.remarks = f"Paytm order: {order_id}"
+    effective_user = system_user or "Administrator"
+    prev_user = frappe.session.user
+    try:
+        frappe.set_user(effective_user)
+        pe = frappe.new_doc("Payment Entry")
+        pe.payment_type = "Receive"
+        pe.party_type = "Customer"
+        pe.party = customer
+        pe.company = company
+        pe.mode_of_payment = mode_of_payment
+        pe.paid_from = paid_from
+        pe.paid_to = payment_account
+        pe.paid_amount = float(amount)
+        pe.received_amount = float(amount)
+        pe.reference_no = txn_id
+        pe.reference_date = frappe.utils.today()
+        pe.remarks = f"Paytm order: {order_id}"
 
-    if si_name:
-        pe.append(
-            "references",
-            {
-                "reference_doctype": "Sales Invoice",
-                "reference_name": si_name,
-                "allocated_amount": float(amount),
-            },
-        )
-    else:
-        # Allocate across outstanding invoices oldest-first
-        invoices = frappe.get_all(
-            "Sales Invoice",
-            filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]},
-            fields=["name", "outstanding_amount"],
-            order_by="posting_date asc",
-        )
-        remaining = float(amount)
-        for inv in invoices:
-            if remaining <= 0:
-                break
-            alloc = min(remaining, float(inv.outstanding_amount))
+        if si_name:
             pe.append(
                 "references",
                 {
                     "reference_doctype": "Sales Invoice",
-                    "reference_name": inv.name,
-                    "allocated_amount": alloc,
+                    "reference_name": si_name,
+                    "allocated_amount": float(amount),
                 },
             )
-            remaining -= alloc
+        else:
+            # Allocate across outstanding invoices oldest-first
+            invoices = frappe.get_all(
+                "Sales Invoice",
+                filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]},
+                fields=["name", "outstanding_amount"],
+                order_by="posting_date asc",
+            )
+            remaining = float(amount)
+            for inv in invoices:
+                if remaining <= 0:
+                    break
+                alloc = min(remaining, float(inv.outstanding_amount))
+                pe.append(
+                    "references",
+                    {
+                        "reference_doctype": "Sales Invoice",
+                        "reference_name": inv.name,
+                        "allocated_amount": alloc,
+                    },
+                )
+                remaining -= alloc
 
-    pe.flags.ignore_permissions = True
-    pe.flags.ignore_validate = True
-    pe.insert()
-    pe.submit()
+        pe.flags.ignore_validate = True
+        pe.insert()
+        pe.submit()
+    finally:
+        frappe.set_user(prev_user)
     return pe.name
 
 
@@ -130,13 +135,15 @@ def _build_payment_entry(customer, amount, txn_id, order_id, settings, si_name=N
 
 def _handle_dealer_dues(cached, txn_amount, txn_id, order_id, settings):
     customer = cached["customer"]
-    pe_name = _build_payment_entry(customer, txn_amount, txn_id, order_id, settings)
+    system_user = getattr(settings, "system_user", None) or "Administrator"
+    pe_name = _build_payment_entry(customer, txn_amount, txn_id, order_id, settings, system_user=system_user)
     return {"payment_entry": pe_name}
 
 
 def _handle_ecommerce(cached, txn_amount, txn_id, order_id, settings):
     so_name = cached["so_name"]
     customer = cached.get("customer")
+    system_user = getattr(settings, "system_user", None) or "Administrator"
 
     # Idempotency: check if SI already exists for this SO
     existing_si = frappe.db.sql(
@@ -152,17 +159,21 @@ def _handle_ecommerce(cached, txn_amount, txn_id, order_id, settings):
 
     if not si_name:
         from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
-        si_doc = frappe.get_doc(make_sales_invoice(so_name))
-        si_doc.flags.ignore_permissions = True
-        si_doc.insert()
-        si_doc.submit()
-        si_name = si_doc.name
-        customer = customer or si_doc.customer
+        prev_user = frappe.session.user
+        try:
+            frappe.set_user(system_user)
+            si_doc = frappe.get_doc(make_sales_invoice(so_name))
+            si_doc.insert()
+            si_doc.submit()
+            si_name = si_doc.name
+            customer = customer or si_doc.customer
+        finally:
+            frappe.set_user(prev_user)
 
     if not customer:
         customer = frappe.db.get_value("Sales Invoice", si_name, "customer")
 
-    pe_name = _build_payment_entry(customer, txn_amount, txn_id, order_id, settings, si_name=si_name)
+    pe_name = _build_payment_entry(customer, txn_amount, txn_id, order_id, settings, si_name=si_name, system_user=system_user)
     return {"sales_invoice": si_name, "payment_entry": pe_name}
 
 
