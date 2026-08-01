@@ -8,7 +8,8 @@
   "merchant_key",
   "payment_account",
   "mode_of_payment",
-  "staging"
+  "staging",
+  "system_user"
  ],
  "fields": [
   {
@@ -44,11 +45,18 @@
    "fieldtype": "Check",
    "label": "Staging / Test Mode",
    "description": "Enable to route all API calls to Paytm's staging environment. Disable in production."
+  },
+  {
+   "fieldname": "system_user",
+   "fieldtype": "Link",
+   "label": "System User",
+   "options": "User",
+   "description": "ERPNext user under whose name Sales Invoices and Payment Entries will be created. Must have create permission on both doctypes."
   }
  ],
  "is_single": 1,
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-08-02 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Paytm Settings",
