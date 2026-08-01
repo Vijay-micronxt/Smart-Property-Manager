@@ -12,12 +12,10 @@ import frappe
 
 
 def execute():
-    # 1. Force is_single on the doctype metadata row
-    frappe.db.sql(
-        "UPDATE `tabDocType` SET is_single = 1 WHERE `name` = 'Mswipe Settings'"
-    )
+    # 1. Force is_single via Frappe's ORM (handles column name for any Frappe version)
+    frappe.db.set_value("DocType", "Mswipe Settings", "is_single", 1, update_modified=False)
 
-    # 2. Migrate any field data from the old list record into tabSingles
+    # 2. Migrate field data from the old list record into tabSingles
     if frappe.db.table_exists("Mswipe Settings"):
         rows = frappe.db.sql(
             "SELECT * FROM `tabMswipe Settings` ORDER BY creation LIMIT 1",
@@ -38,5 +36,5 @@ def execute():
 
     frappe.db.commit()
 
-    # 3. Clear the metadata cache for this doctype so the desk router picks up is_single
+    # 3. Clear the metadata cache so the desk router picks up is_single immediately
     frappe.clear_cache(doctype="Mswipe Settings")
