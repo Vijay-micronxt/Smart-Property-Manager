@@ -74,60 +74,57 @@ def _build_payment_entry(customer, amount, txn_id, order_id, settings, si_name=N
     paid_from = frappe.get_cached_value("Company", company, "default_receivable_account")
 
     effective_user = system_user or "Administrator"
-    prev_user = frappe.session.user
-    try:
-        frappe.set_user(effective_user)
-        pe = frappe.new_doc("Payment Entry")
-        pe.payment_type = "Receive"
-        pe.party_type = "Customer"
-        pe.party = customer
-        pe.company = company
-        pe.mode_of_payment = mode_of_payment
-        pe.paid_from = paid_from
-        pe.paid_to = payment_account
-        pe.paid_amount = float(amount)
-        pe.received_amount = float(amount)
-        pe.reference_no = txn_id
-        pe.reference_date = frappe.utils.today()
-        pe.remarks = f"Paytm order: {order_id}"
+    pe = frappe.new_doc("Payment Entry")
+    pe.payment_type = "Receive"
+    pe.party_type = "Customer"
+    pe.party = customer
+    pe.company = company
+    pe.mode_of_payment = mode_of_payment
+    pe.paid_from = paid_from
+    pe.paid_to = payment_account
+    pe.paid_amount = float(amount)
+    pe.received_amount = float(amount)
+    pe.reference_no = txn_id
+    pe.reference_date = frappe.utils.today()
+    pe.remarks = f"Paytm order: {order_id}"
 
-        if si_name:
+    if si_name:
+        pe.append(
+            "references",
+            {
+                "reference_doctype": "Sales Invoice",
+                "reference_name": si_name,
+                "allocated_amount": float(amount),
+            },
+        )
+    else:
+        # Allocate across outstanding invoices oldest-first
+        invoices = frappe.get_all(
+            "Sales Invoice",
+            filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]},
+            fields=["name", "outstanding_amount"],
+            order_by="posting_date asc",
+        )
+        remaining = float(amount)
+        for inv in invoices:
+            if remaining <= 0:
+                break
+            alloc = min(remaining, float(inv.outstanding_amount))
             pe.append(
                 "references",
                 {
                     "reference_doctype": "Sales Invoice",
-                    "reference_name": si_name,
-                    "allocated_amount": float(amount),
+                    "reference_name": inv.name,
+                    "allocated_amount": alloc,
                 },
             )
-        else:
-            # Allocate across outstanding invoices oldest-first
-            invoices = frappe.get_all(
-                "Sales Invoice",
-                filters={"customer": customer, "docstatus": 1, "outstanding_amount": [">", 0]},
-                fields=["name", "outstanding_amount"],
-                order_by="posting_date asc",
-            )
-            remaining = float(amount)
-            for inv in invoices:
-                if remaining <= 0:
-                    break
-                alloc = min(remaining, float(inv.outstanding_amount))
-                pe.append(
-                    "references",
-                    {
-                        "reference_doctype": "Sales Invoice",
-                        "reference_name": inv.name,
-                        "allocated_amount": alloc,
-                    },
-                )
-                remaining -= alloc
+            remaining -= alloc
 
-        pe.flags.ignore_validate = True
-        pe.insert()
-        pe.submit()
-    finally:
-        frappe.set_user(prev_user)
+    pe.owner = effective_user
+    pe.flags.ignore_permissions = True
+    pe.flags.ignore_validate = True
+    pe.insert()
+    pe.submit()
     return pe.name
 
 
@@ -159,16 +156,13 @@ def _handle_ecommerce(cached, txn_amount, txn_id, order_id, settings):
 
     if not si_name:
         from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
-        prev_user = frappe.session.user
-        try:
-            frappe.set_user(system_user)
-            si_doc = frappe.get_doc(make_sales_invoice(so_name))
-            si_doc.insert()
-            si_doc.submit()
-            si_name = si_doc.name
-            customer = customer or si_doc.customer
-        finally:
-            frappe.set_user(prev_user)
+        si_doc = frappe.get_doc(make_sales_invoice(so_name, ignore_permissions=True))
+        si_doc.flags.ignore_permissions = True
+        si_doc.owner = system_user
+        si_doc.insert()
+        si_doc.submit()
+        si_name = si_doc.name
+        customer = customer or si_doc.customer
 
     if not customer:
         customer = frappe.db.get_value("Sales Invoice", si_name, "customer")
