@@ -1,0 +1,1 @@
+property_core.property_core.patches.migrate_mswipe_settings_to_single
