@@ -123,7 +123,7 @@ def handle_mswipe_callback():
             )
 
         # Create SI if not exists
-        si_name = create_sales_invoice_from_order(order_id)
+        si_name = create_sales_invoice_from_order(order_id, system_user=gateway.system_user)
 
         # Update Mswipe Payment Entry
         customer = frappe.db.get_value("Sales Invoice", si_name, "customer")
@@ -139,7 +139,11 @@ def handle_mswipe_callback():
         mswipe_entry.save(ignore_permissions=True)
 
         # Create ERPNext Payment Entry
-        create_payment_entry_from_mswipe(mswipe_entry)
+        create_payment_entry_from_mswipe(
+            mswipe_entry,
+            system_user=gateway.system_user,
+            mode_of_payment=gateway.mode_of_payment,
+        )
 
         # Single commit for the entire confirm-and-credit sequence
         frappe.db.commit()
