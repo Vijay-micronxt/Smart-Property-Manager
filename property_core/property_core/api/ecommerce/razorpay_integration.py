@@ -20,6 +20,7 @@ class RazorpayGateway:
         self.key_secret = settings.get_password("api_secret") if settings.api_secret else None
         self.webhook_secret = settings.get_password("webhook_secret") if getattr(settings, "webhook_secret", None) else None
         self.system_user = settings.system_user
+        self.mode_of_payment = settings.mode_of_payment or "Razorpay"
         self.base_url = "https://api.razorpay.com/v1"
 
         if not self.key_id or not self.key_secret:
@@ -204,7 +205,7 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
 
         if not rpe.payment_entry and rpe.sales_invoice:
             try:
-                create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user)
+                create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user, mode_of_payment=gateway.mode_of_payment)
                 pe_name = rpe.payment_entry
             except Exception:
                 pe_error = frappe.get_traceback()
@@ -285,7 +286,7 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
                         "sales_invoice": rpe.sales_invoice,
                     },
                 }
-            create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user)
+            create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user, mode_of_payment=gateway.mode_of_payment)
             return {
                 "status": 200,
                 "is_duplicate": False,
@@ -316,7 +317,7 @@ def capture_payment(order_id, payment_token, store_id=None, party=None,
         rpe.razorpay_response = json.dumps(payment)
         rpe.insert(ignore_permissions=True)
 
-        create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user)
+        create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user, mode_of_payment=gateway.mode_of_payment)
 
         return {
             "status": 200,
@@ -384,7 +385,7 @@ def create_sales_invoice_from_order(order_name, system_user=None):
     return si_name
 
 
-def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None):
+def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None, mode_of_payment=None):
     si_name = razorpay_payment_entry.sales_invoice
     if not si_name:
         frappe.throw(_("Razorpay Payment Entry has no linked Sales Invoice"))
@@ -392,17 +393,21 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None)
     si = frappe.get_doc("Sales Invoice", si_name)
     company = si.company
 
+    mop = mode_of_payment or "Razorpay"
     mop_account = frappe.db.get_value(
         "Mode of Payment Account",
-        {"parent": "Razorpay", "company": company},
+        {"parent": mop, "company": company},
         "default_account",
     )
     if not mop_account:
         frappe.throw(
-            _("Configure default account for 'Razorpay' Mode of Payment for company {0}").format(company)
+            _("Configure default account for '{0}' Mode of Payment for company {1}").format(mop, company)
         )
 
     paid_from = frappe.get_cached_value("Company", company, "default_receivable_account")
+    company_currency = frappe.get_cached_value("Company", company, "default_currency") or "INR"
+    paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
+    paid_to_currency = frappe.db.get_value("Account", mop_account, "account_currency") or company_currency
 
     effective_user = system_user or "Administrator"
     pe = frappe.new_doc("Payment Entry")
@@ -410,11 +415,17 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None)
     pe.party_type = "Customer"
     pe.party = si.customer
     pe.company = company
-    pe.mode_of_payment = "Razorpay"
+    pe.mode_of_payment = mop
     pe.paid_from = paid_from
     pe.paid_to = mop_account
+    pe.paid_from_account_currency = paid_from_currency
+    pe.paid_to_account_currency = paid_to_currency
+    pe.source_exchange_rate = 1.0
+    pe.target_exchange_rate = 1.0
     pe.paid_amount = razorpay_payment_entry.amount
     pe.received_amount = razorpay_payment_entry.amount
+    pe.paid_amount_in_company_currency = float(razorpay_payment_entry.amount)
+    pe.received_amount_in_company_currency = float(razorpay_payment_entry.amount)
     pe.reference_no = (
         razorpay_payment_entry.razorpay_payment_id
         or razorpay_payment_entry.razorpay_order_id
