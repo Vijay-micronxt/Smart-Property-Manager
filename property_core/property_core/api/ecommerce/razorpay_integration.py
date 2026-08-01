@@ -405,6 +405,9 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None,
         )
 
     paid_from = frappe.get_cached_value("Company", company, "default_receivable_account")
+    company_currency = frappe.get_cached_value("Company", company, "default_currency") or "INR"
+    paid_from_currency = frappe.db.get_value("Account", paid_from, "account_currency") or company_currency
+    paid_to_currency = frappe.db.get_value("Account", mop_account, "account_currency") or company_currency
 
     effective_user = system_user or "Administrator"
     pe = frappe.new_doc("Payment Entry")
@@ -415,8 +418,14 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None,
     pe.mode_of_payment = mop
     pe.paid_from = paid_from
     pe.paid_to = mop_account
+    pe.paid_from_account_currency = paid_from_currency
+    pe.paid_to_account_currency = paid_to_currency
+    pe.source_exchange_rate = 1.0
+    pe.target_exchange_rate = 1.0
     pe.paid_amount = razorpay_payment_entry.amount
     pe.received_amount = razorpay_payment_entry.amount
+    pe.paid_amount_in_company_currency = float(razorpay_payment_entry.amount)
+    pe.received_amount_in_company_currency = float(razorpay_payment_entry.amount)
     pe.reference_no = (
         razorpay_payment_entry.razorpay_payment_id
         or razorpay_payment_entry.razorpay_order_id
