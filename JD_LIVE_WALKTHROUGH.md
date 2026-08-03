@@ -102,7 +102,16 @@ On the Property Unit set three fields:
 
 Every night the maintenance job walks each enrolled, unpaused unit, works out which periods have come due since the start date, skips any period already billed, and raises **one submitted Sales Invoice per new period**. Each invoice carries `property_unit` and `maintenance_period` (e.g. `2026-05`) — that period stamp is what prevents double billing, so re-running is always safe.
 
-Because `UNIT-0001` is back-dated to May, the next run should produce three invoices: **₹500 (2026-05) + ₹500 (2026-06) + ₹1,200 (2026-07)**. Check `TP-Test-Project → UNIT-0001` tomorrow morning.
+Because `UNIT-0001` is back-dated to 2026-05-03, `months_elapsed` works out to 4, so the next run should produce **four** invoices — months 1–3 from the schedule rows plus month 4 from the repeat block:
+
+| Period | Due | Amount | From |
+|---|---|---|---|
+| 2026-05 | 03 May | ₹500 | row month 1 |
+| 2026-06 | 03 Jun | ₹500 | row month 2 |
+| 2026-07 | 03 Jul | ₹1,200 | row month 3 (Annual Water) |
+| 2026-08 | 03 Aug | ₹500 | repeat block |
+
+**Total ₹2,700.** Check `TP-Test-Project → UNIT-0001` tomorrow morning.
 
 > If you'd rather not have those three appear, set Maintenance Start Date back to today's date before midnight, or tick Pause Maintenance Billing.
 
