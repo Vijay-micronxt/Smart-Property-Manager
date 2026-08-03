@@ -18,6 +18,11 @@
     "amenities",
     "section_documents",
     "property_documents",
+    "section_layout",
+    "layout_image",
+    "layout_world_width",
+    "layout_world_height",
+    "layout_annotations",
     "section_geo",
     "geo_location"
   ],
@@ -106,6 +111,39 @@
       "fieldtype": "Table",
       "label": "Documents",
       "options": "Property Document"
+    },
+    {
+      "fieldname": "section_layout",
+      "fieldtype": "Section Break",
+      "label": "Site Layout",
+      "collapsible": 1,
+      "collapsed": 1
+    },
+    {
+      "fieldname": "layout_image",
+      "fieldtype": "Attach Image",
+      "label": "Layout Blueprint Image",
+      "description": "Master plan / blueprint image the unit shapes are drawn over. Use the Layout Editor button to place units."
+    },
+    {
+      "fieldname": "layout_world_width",
+      "fieldtype": "Int",
+      "label": "Layout World Width",
+      "default": "3000",
+      "hidden": 1
+    },
+    {
+      "fieldname": "layout_world_height",
+      "fieldtype": "Int",
+      "label": "Layout World Height",
+      "default": "2000",
+      "hidden": 1
+    },
+    {
+      "fieldname": "layout_annotations",
+      "fieldtype": "Long Text",
+      "label": "Layout Annotations (JSON)",
+      "hidden": 1
     },
     {
       "fieldname": "section_geo",
