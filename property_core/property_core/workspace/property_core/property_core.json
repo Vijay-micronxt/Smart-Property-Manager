@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[]",
+ "content": "[{\"id\": \"3f4dy4SARC\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"6LJDN42UbT\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Property\", \"col\": 4}}, {\"id\": \"4iIVhIekrZ\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Property Booking\", \"col\": 4}}, {\"id\": \"doXjnU3Vlh\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Razorpay Settings\", \"col\": 4}}, {\"id\": \"QcXWILAFh8\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Mswipe Settings\", \"col\": 4}}, {\"id\": \"WHbyFYj31r\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Paytm Settings\", \"col\": 4}}, {\"id\": \"vsAllJ78PD\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"6o9aryw9bA\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters & Documents</b></span>\", \"col\": 12}}, {\"id\": \"AmxgMXumLs\", \"type\": \"card\", \"data\": {\"card_name\": \"Property Management\", \"col\": 4}}, {\"id\": \"vwhyxyBSAq\", \"type\": \"card\", \"data\": {\"card_name\": \"Settings\", \"col\": 4}}, {\"id\": \"Ofs13CRHnD\", \"type\": \"card\", \"data\": {\"card_name\": \"Payment Transactions\", \"col\": 4}}]",
  "developer_mode_only": 0,
  "disable_user_customization": 0,
  "doctype": "Workspace",
@@ -8,6 +8,14 @@
  "is_hidden": 0,
  "label": "Property Core",
  "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Management",
+   "link_count": 8,
+   "onboard": 0,
+   "type": "Card Break"
+  },
   {
    "hidden": 0,
    "is_query_report": 0,
@@ -97,10 +105,11 @@
    "type": "Link"
   },
   {
+   "hidden": 0,
    "label": "Settings",
-   "type": "Card Break",
+   "link_count": 4,
    "name": "pc-break-settings",
-   "hidden": 0
+   "type": "Card Break"
   },
   {
    "hidden": 0,
@@ -147,10 +156,11 @@
    "type": "Link"
   },
   {
+   "hidden": 0,
    "label": "Payment Transactions",
-   "type": "Card Break",
+   "link_count": 3,
    "name": "pc-break-payment-txns",
-   "hidden": 0
+   "type": "Card Break"
   },
   {
    "hidden": 0,
