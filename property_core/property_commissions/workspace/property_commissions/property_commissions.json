@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[]",
+ "content": "[{\"id\": \"dsepQQsGuT\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"JGPvjgXCUH\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Commission Entry\", \"col\": 4}}, {\"id\": \"lGj0Uf5H5G\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"cACUujZa07\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters & Documents</b></span>\", \"col\": 12}}, {\"id\": \"KAOizFo6Ej\", \"type\": \"card\", \"data\": {\"card_name\": \"Commissions\", \"col\": 4}}]",
  "developer_mode_only": 0,
  "disable_user_customization": 0,
  "doctype": "Workspace",
@@ -8,6 +8,14 @@
  "is_hidden": 0,
  "label": "Property Commissions",
  "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Commissions",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
   {
    "hidden": 0,
    "is_query_report": 0,

@@ -10,6 +10,15 @@ app_license = "MIT"
 app_include_js = []
 app_include_css = []
 
+add_to_apps_screen = [
+    {
+        "name": "property_core",
+        "logo": "/assets/property_core/images/property-logo.svg",
+        "title": "Smart Property Manager",
+        "route": "/app/property-core",
+    }
+]
+
 doctype_js = {
     # property_core module
     "Property": "public/js/property.js",

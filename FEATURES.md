@@ -1,6 +1,7 @@
 # Smart Property Manager — Feature List
 
-> **Last updated:** 2026-07-23 — Architecture unification: Maintenance Request retired, Work Order now links directly to Issue, new Maintenance Plan Template recurring billing added
+> **Last updated:** 2026-08-04 — Customer Portal API v2 (`property_core.api.portal.*`, 28 endpoints), extensible field registry, Property ↔ ERPNext Project link
+> **2026-07-23:** — Architecture unification: Maintenance Request retired, Work Order now links directly to Issue, new Maintenance Plan Template recurring billing added
 > **2026-07-21:** Phase 2 & 3: property_operations (Maintenance, Work Order, Inspection, Utility) and property_commissions (Rule, Entry, Settlement) fully implemented
 > Update this file whenever a DocType, engine, or workflow is added, changed, or removed.
 
@@ -600,3 +601,49 @@ Added to the Customer form after the `website` field. No ERPNext core modificati
 | Item | Required for invoice line items |
 | Account | Security deposit liability account |
 | Company | All accounting entries |
+| Project | Optional link on Property; fetched down to Unit, Booking, Allocation, Agreement |
+
+---
+
+## Customer Portal API
+
+Full reference with live responses: **CUSTOMER_PORTAL_API.md**.
+
+Base path `/api/method/property_core.api.portal.<module>.<function>`, token or
+session auth, one envelope for every endpoint (`{status, message, data}`). No
+endpoint takes a customer parameter — the session user resolves to one Customer
+and every query is scoped to it; anything the client names (unit, booking,
+invoice, issue) is ownership-checked before it is read.
+
+| Module | Endpoints |
+|---|---|
+| `meta` | `settings` |
+| `profile` | `me`, `update_contact` |
+| `dashboard` | `summary` |
+| `properties` | `my_units`, `unit`, `projects`, `site_map`, `available_units` |
+| `bookings` | `list_bookings`, `booking_details`, `book_unit` |
+| `billing` | `charges`, `maintenance_charges`, `utility_bills`, `rent_history`, `outstanding_dues`, `payments`, `invoice`, `payment_schedule` |
+| `maintenance` | `work_history`, `schedule`, `inspections` |
+| `support` | `issues`, `issue`, `raise_issue`, `add_comment` |
+| `documents` | `list_documents` |
+
+`billing.charges` is the unified feed: booking milestones, maintenance invoices,
+rent invoices and un-invoiced utility bills merged into one type-tagged list with
+a shared `Paid / Overdue / Due Soon / Upcoming` rule.
+
+**Field registry** — payload fields live in `property_core/api/portal/fields.py`,
+not inside queries. Any `custom_*` field on Property, Property Unit, Property
+Booking, Property Allocation, Property Agreement, Issue or Work Order is exposed
+automatically; other fields are one line in `REGISTRY`; another app can extend a
+payload via the `portal_extra_fields` hook. Fields missing on a site are dropped
+rather than raising, and secrets are blocklisted.
+
+**Not included:** payment-gateway "pay now" calls (gateway methods exist for desk
+and webhook flows only) and any document storage of its own — `documents.list_documents`
+indexes what is already attached and returns links, not bytes.
+
+The older `property_core.property_core.api.customer_portal.*` methods (11) still
+work unchanged and are what the bundled `/customer-portal` page calls.
+
+**Auth:** `property_core.api.auth.*` — `login`, `get_token`, `logout`,
+`get_logged_in_user`, `change_password`, `forgot_password` (OTP), `reset_password`.

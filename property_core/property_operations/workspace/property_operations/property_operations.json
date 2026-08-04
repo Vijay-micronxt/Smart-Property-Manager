@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[]",
+ "content": "[{\"id\": \"dNaDQJbB3K\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"7BiACaQ0Xq\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Issue\", \"col\": 4}}, {\"id\": \"rNwap1ie18\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Work Order\", \"col\": 4}}, {\"id\": \"RcvjyP9LRQ\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"cdbLhuoyS0\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters & Documents</b></span>\", \"col\": 12}}, {\"id\": \"JR3A4y2bI7\", \"type\": \"card\", \"data\": {\"card_name\": \"Maintenance & Complaints\", \"col\": 4}}, {\"id\": \"ZzGeQQkTvJ\", \"type\": \"card\", \"data\": {\"card_name\": \"Inspections\", \"col\": 4}}, {\"id\": \"VQthgEfKNP\", \"type\": \"card\", \"data\": {\"card_name\": \"Utilities\", \"col\": 4}}]",
  "developer_mode_only": 0,
  "disable_user_customization": 0,
  "doctype": "Workspace",
@@ -9,10 +9,11 @@
  "label": "Property Operations",
  "links": [
   {
+   "hidden": 0,
    "label": "Maintenance & Complaints",
-   "type": "Card Break",
+   "link_count": 3,
    "name": "po-break-maintenance",
-   "hidden": 0
+   "type": "Card Break"
   },
   {
    "hidden": 0,
@@ -48,10 +49,11 @@
    "type": "Link"
   },
   {
+   "hidden": 0,
    "label": "Inspections",
-   "type": "Card Break",
+   "link_count": 1,
    "name": "po-break-inspections",
-   "hidden": 0
+   "type": "Card Break"
   },
   {
    "hidden": 0,
@@ -65,10 +67,11 @@
    "type": "Link"
   },
   {
+   "hidden": 0,
    "label": "Utilities",
-   "type": "Card Break",
+   "link_count": 2,
    "name": "po-break-utilities",
-   "hidden": 0
+   "type": "Card Break"
   },
   {
    "hidden": 0,

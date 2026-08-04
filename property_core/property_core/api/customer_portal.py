@@ -7,6 +7,8 @@ customer itself -- that resolution is the actual security boundary.
 import frappe
 from frappe.utils import getdate, today, date_diff
 
+from property_core.property_core.api.layout import STATUS_COLORS
+
 
 def _get_customer_for_session():
     user = frappe.session.user
@@ -471,3 +473,152 @@ def get_rent_history(property_unit=None, limit=50):
             log["invoice_details"] = inv or {}
 
     return {"rent_history": logs, "total": len(logs)}
+
+
+
+@frappe.whitelist()
+def site_map():
+    """Layout data for the portal Site Map tab. Includes every Active property
+    that has a layout, plus any property the customer owns a unit/booking in.
+    Other customers' identities are never exposed — only unit statuses."""
+    import json as _json
+
+    customer = _get_customer_for_session()
+
+    property_names = set(
+        frappe.get_all(
+            "Property Unit", filters={"customer": customer}, pluck="property"
+        )
+    )
+    property_names.update(
+        frappe.get_all(
+            "Property Booking",
+            filters={"customer": customer, "docstatus": ["<", 2]},
+            pluck="unit_property",
+        )
+    )
+    property_names.discard(None)
+
+    with_layout = set(
+        frappe.get_all(
+            "Property",
+            filters={"status": "Active", "layout_image": ["!=", ""]},
+            pluck="name",
+        )
+    )
+    property_names.update(with_layout)
+
+    properties = []
+    for prop_name in sorted(property_names):
+        prop = frappe.db.get_value(
+            "Property",
+            prop_name,
+            ["name", "property_name", "layout_image", "layout_world_width", "layout_world_height", "layout_annotations"],
+            as_dict=True,
+        )
+        if not prop:
+            continue
+
+        annotations = []
+        if prop.layout_annotations:
+            try:
+                annotations = _json.loads(prop.layout_annotations)
+            except Exception:
+                annotations = []
+
+        units = frappe.get_all(
+            "Property Unit",
+            filters={"property": prop_name},
+            fields=[
+                "name", "unit_number", "unit_type", "availability_status",
+                "area", "base_price", "customer",
+                "layout_shape", "layout_x", "layout_y", "layout_w", "layout_h",
+                "layout_rotation", "layout_points",
+            ],
+            order_by="unit_number asc",
+        )
+        for unit in units:
+            if unit.layout_points:
+                try:
+                    unit.layout_points = _json.loads(unit.layout_points)
+                except Exception:
+                    unit.layout_points = None
+            unit["mine"] = 1 if unit.customer == customer else 0
+            unit["bookable"] = 1 if unit.availability_status == "Available" else 0
+            del unit["customer"]
+
+        properties.append({
+            "property": {
+                "name": prop.name,
+                "property_name": prop.property_name,
+                "layout_image": prop.layout_image,
+                "world_width": prop.layout_world_width or 3000,
+                "world_height": prop.layout_world_height or 2000,
+                "annotations": annotations,
+            },
+            "units": units,
+        })
+
+    return {"properties": properties, "status_colors": STATUS_COLORS}
+
+
+@frappe.whitelist()
+def book_unit(property_unit, note=None):
+    """Portal booking request: creates a DRAFT Property Booking for staff to
+    verify and submit. All validation server-side; never trusts the client."""
+    customer = _get_customer_for_session()
+
+    unit = frappe.db.get_value(
+        "Property Unit",
+        property_unit,
+        ["name", "property", "unit_number", "availability_status", "base_price"],
+        as_dict=True,
+    )
+    if not unit:
+        frappe.throw(frappe._("Unit not found"))
+    if unit.availability_status != "Available":
+        frappe.throw(frappe._("Unit {0} is not available").format(unit.unit_number))
+
+    active = frappe.db.exists(
+        "Property Booking",
+        {
+            "property_unit": property_unit,
+            "docstatus": ["<", 2],
+            "booking_status": ["!=", "Cancelled"],
+        },
+    )
+    if active:
+        frappe.throw(frappe._("Unit {0} already has an active booking").format(unit.unit_number))
+
+    booking = frappe.get_doc({
+        "doctype": "Property Booking",
+        "customer": customer,
+        "property_unit": property_unit,
+        "booking_date": today(),
+        "booking_status": "Draft",
+        "booking_amount": unit.base_price or 0,
+        "notes": "Requested via customer portal." + (" Customer note: " + note.strip() if note and note.strip() else ""),
+    })
+    booking.insert(ignore_permissions=True)
+
+    managers = frappe.get_all(
+        "Has Role",
+        filters={"role": "Property Manager", "parenttype": "User"},
+        pluck="parent",
+        limit=10,
+    )
+    for user in managers:
+        if not frappe.db.get_value("User", user, "enabled"):
+            continue
+        frappe.get_doc({
+            "doctype": "ToDo",
+            "allocated_to": user,
+            "reference_type": "Property Booking",
+            "reference_name": booking.name,
+            "description": frappe._("Portal booking request: {0} for unit {1} by {2}. Verify and submit.").format(
+                booking.name, unit.unit_number, customer
+            ),
+            "priority": "High",
+        }).insert(ignore_permissions=True)
+
+    return {"ok": 1, "booking": booking.name, "unit": unit.unit_number}

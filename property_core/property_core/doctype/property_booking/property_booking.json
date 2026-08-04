@@ -10,6 +10,7 @@
     "customer",
     "property_unit",
     "unit_property",
+    "project",
     "unit_type",
     "column_break_unit",
     "unit_area",
@@ -54,6 +55,15 @@
       "label": "Property",
       "options": "Property",
       "fetch_from": "property_unit.property",
+      "read_only": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "Project",
+      "options": "Project",
+      "fetch_from": "property_unit.project",
+      "fetch_if_empty": 1,
       "read_only": 1
     },
     {

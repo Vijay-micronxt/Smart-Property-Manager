@@ -1,6 +1,7 @@
 # Smart Property Manager — Use Cases
 
-> **Last updated:** 2026-07-30 — Payment gateway integration: Razorpay order/capture/webhook (UC-34, UC-35), Mswipe order/callback (UC-36, UC-37), Paytm Pay-by-Link WhatsApp dealer dues (UC-38) + ecommerce checkout with partial payment (UC-39, UC-40). Customer report portal APIs: UC-41–UC-47 (maintenance, utility bills, outstanding dues, payment history, unit details, inspection reports, rent history). API authentication enforcement throughout.
+> **Last updated:** 2026-08-04 — Customer Portal API v2 (`property_core.api.portal.*`): UC-48 bootstrap/dashboard, UC-49 unified charge feed, UC-50 maintenance charges, UC-51 maintenance work history + schedule, UC-52 ticket thread, UC-53 portal booking. UC-54 Property ↔ ERPNext Project link. See CUSTOMER_PORTAL_API.md.
+> Previously: 2026-07-30 — Payment gateway integration: Razorpay order/capture/webhook (UC-34, UC-35), Mswipe order/callback (UC-36, UC-37), Paytm Pay-by-Link WhatsApp dealer dues (UC-38) + ecommerce checkout with partial payment (UC-39, UC-40). Customer report portal APIs: UC-41–UC-47 (maintenance, utility bills, outstanding dues, payment history, unit details, inspection reports, rent history). API authentication enforcement throughout.
 > Previously: 2026-07-23 (part 2) — Architecture unification: retired Maintenance Request entirely, Issue is now the single complaint/query entry point (UC-17 revised), Work Order links to Issue directly (UC-18 revised). Added recurring maintenance billing (UC-32, UC-33), ported from JD's proven live pattern.
 > Previously same day — JD BRD gap-closing pass: UC-26 CRM↔Property link, UC-27 Raise Issue (portal API), UC-28 Customer Portal data API, UC-29 Automatic Payment Plan invoicing. Also fixed 12 bugs found while installing/testing all 3 apps (see BUGS_AND_FIXES.md) and closed against JD's BRD (see BRD_GAP_ANALYSIS.md).
 > Previously: 2026-07-21 — Phase 2 & 3: UC-19 Inspection Checklist, UC-20 Utility Billing, UC-21 Commission Rule, UC-22 Commission Entry, UC-23 Commission Settlement
@@ -864,11 +865,101 @@ Customer can pay any amount ≥ ₹25,000.
 
 ---
 
+## UC-48: Customer Portal Bootstrap and Home Screen (Portal API v2)
+
+**Actor:** Customer (portal login)
+**API:** `property_core.api.portal.meta.settings`, `property_core.api.portal.profile.me`, `property_core.api.portal.dashboard.summary`
+
+**Steps:**
+1. Client calls `meta.settings` once at startup.
+2. Client calls `dashboard.summary` for the landing screen.
+
+**Outcome:** `settings` returns currency, status colours, every Select option list (unit status/type, booking status, issue status), charge types and feature flags, so no label or colour is hardcoded in the frontend. `dashboard.summary` returns totals (units, bookings, outstanding, overdue, open issues, open work orders), a per-charge-type breakdown, the single `next_due` charge, and the five most recent bookings, payments, work orders and open issues. One call fills a home screen; every section has a dedicated endpoint for its own tab.
+
+---
+
+## UC-49: Customer Views All Charges in One Feed (Portal API v2)
+
+**Actor:** Customer (portal login)
+**API:** `property_core.api.portal.billing.charges`
+
+**Steps:** Call `charges(property_unit?, charge_type?, status?, limit=200)`.
+
+**Outcome:** Booking milestones, recurring maintenance invoices, rent invoices and un-invoiced utility bills are merged into one list, each row tagged with `charge_type` and carrying the same `amount` / `outstanding` / `due_date` / `status` shape. Status is computed identically for every type: `Paid` when nothing is outstanding, else `Overdue` / `Due Soon` (7 days) / `Upcoming`. Returns `totals` and a `by_type` breakdown alongside the rows, so a Payments tab needs exactly one request.
+
+---
+
+## UC-50: Customer Views Recurring Maintenance Charges (Portal API v2)
+
+**Actor:** Customer (portal login)
+**API:** `property_core.api.portal.billing.maintenance_charges`
+
+**Steps:** Call `maintenance_charges(property_unit?, status?, limit=60)`.
+
+**Outcome:** Returns the Sales Invoices raised by the daily maintenance billing job — identified by the `maintenance_period` stamp — newest period first, with per-row status, `total_due` and `total_billed`. This is the charge side of maintenance; UC-51 is the work side.
+
+---
+
+## UC-51: Customer Sees What Maintenance Work Was Done (Portal API v2)
+
+**Actor:** Customer (portal login)
+**API:** `property_core.api.portal.maintenance.work_history`, `property_core.api.portal.maintenance.schedule`
+
+**Steps:**
+1. Call `work_history(property_unit?, status?, limit=100)` for the work trail.
+2. Call `schedule(property_unit?)` for what is due next.
+
+**Outcome:** `work_history` returns every Work Order on the customer's units — description, scheduled and completed dates, actual cost, notes, and the complaint it came from — plus a summary (completed, open, total cost, counts by status). `schedule` reads the unit's Maintenance Plan Template and returns upcoming scheduled rows and the repeat cycle, with `due_date` derived from `maintenance_start_date + month_no`, and `billed: 1` on periods already invoiced.
+
+---
+
+## UC-52: Customer Tracks and Replies on a Ticket (Portal API v2)
+
+**Actor:** Customer (portal login)
+**API:** `property_core.api.portal.support.issues`, `.issue`, `.raise_issue`, `.add_comment`
+
+**Steps:**
+1. `raise_issue(subject, description?, property_unit?, priority?)` opens the ticket.
+2. `issues(property_unit?, status?, limit=50)` lists them with the Work Orders raised against each.
+3. `issue(issue)` opens one with its full comment thread.
+4. `add_comment(issue, message)` posts the customer's reply.
+
+**Outcome:** A two-way support thread without desk access. The unit, when passed, must belong to the customer; a foreign issue name is rejected with `Issue X does not belong to your account`.
+
+---
+
+## UC-53: Customer Books a Unit From the Portal (Portal API v2)
+
+**Actor:** Customer (portal login)
+**API:** `property_core.api.portal.properties.available_units`, `property_core.api.portal.properties.site_map`, `property_core.api.portal.bookings.book_unit`
+
+**Steps:**
+1. Browse `available_units(property?, unit_type?)` or the map via `site_map(property?)`.
+2. Call `book_unit(property_unit, note?)`.
+
+**Outcome:** A **draft** Property Booking is created with the price read server-side from the unit, and a high-priority ToDo is raised for every enabled Property Manager. The client cannot influence rate or area. Guards run in order: unit exists → status is `Available` → no other live booking on it. On the map, other customers' identities are never exposed — only status and a `mine` flag.
+
+---
+
+## UC-54: Link a Property to an ERPNext Project
+
+**Actor:** Property Manager
+**Trigger:** The development is tracked as a Project (tasks, progress, costing) alongside its Property record.
+
+**Steps:**
+1. Create or open the Project in ERPNext.
+2. Open Property Core → Property → set **Project**.
+3. Save units/bookings under it (or let them fetch on next save).
+
+**Outcome:** `Property.project` flows down as a read-only fetched field on Property Unit, Property Booking, Property Allocation and Property Agreement, and is returned by every portal endpoint that mentions a unit. Bookings created before the field existed resolve their project from the unit at read time. The link is manual by design — no Project is auto-created.
+
+---
+
 ## Future Use Cases (Not Yet Implemented)
 
 | ID | Use Case | Notes |
 |---|---|---|
-| UC-24 | Tenant Portal — web pages for invoices and requests | Data/report APIs implemented (UC-27/28, UC-41–47); customer-facing web page UI still not built |
+| UC-24 | Tenant Portal — web pages for invoices and requests | Full API surface implemented (UC-27/28, UC-41–47 legacy; UC-48–53 `api.portal.*`); a bundled `/customer-portal` page exists, a richer customer-facing UI is still open |
 | UC-25 | Commission report by sales person and period | reporting |
 | UC-30 | WhatsApp/SMS notifications (payment reminders, follow-ups) | explicitly deferred — to be wired via Server Script, not app code |
 | UC-31 | Lead assignment rules (round-robin, auto-apply salesperson) | raised as a feature-flag-gated configuration item, not yet scoped |

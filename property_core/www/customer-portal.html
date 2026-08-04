@@ -1,0 +1,605 @@
+{% extends "templates/base.html" %}
+
+{% block title %}My Property Portal{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block head_include %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/property_core/css/plot_layout.css">
+<style>
+    :root {
+        --cp-bg: #f4f6fb;
+        --cp-card: #ffffff;
+        --cp-ink: #0f172a;
+        --cp-muted: #64748b;
+        --cp-line: #e2e8f0;
+        --cp-brand: #1d4ed8;
+        --cp-brand-2: #059669;
+        --cp-radius: 16px;
+        --cp-shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+    }
+
+    body {
+        background: var(--cp-bg);
+        font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--cp-ink);
+        margin: 0;
+    }
+
+    .cp-shell { max-width: 1080px; margin: 0 auto; padding: 0 16px 80px; }
+
+    /* hero */
+    .cp-hero {
+        margin: 18px 0 14px;
+        padding: 26px 26px 30px;
+        border-radius: 20px;
+        color: #fff;
+        background:
+            radial-gradient(900px 300px at 90% -20%, rgba(16, 185, 129, 0.35), transparent 60%),
+            linear-gradient(120deg, #0f1e46 0%, #1d4ed8 60%, #2563eb 100%);
+        box-shadow: var(--cp-shadow);
+        position: relative;
+        overflow: hidden;
+    }
+    .cp-hero-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+    .cp-hero-name { font-size: clamp(22px, 4vw, 30px); font-weight: 800; margin-top: 4px; }
+    .cp-hero-sub { margin-top: 6px; font-size: 13.5px; opacity: 0.85; }
+    .cp-logout { position: absolute; top: 18px; right: 20px; color: #fff; opacity: 0.8; font-size: 12.5px; text-decoration: none; }
+    .cp-logout:hover { opacity: 1; color: #fff; }
+
+    /* tabbar */
+    .cp-tabbar {
+        position: sticky; top: 10px; z-index: 30;
+        display: flex; gap: 4px; padding: 5px;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        border-radius: 99px;
+        box-shadow: var(--cp-shadow);
+        overflow-x: auto; scrollbar-width: none;
+    }
+    .cp-tabbar::-webkit-scrollbar { display: none; }
+    .cp-tab {
+        flex: 1; min-width: max-content;
+        border: none; background: transparent; cursor: pointer;
+        padding: 9px 18px; border-radius: 99px;
+        font: inherit; font-size: 13.5px; font-weight: 600; color: var(--cp-muted);
+        transition: all 0.15s ease; white-space: nowrap;
+    }
+    .cp-tab.active { background: var(--cp-ink); color: #fff; }
+
+    .cp-panel { display: none; margin-top: 18px; animation: cp-fade 0.25s ease; }
+    .cp-panel.active { display: block; }
+    @keyframes cp-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* cards */
+    .cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+    .cp-card {
+        background: var(--cp-card); border: 1px solid var(--cp-line);
+        border-radius: var(--cp-radius); padding: 18px; box-shadow: var(--cp-shadow);
+    }
+    .cp-card-title { font-size: 16px; font-weight: 800; }
+    .cp-card-sub { font-size: 12.5px; color: var(--cp-muted); margin-top: 2px; }
+    .cp-kv { display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; gap: 10px; }
+    .cp-kv .k { color: var(--cp-muted); }
+    .cp-kv .v { font-weight: 600; text-align: right; }
+
+    .cp-section-title { font-size: 15px; font-weight: 800; margin: 26px 0 12px; }
+
+    .cp-pill {
+        display: inline-block; padding: 3px 11px; border-radius: 99px;
+        font-size: 11.5px; font-weight: 700;
+    }
+    .cp-pill.green { background: #d1fae5; color: #047857; }
+    .cp-pill.orange { background: #ffedd5; color: #c2410c; }
+    .cp-pill.red { background: #fee2e2; color: #b91c1c; }
+    .cp-pill.blue { background: #dbeafe; color: #1d4ed8; }
+    .cp-pill.gray { background: #f1f5f9; color: #475569; }
+
+    /* map */
+    .cp-map-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .cp-chip {
+        border: 1px solid var(--cp-line); background: #fff; cursor: pointer;
+        padding: 7px 14px; border-radius: 99px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--cp-muted);
+    }
+    .cp-chip.active { background: var(--cp-ink); color: #fff; border-color: var(--cp-ink); }
+    .cp-map-wrap {
+        height: min(64vh, 560px); border-radius: var(--cp-radius);
+        border: 1px solid var(--cp-line); box-shadow: var(--cp-shadow); overflow: hidden;
+        background: #fff;
+    }
+    .cp-map-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 12.5px; color: var(--cp-muted); }
+    .cp-map-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .cp-map-hint { font-size: 12.5px; color: var(--cp-muted); margin-top: 6px; }
+
+    /* tables */
+    .cp-table-wrap { overflow-x: auto; background: var(--cp-card); border: 1px solid var(--cp-line); border-radius: var(--cp-radius); box-shadow: var(--cp-shadow); }
+    table.cp-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 520px; }
+    .cp-table th {
+        text-align: left; padding: 12px 16px; font-size: 11.5px; text-transform: uppercase;
+        letter-spacing: 0.05em; color: var(--cp-muted); border-bottom: 1px solid var(--cp-line);
+        background: #fafbfe;
+    }
+    .cp-table td { padding: 12px 16px; border-bottom: 1px solid var(--cp-line); }
+    .cp-table tr:last-child td { border-bottom: none; }
+    .cp-amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+    /* buttons + forms */
+    .cp-btn {
+        display: inline-block; border: none; cursor: pointer;
+        background: var(--cp-brand); color: #fff;
+        padding: 10px 20px; border-radius: 12px;
+        font: inherit; font-size: 13.5px; font-weight: 700;
+        transition: transform 0.1s ease, box-shadow 0.15s ease;
+    }
+    .cp-btn:hover { box-shadow: 0 6px 18px rgba(29, 78, 216, 0.35); transform: translateY(-1px); color: #fff; }
+    .cp-btn.secondary { background: #eef2ff; color: var(--cp-brand); }
+    .cp-btn.green { background: var(--cp-brand-2); }
+    .cp-btn:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; }
+
+    .cp-input, .cp-textarea, .cp-select {
+        width: 100%; box-sizing: border-box;
+        border: 1px solid var(--cp-line); border-radius: 12px;
+        padding: 10px 14px; font: inherit; font-size: 13.5px;
+        background: #fff; color: var(--cp-ink);
+    }
+    .cp-input:focus, .cp-textarea:focus, .cp-select:focus { outline: 2px solid rgba(29, 78, 216, 0.35); border-color: var(--cp-brand); }
+    .cp-field { margin-bottom: 12px; }
+    .cp-label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 5px; color: #334155; }
+
+    /* modal */
+    .cp-modal-backdrop {
+        position: fixed; inset: 0; z-index: 50;
+        background: rgba(15, 23, 42, 0.55); backdrop-filter: blur(4px);
+        display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .cp-modal-backdrop.open { display: flex; }
+    .cp-modal {
+        background: #fff; border-radius: 20px; max-width: 430px; width: 100%;
+        padding: 24px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+        animation: cp-fade 0.2s ease;
+    }
+    .cp-modal-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .cp-modal-sub { font-size: 13px; color: var(--cp-muted); margin-bottom: 14px; }
+    .cp-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+
+    /* toast */
+    .cp-toast {
+        position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
+        z-index: 60; background: var(--cp-ink); color: #fff;
+        padding: 12px 22px; border-radius: 99px; font-size: 13.5px; font-weight: 600;
+        opacity: 0; pointer-events: none; transition: all 0.25s ease;
+        max-width: 90vw;
+    }
+    .cp-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .cp-toast.error { background: #b91c1c; }
+
+    /* skeleton + empty */
+    .cp-skel { border-radius: var(--cp-radius); background: linear-gradient(90deg, #eef1f7 25%, #f7f9fc 50%, #eef1f7 75%); background-size: 200% 100%; animation: cp-shimmer 1.1s infinite; height: 120px; }
+    @keyframes cp-shimmer { to { background-position: -200% 0; } }
+    .cp-empty { text-align: center; color: var(--cp-muted); font-size: 13.5px; padding: 40px 10px; }
+
+    @media (max-width: 640px) {
+        .cp-hero { padding: 20px 18px 24px; }
+        .cp-map-wrap { height: 60vh; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cp-shell">
+    <div class="cp-hero">
+        <a class="cp-logout" href="/?cmd=web_logout">Logout</a>
+        <div class="cp-hero-eyebrow">My Property Portal</div>
+        <div class="cp-hero-name" id="cp-hello">Welcome{% if full_name %}, {{ full_name }}{% endif %}</div>
+        <div class="cp-hero-sub" id="cp-hero-sub">Your plots, payments and site map — all in one place.</div>
+    </div>
+
+    <div class="cp-tabbar" id="cp-tabbar">
+        <button class="cp-tab active" data-tab="overview">My Plots</button>
+        <button class="cp-tab" data-tab="map">Site Map</button>
+        <button class="cp-tab" data-tab="payments">Payments</button>
+        <button class="cp-tab" data-tab="documents">Documents</button>
+        <button class="cp-tab" data-tab="support">Support</button>
+    </div>
+
+    <div class="cp-panel active" data-panel="overview">
+        <div class="cp-grid" id="cp-units"><div class="cp-skel"></div><div class="cp-skel"></div></div>
+        <div id="cp-bookings-section">
+            <div class="cp-section-title">My Bookings</div>
+            <div class="cp-grid" id="cp-bookings"><div class="cp-skel"></div></div>
+        </div>
+    </div>
+
+    <div class="cp-panel" data-panel="map">
+        <div class="cp-map-toolbar" id="cp-map-props"></div>
+        <div class="cp-map-wrap"><div id="cp-map"></div></div>
+        <div class="cp-map-legend" id="cp-map-legend"></div>
+        <div class="cp-map-hint">Scroll / pinch to zoom, drag to pan. Your plots glow blue. Tap an <b>Available</b> plot to request a booking.</div>
+    </div>
+
+    <div class="cp-panel" data-panel="payments">
+        <div id="cp-payments"><div class="cp-skel"></div></div>
+    </div>
+
+    <div class="cp-panel" data-panel="documents">
+        <div id="cp-documents"><div class="cp-skel"></div></div>
+    </div>
+
+    <div class="cp-panel" data-panel="support">
+        <div class="cp-card" style="max-width:560px">
+            <div class="cp-card-title">Raise a request</div>
+            <div class="cp-card-sub" style="margin-bottom:12px">Facing an issue? Tell us and our team will get back to you.</div>
+            <div class="cp-field">
+                <label class="cp-label">Subject</label>
+                <input class="cp-input" id="cp-issue-subject" placeholder="e.g. Water connection pending">
+            </div>
+            <div class="cp-field">
+                <label class="cp-label">Related unit (optional)</label>
+                <select class="cp-select" id="cp-issue-unit"><option value="">— None —</option></select>
+            </div>
+            <div class="cp-field">
+                <label class="cp-label">Details</label>
+                <textarea class="cp-textarea" id="cp-issue-desc" rows="4" placeholder="Describe the issue..."></textarea>
+            </div>
+            <button class="cp-btn" id="cp-issue-submit">Submit Request</button>
+        </div>
+        <div class="cp-section-title">My Requests</div>
+        <div id="cp-issues"><div class="cp-skel"></div></div>
+    </div>
+</div>
+
+<div class="cp-modal-backdrop" id="cp-book-modal">
+    <div class="cp-modal">
+        <div class="cp-modal-title" id="cp-book-title">Book this plot</div>
+        <div class="cp-modal-sub" id="cp-book-sub"></div>
+        <div id="cp-book-info"></div>
+        <div class="cp-field" style="margin-top:12px">
+            <label class="cp-label">Note for our team (optional)</label>
+            <textarea class="cp-textarea" id="cp-book-note" rows="2" placeholder="Any preference or question..."></textarea>
+        </div>
+        <div class="cp-modal-actions">
+            <button class="cp-btn secondary" id="cp-book-cancel">Cancel</button>
+            <button class="cp-btn green" id="cp-book-confirm">Request Booking</button>
+        </div>
+    </div>
+</div>
+
+<div class="cp-toast" id="cp-toast"></div>
+
+<script src="/assets/property_core/js/plot_layout_engine.js"></script>
+<script>
+(function () {
+    "use strict";
+
+    var CSRF = "{{ csrf_token }}";
+    var API_BASE = "property_core.property_core.api.customer_portal.";
+    var state = { data: null, map: null, engine: null, mapProperty: null, bookUnit: null };
+
+    /* ---------- helpers ---------- */
+
+    function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    }
+
+    var fmtMoney = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+    function money(v) { return v == null ? "—" : fmtMoney.format(v); }
+
+    function el(id) { return document.getElementById(id); }
+
+    function toast(msg, isError) {
+        var t = el("cp-toast");
+        t.textContent = msg;
+        t.className = "cp-toast show" + (isError ? " error" : "");
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function () { t.className = "cp-toast"; }, 3500);
+    }
+
+    async function api(method, args) {
+        var res = await fetch("/api/method/" + API_BASE + method, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Frappe-CSRF-Token": CSRF },
+            body: JSON.stringify(args || {}),
+        });
+        var body = await res.json().catch(function () { return {}; });
+        if (!res.ok) {
+            var msg = "Something went wrong. Please try again.";
+            try {
+                var sm = JSON.parse(body._server_messages || "[]");
+                if (sm.length) msg = JSON.parse(sm[0]).message.replace(/<[^>]*>/g, "");
+            } catch (e) { /* keep default */ }
+            throw new Error(msg);
+        }
+        return body.message;
+    }
+
+    function pillClass(status) {
+        return {
+            "Paid": "green", "Upcoming": "gray", "Due Soon": "orange", "Overdue": "red",
+            "Available": "green", "Booked": "orange", "Reserved": "orange",
+            "Allocated": "red", "Leased": "blue", "Maintenance Blocked": "gray",
+            "Draft": "gray", "Confirmed": "green", "Cancelled": "red",
+            "Open": "orange", "Replied": "blue", "Closed": "green", "Resolved": "green",
+        }[status] || "gray";
+    }
+
+    function pill(status) {
+        return '<span class="cp-pill ' + pillClass(status) + '">' + esc(status || "—") + "</span>";
+    }
+
+    /* ---------- tabs ---------- */
+
+    document.querySelectorAll(".cp-tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+            document.querySelectorAll(".cp-tab").forEach(function (t) { t.classList.remove("active"); });
+            document.querySelectorAll(".cp-panel").forEach(function (p) { p.classList.remove("active"); });
+            tab.classList.add("active");
+            document.querySelector('.cp-panel[data-panel="' + tab.dataset.tab + '"]').classList.add("active");
+            if (tab.dataset.tab === "map") initMap();
+        });
+    });
+
+    /* ---------- overview ---------- */
+
+    function renderOverview() {
+        var d = state.data;
+        var units = d.units || [];
+        el("cp-hero-sub").textContent = units.length
+            ? "You own " + units.length + " unit" + (units.length > 1 ? "s" : "") + ". Explore the site map or track your payments."
+            : "Browse the site map and request a booking for an available plot.";
+
+        el("cp-units").innerHTML = units.length
+            ? units.map(function (u) {
+                return '<div class="cp-card">' +
+                    '<div class="cp-card-title">' + esc(u.unit_number || u.name) + "</div>" +
+                    '<div class="cp-card-sub">' + esc(u.property) + " · " + esc(u.unit_type || "") + "</div>" +
+                    '<div class="cp-kv"><span class="k">Status</span><span class="v">' + pill(u.availability_status) + "</span></div>" +
+                    (u.area ? '<div class="cp-kv"><span class="k">Area</span><span class="v">' + esc(u.area) + " sq ft</span></div>" : "") +
+                    (u.base_price ? '<div class="cp-kv"><span class="k">Price</span><span class="v">' + money(u.base_price) + "</span></div>" : "") +
+                    "</div>";
+            }).join("")
+            : '<div class="cp-empty">No units linked to your account yet.</div>';
+
+        var bookings = d.bookings || [];
+        el("cp-bookings").innerHTML = bookings.length
+            ? bookings.map(function (b) {
+                var paid = (b.payment_plan || []).filter(function (p) { return p.status === "Paid"; }).length;
+                return '<div class="cp-card">' +
+                    '<div class="cp-card-title">' + esc(b.name) + "</div>" +
+                    '<div class="cp-card-sub">' + esc(b.property_unit || "") + " · " + esc(b.booking_date || "") + "</div>" +
+                    '<div class="cp-kv"><span class="k">Status</span><span class="v">' + pill(b.booking_status) + "</span></div>" +
+                    '<div class="cp-kv"><span class="k">Amount</span><span class="v">' + money(b.booking_amount) + "</span></div>" +
+                    ((b.payment_plan || []).length ? '<div class="cp-kv"><span class="k">Milestones paid</span><span class="v">' + paid + " / " + b.payment_plan.length + "</span></div>" : "") +
+                    "</div>";
+            }).join("")
+            : '<div class="cp-empty">No bookings yet.</div>';
+    }
+
+    /* ---------- site map ---------- */
+
+    function initMap() {
+        if (!state.map) return;
+        if (!state.engine) {
+            state.engine = new PlotLayoutEngine(el("cp-map"), {
+                mode: "view",
+                statusColors: state.map.status_colors,
+                unitClass: function (u) {
+                    if (u.mine) return "ple-mine";
+                    if (u.bookable) return "ple-bookable";
+                    return "";
+                },
+                tooltipHtml: function (u) {
+                    return '<div class="ple-tt-title">' + esc(u.unit_number || u.name) + "</div>" +
+                        '<span class="ple-tt-status">' + esc(u.availability_status) + "</span>" +
+                        (u.area ? "<div>Area: " + esc(u.area) + " sq ft</div>" : "") +
+                        (u.base_price && u.bookable ? "<div>Price: " + money(u.base_price) + "</div>" : "") +
+                        (u.mine ? "<div><b>Your plot</b></div>" : (u.bookable ? "<div>Tap to book</div>" : ""));
+                },
+                onSelect: function (u) {
+                    if (!u) return;
+                    if (u.bookable && !u.mine) openBookModal(u);
+                },
+            });
+            renderMapChips();
+        }
+        showMapProperty(state.mapProperty || (state.map.properties[0] && state.map.properties[0].property.name));
+    }
+
+    function renderMapChips() {
+        var props = state.map.properties;
+        el("cp-map-props").innerHTML = props.length > 1
+            ? props.map(function (p) {
+                return '<button class="cp-chip" data-prop="' + esc(p.property.name) + '">' + esc(p.property.property_name || p.property.name) + "</button>";
+            }).join("")
+            : "";
+        el("cp-map-props").querySelectorAll(".cp-chip").forEach(function (chip) {
+            chip.addEventListener("click", function () { showMapProperty(chip.dataset.prop); });
+        });
+    }
+
+    function showMapProperty(propName) {
+        if (!propName) {
+            el("cp-map").innerHTML = '<div class="cp-empty" style="padding-top:120px">No site layout published yet.</div>';
+            return;
+        }
+        state.mapProperty = propName;
+        el("cp-map-props").querySelectorAll(".cp-chip").forEach(function (chip) {
+            chip.classList.toggle("active", chip.dataset.prop === propName);
+        });
+        var entry = state.map.properties.find(function (p) { return p.property.name === propName; });
+        if (!entry) return;
+        state.engine.setData({
+            property: entry.property,
+            units: entry.units,
+            status_colors: state.map.status_colors,
+        });
+        var mine = entry.units.find(function (u) { return u.mine && u.layout_shape; });
+        if (mine) state.engine.focusUnit(mine.name, 10);
+
+        var colors = state.map.status_colors;
+        el("cp-map-legend").innerHTML = Object.keys(colors).map(function (s) {
+            return '<span><span class="dot" style="background:' + colors[s] + '"></span>' + esc(s) + "</span>";
+        }).join("");
+    }
+
+    /* ---------- booking ---------- */
+
+    function openBookModal(unit) {
+        state.bookUnit = unit;
+        el("cp-book-title").textContent = "Book " + (unit.unit_number || unit.name);
+        el("cp-book-sub").textContent = "Send a booking request — our team will verify and confirm with you.";
+        el("cp-book-info").innerHTML =
+            '<div class="cp-kv"><span class="k">Unit</span><span class="v">' + esc(unit.unit_number || unit.name) + "</span></div>" +
+            (unit.area ? '<div class="cp-kv"><span class="k">Area</span><span class="v">' + esc(unit.area) + " sq ft</span></div>" : "") +
+            (unit.base_price ? '<div class="cp-kv"><span class="k">Price</span><span class="v">' + money(unit.base_price) + "</span></div>" : "");
+        el("cp-book-note").value = "";
+        el("cp-book-modal").classList.add("open");
+    }
+
+    el("cp-book-cancel").addEventListener("click", function () {
+        el("cp-book-modal").classList.remove("open");
+    });
+    el("cp-book-modal").addEventListener("click", function (evt) {
+        if (evt.target === el("cp-book-modal")) el("cp-book-modal").classList.remove("open");
+    });
+
+    el("cp-book-confirm").addEventListener("click", async function () {
+        if (!state.bookUnit) return;
+        var btn = el("cp-book-confirm");
+        btn.disabled = true;
+        try {
+            var r = await api("book_unit", { property_unit: state.bookUnit.name, note: el("cp-book-note").value });
+            el("cp-book-modal").classList.remove("open");
+            toast("Booking request " + r.booking + " sent! Our team will contact you.");
+            await loadAll();
+            if (state.engine) showMapProperty(state.mapProperty);
+        } catch (err) {
+            toast(err.message, true);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    /* ---------- payments ---------- */
+
+    function renderPayments() {
+        var bookings = (state.data.bookings || []).filter(function (b) { return (b.payment_plan || []).length; });
+        if (!bookings.length) {
+            el("cp-payments").innerHTML = '<div class="cp-empty">No payment schedules yet.</div>';
+            return;
+        }
+        el("cp-payments").innerHTML = bookings.map(function (b) {
+            var total = 0, paid = 0;
+            var rows = b.payment_plan.map(function (p) {
+                total += p.amount || 0;
+                if (p.status === "Paid") paid += p.amount || 0;
+                return "<tr>" +
+                    "<td>" + esc(p.milestone || p.name) + "</td>" +
+                    "<td>" + esc(p.due_date || "—") + "</td>" +
+                    '<td class="cp-amount">' + money(p.amount) + "</td>" +
+                    "<td>" + pill(p.status) + "</td>" +
+                    "</tr>";
+            }).join("");
+            return '<div class="cp-section-title">' + esc(b.name) + " · " + esc(b.property_unit || "") +
+                ' <span style="font-weight:600;color:var(--cp-muted);font-size:12.5px">(' + money(paid) + " of " + money(total) + " paid)</span></div>" +
+                '<div class="cp-table-wrap"><table class="cp-table">' +
+                "<thead><tr><th>Milestone</th><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>" +
+                "<tbody>" + rows + "</tbody></table></div>";
+        }).join("");
+    }
+
+    /* ---------- documents ---------- */
+
+    function renderDocuments() {
+        var ags = state.data.agreements || [];
+        if (!ags.length) {
+            el("cp-documents").innerHTML = '<div class="cp-empty">No documents shared yet.</div>';
+            return;
+        }
+        el("cp-documents").innerHTML =
+            '<div class="cp-table-wrap"><table class="cp-table">' +
+            "<thead><tr><th>Agreement</th><th>Type</th><th>Status</th><th>Period</th><th></th></tr></thead><tbody>" +
+            ags.map(function (a) {
+                return "<tr>" +
+                    "<td>" + esc(a.name) + "</td>" +
+                    "<td>" + esc(a.agreement_type || "—") + "</td>" +
+                    "<td>" + pill(a.agreement_status) + "</td>" +
+                    "<td>" + esc(a.start_date || "—") + " → " + esc(a.end_date || "—") + "</td>" +
+                    "<td>" + (a.document_attachment ? '<a href="' + esc(a.document_attachment) + '" target="_blank" rel="noopener">Download</a>' : "—") + "</td>" +
+                    "</tr>";
+            }).join("") +
+            "</tbody></table></div>";
+    }
+
+    /* ---------- support ---------- */
+
+    function renderSupport() {
+        var issues = state.data.issues || [];
+        el("cp-issues").innerHTML = issues.length
+            ? '<div class="cp-table-wrap"><table class="cp-table">' +
+              "<thead><tr><th>Request</th><th>Subject</th><th>Unit</th><th>Status</th></tr></thead><tbody>" +
+              issues.map(function (i) {
+                  return "<tr><td>" + esc(i.name) + "</td><td>" + esc(i.subject) + "</td><td>" +
+                      esc(i.property_unit || "—") + "</td><td>" + pill(i.status) + "</td></tr>";
+              }).join("") +
+              "</tbody></table></div>"
+            : '<div class="cp-empty">No requests yet.</div>';
+
+        var select = el("cp-issue-unit");
+        select.innerHTML = '<option value="">— None —</option>' + (state.data.units || []).map(function (u) {
+            return '<option value="' + esc(u.name) + '">' + esc(u.unit_number || u.name) + "</option>";
+        }).join("");
+    }
+
+    el("cp-issue-submit").addEventListener("click", async function () {
+        var subject = el("cp-issue-subject").value.trim();
+        if (!subject) { toast("Please enter a subject", true); return; }
+        var btn = el("cp-issue-submit");
+        btn.disabled = true;
+        try {
+            await api("raise_issue", {
+                subject: subject,
+                description: el("cp-issue-desc").value,
+                property_unit: el("cp-issue-unit").value || null,
+            });
+            el("cp-issue-subject").value = "";
+            el("cp-issue-desc").value = "";
+            toast("Request submitted — we'll get back to you soon.");
+            await loadAll();
+        } catch (err) {
+            toast(err.message, true);
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    /* ---------- boot ---------- */
+
+    async function loadAll() {
+        var results = await Promise.all([api("customer_portal_get"), api("site_map")]);
+        state.data = results[0];
+        state.map = results[1];
+        if (state.data.customer && state.data.customer.customer_name) {
+            el("cp-hello").textContent = "Welcome, " + state.data.customer.customer_name;
+        }
+        renderOverview();
+        renderPayments();
+        renderDocuments();
+        renderSupport();
+    }
+
+    loadAll().catch(function (err) {
+        toast(err.message, true);
+        el("cp-units").innerHTML = '<div class="cp-empty">' + esc(err.message) + "</div>";
+        el("cp-bookings").innerHTML = "";
+        ["cp-payments", "cp-documents", "cp-issues"].forEach(function (id) { el(id).innerHTML = ""; });
+    });
+})();
+</script>
+{% endblock %}

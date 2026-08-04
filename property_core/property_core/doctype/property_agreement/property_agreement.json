@@ -9,6 +9,7 @@
     "agreement_type",
     "customer",
     "property_unit",
+    "project",
     "agreement_status",
     "column_break_1",
     "start_date",
@@ -53,6 +54,15 @@
       "options": "Property Unit",
       "reqd": 1,
       "in_list_view": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "Project",
+      "options": "Project",
+      "fetch_from": "property_unit.project",
+      "fetch_if_empty": 1,
+      "read_only": 1
     },
     {
       "fieldname": "agreement_status",
