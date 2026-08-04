@@ -10,6 +10,7 @@
     "company",
     "status",
     "launch_date",
+    "project",
     "column_break_1",
     "total_area",
     "address",
@@ -64,6 +65,13 @@
       "fieldname": "launch_date",
       "fieldtype": "Date",
       "label": "Launch Date"
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "Project",
+      "options": "Project",
+      "description": "Optional ERPNext Project for this development. Flows down to every unit, booking, allocation and agreement under it."
     },
     {
       "fieldname": "column_break_1",

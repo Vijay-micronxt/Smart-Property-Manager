@@ -7,6 +7,7 @@
   "field_order": [
     "naming_series",
     "property",
+    "project",
     "unit_number",
     "unit_type",
     "availability_status",
@@ -43,6 +44,15 @@
       "reqd": 1,
       "in_list_view": 1,
       "in_standard_filter": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "Project",
+      "options": "Project",
+      "fetch_from": "property.project",
+      "fetch_if_empty": 1,
+      "read_only": 1
     },
     {
       "fieldname": "unit_number",
