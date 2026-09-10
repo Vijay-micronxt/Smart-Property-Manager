@@ -100,7 +100,7 @@ def _handle_payment_captured(payload):
 
         if original_order_id:
             try:
-                si_name = create_sales_invoice_from_order(original_order_id)
+                si_name = create_sales_invoice_from_order(original_order_id, system_user=gateway.system_user)
                 rpe.db_set("sales_invoice", si_name)
                 rpe.sales_invoice = si_name
             except Exception:
@@ -115,7 +115,7 @@ def _handle_payment_captured(payload):
             )
 
     if not rpe.payment_entry and rpe.sales_invoice:
-        create_payment_entry_from_razorpay(rpe)
+        create_payment_entry_from_razorpay(rpe, system_user=gateway.system_user, mode_of_payment=gateway.mode_of_payment)
 
 
 def _handle_payment_failed(payload):
