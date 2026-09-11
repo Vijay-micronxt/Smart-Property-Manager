@@ -30,11 +30,13 @@ REGISTRY = {
         "name", "property_name", "property_type", "status", "project",
         "launch_date", "total_area", "address",
         "layout_image", "layout_world_width", "layout_world_height",
+        "latitude", "longitude", "map_link",
     ],
     "Property Unit": [
         "name", "property", "project", "unit_number", "unit_type",
         "availability_status", "area", "facing", "floor", "base_price",
         "item_code", "customer",
+        "latitude", "longitude", "map_link",
     ],
     "Property Unit Layout": [
         "name", "unit_number", "unit_type", "availability_status", "area", "base_price",

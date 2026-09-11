@@ -362,7 +362,24 @@ Inspection Checklists with their line items (`item_name`, `category`,
 `percent_complete`), `amenities`, `property_documents`, `allocation`,
 `agreement` and `booking` in one payload.
 
-### 7.2 `properties.site_map`
+### 7.2 Where a property or unit actually is
+
+Both `properties.my_units` and `properties.unit` carry the location as plain
+numbers, so an app can drop a pin or open navigation without parsing GeoJSON:
+
+```json
+{"name": "UNIT-0007", "unit_number": "A-4", "property": "DUMMY Sunrise Meadows Property",
+ "latitude": 12.9716, "longitude": 77.5946,
+ "map_link": "https://www.google.com/maps/search/?api=1&query=12.9716,77.5946"}
+```
+
+All three are `null` until somebody sets the location on the record. `map_link`
+opens Google Maps on any phone, which is usually what a site visit needs.
+
+The raw `geo_location` GeoJSON is still on the document for anyone who wants
+the drawn shape rather than a single point.
+
+### 7.3 `properties.site_map`
 
 Layout geometry for the map view — the same engine data the desk Layout Editor
 writes.
@@ -391,7 +408,7 @@ writes.
 Other customers' identities are never exposed — the `customer` field is stripped
 and replaced by `mine`.
 
-### 7.3 `bookings.book_unit` — request a booking
+### 7.4 `bookings.book_unit` — request a booking
 
 Creates a **draft** Property Booking for staff to verify and submit, and a
 high-priority ToDo for every enabled Property Manager. Price comes from the

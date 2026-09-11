@@ -21,10 +21,14 @@ add_to_apps_screen = [
 
 doctype_js = {
     # property_core module
-    "Property": "public/js/property.js",
+    "Property": [
+        "public/js/property.js",
+        "public/js/geo_search.js",
+    ],
     "Property Unit": [
         "public/js/property_unit.js",
         "public/js/property_unit_maintenance.js",
+        "public/js/geo_search.js",
     ],
     "Payment Plan": "public/js/payment_plan.js",
     "Property Allocation": "public/js/property_allocation.js",
@@ -119,6 +123,12 @@ doc_events = {
     },
     "Call Log": {
         "after_insert": "property_core.property_core.crm.call_log.after_insert",
+    },
+    "Property": {
+        "validate": "property_core.property_core.geo.sync_location_fields",
+    },
+    "Property Unit": {
+        "validate": "property_core.property_core.geo.sync_location_fields",
     },
 }
 
