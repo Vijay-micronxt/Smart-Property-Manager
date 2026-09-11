@@ -1,0 +1,154 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-09-11 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 0,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "work_order",
+  "property_unit",
+  "update_type",
+  "column_break_head",
+  "progress",
+  "posted_on",
+  "posted_by",
+  "section_detail",
+  "note",
+  "section_proof",
+  "proof_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "WOU-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "work_order",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Work Order",
+   "options": "Work Order",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "work_order.property_unit",
+   "fetch_if_empty": 1,
+   "fieldname": "property_unit",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Property Unit",
+   "options": "Property Unit",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Progress",
+   "fieldname": "update_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Update Type",
+   "options": "Progress\nCompleted\nBlocked\nNote",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "How much of this job is done. 100 marks the work order Completed.",
+   "fieldname": "progress",
+   "fieldtype": "Percent",
+   "in_list_view": 1,
+   "label": "Work Done"
+  },
+  {
+   "default": "Now",
+   "fieldname": "posted_on",
+   "fieldtype": "Datetime",
+   "label": "Posted On",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "posted_by",
+   "fieldtype": "Link",
+   "label": "Posted By",
+   "no_copy": 1,
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_detail",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "What was done"
+  },
+  {
+   "fieldname": "section_proof",
+   "fieldtype": "Section Break",
+   "label": "Proof"
+  },
+  {
+   "description": "Photos and video attached to this update.",
+   "fieldname": "proof_html",
+   "fieldtype": "HTML",
+   "label": "Attached Proof"
+  }
+ ],
+ "links": [],
+ "max_attachments": 20,
+ "modified": "2026-09-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Property Operations",
+ "name": "Work Order Update",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Property Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operations User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Tenant"
+  },
+  {
+   "read": 1,
+   "role": "Property Owner"
+  }
+ ],
+ "sort_field": "posted_on",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "work_order",
+ "track_changes": 1
+}

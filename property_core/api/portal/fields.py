@@ -88,6 +88,11 @@ REGISTRY = {
     "Work Order": [
         "name", "issue", "property_unit", "status", "description",
         "scheduled_date", "completed_date", "actual_cost", "notes",
+        "progress", "last_update_on",
+    ],
+    "Work Order Update": [
+        "name", "work_order", "property_unit", "update_type", "progress",
+        "note", "posted_on", "posted_by",
     ],
     "Inspection Checklist": [
         "name", "property_unit", "inspection_type", "inspection_date",
