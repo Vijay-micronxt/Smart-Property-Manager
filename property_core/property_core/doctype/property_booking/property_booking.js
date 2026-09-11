@@ -45,14 +45,5 @@ frappe.ui.form.on("Property Booking", {
 });
 
 function create_customer(frm) {
-	frappe.call({
-		method: "erpnext.crm.doctype.lead.lead.make_customer",
-		args: { source_name: frm.doc.lead },
-		freeze: true,
-		callback: (r) => {
-			if (!r.message) return;
-			const customer = frappe.model.sync(r.message)[0];
-			frappe.set_route("Form", "Customer", customer.name);
-		},
-	});
+	property_core.follow_up.create_customer(frm.doc.lead);
 }

@@ -24,6 +24,9 @@ class PropertyBooking(Document):
         self.validate_booking_amount()
 
     def after_insert(self):
+        self.provision_portal_user()
+
+    def provision_portal_user(self):
         try:
             ensure_portal_user(self.customer)
         except Exception:
@@ -38,6 +41,10 @@ class PropertyBooking(Document):
         generate_payment_plan(self)
         ensure_booking_folder(self)
         self.close_opportunity()
+        # Again on submit, not just after_insert: when the customer was created
+        # moments earlier the Contact carrying their email may not have been
+        # linked yet, and a booked customer must be able to log in.
+        self.provision_portal_user()
 
     def on_cancel(self):
         self.booking_status = "Cancelled"

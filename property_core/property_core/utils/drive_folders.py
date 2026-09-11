@@ -194,7 +194,13 @@ def ensure_booking_folder(booking):
         for segment in BOOKING_PARENT_PATH:
             parent = get_or_create_folder(segment, parent, team)
 
-        title = f"{booking.customer} - {booking.property_unit}"
+        # Named for the property and the unit, not the booking id -- that is
+        # what people look for when they go hunting for a plot's papers.
+        unit_number = (
+            frappe.db.get_value("Property Unit", booking.property_unit, "unit_number")
+            or booking.property_unit
+        )
+        title = f"{booking.unit_property} - {unit_number}"
         folder = get_or_create_folder(title, parent, team)
         frappe.db.set_value(
             "Property Booking", booking.name, "drive_folder_id", folder, update_modified=False

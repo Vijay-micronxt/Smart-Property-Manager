@@ -107,7 +107,11 @@ doc_events = {
         "on_update": [
             "property_core.property_core.notifications.lead_followup.on_lead_update",
             "property_core.property_core.crm.call_log.keep_single_assignment",
+            "property_core.property_core.crm.customer_from_lead.sync_lead_address",
         ],
+    },
+    "Customer": {
+        "after_insert": "property_core.property_core.crm.customer_from_lead.link_lead_records",
     },
     "Call Log": {
         "after_insert": "property_core.property_core.crm.call_log.after_insert",
@@ -139,6 +143,7 @@ after_migrate = [
     # relative to custom_property_unit, which that one creates
     "property_core.property_core.crm.lead_fields.sync_lead_crm_fields",
     "property_core.property_core.crm.telephony.sync_telephony_fields",
+    "property_core.property_core.crm.customer_from_lead.sync_address_fields",
     "property_core.property_core.doctype.property_notification_settings.property_notification_settings.seed_default_reminder_rules",
 ]
 
@@ -150,6 +155,7 @@ before_uninstall = [
     "property_core.property_core.notifications.custom_fields.delete_notification_fields",
     "property_core.property_core.crm.lead_fields.delete_lead_crm_fields",
     "property_core.property_core.crm.telephony.delete_telephony_fields",
+    "property_core.property_core.crm.customer_from_lead.delete_address_fields",
 ]
 
 fixtures = [

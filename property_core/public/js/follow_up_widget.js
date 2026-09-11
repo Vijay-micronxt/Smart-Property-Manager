@@ -183,6 +183,21 @@ property_core.follow_up = {
 		d.show();
 	},
 
+	// One lead makes one customer, wherever the button is pressed.
+	create_customer(lead) {
+		frappe.call({
+			method: "property_core.property_core.crm.customer_from_lead.make_customer_from_lead",
+			args: { lead: lead },
+			freeze: true,
+			freeze_message: __("Creating customer..."),
+			callback: (r) => {
+				if (!r.message) return;
+				frappe.show_alert({ message: __("Customer {0} ready", [r.message]), indicator: "green" });
+				frappe.set_route("Form", "Customer", r.message);
+			},
+		});
+	},
+
 	whatsapp(number, message) {
 		if (!number) {
 			frappe.msgprint(__("No mobile number on this record."));

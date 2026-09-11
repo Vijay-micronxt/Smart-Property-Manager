@@ -6,6 +6,8 @@ import frappe
 import requests
 from frappe import _
 
+from property_core.property_core.api.ecommerce import billing_context
+
 
 class RazorpayGateway:
     def __init__(self):
@@ -126,17 +128,27 @@ class RazorpayGateway:
 def order_payment(order_id, amount, store_id=None, owner_id=None, payment_provider_id=None):
     try:
         gateway = RazorpayGateway()
-        order_doc = frappe.get_doc(_get_doctype(order_id), order_id)
+        doctype = _get_doctype(order_id)
+        order_doc = frappe.get_doc(doctype, order_id)
+        customer, email, phone = billing_context.get_contact(doctype, order_doc)
+
+        # A booking or an instalment is settled through its Sales Invoice.
+        # Resolve it now rather than at verification time: if it fails, the
+        # customer sees it before paying instead of after.
+        sales_invoice = billing_context.resolve_sales_invoice(order_id, doctype)
+
         notes = {"order_id": order_id, "store_id": store_id or ""}
         rz_order = gateway.create_order(
             amount=amount,
             currency="INR",
             order_id=order_id,
-            customer_email=getattr(order_doc, "contact_email", None),
-            customer_phone=getattr(order_doc, "contact_mobile", None),
+            customer_email=email,
+            customer_phone=phone,
             notes=notes,
         )
-        _ensure_razorpay_payment_entry(rz_order["id"], order_doc, amount)
+        _ensure_razorpay_payment_entry(
+            rz_order["id"], order_doc, amount, customer=customer, sales_invoice=sales_invoice
+        )
         return {
             "status": 200,
             "data": {
@@ -345,6 +357,12 @@ def create_sales_invoice_from_order(order_name, system_user=None):
     so_name = order_name
     effective_user = system_user or "Administrator"
 
+    if doctype in billing_context.PROPERTY_DOCTYPES:
+        return billing_context.resolve_sales_invoice(order_name, doctype)
+
+    if doctype == "Sales Invoice":
+        return order_name
+
     if doctype == "Quotation":
         existing_so = frappe.db.get_value(
             "Sales Order", {"quotation": order_name, "docstatus": ["!=", 2]}, "name"
@@ -474,20 +492,19 @@ def mark_payment_plan_paid(si_name):
 
 
 def _get_doctype(doc_name):
-    for dt in ("Sales Order", "Sales Invoice", "Quotation"):
-        if frappe.db.exists(dt, doc_name):
-            return dt
-    frappe.throw(
-        _("Document {0} not found as Sales Order, Sales Invoice, or Quotation").format(doc_name)
-    )
+    return billing_context.get_doctype(doc_name)
 
 
-def _ensure_razorpay_payment_entry(rz_order_id, order_doc, amount):
+def _ensure_razorpay_payment_entry(
+    rz_order_id, order_doc, amount, customer=None, sales_invoice=None
+):
     if frappe.db.exists("Razorpay Payment Entry", {"razorpay_order_id": rz_order_id}):
         return
     rpe = frappe.new_doc("Razorpay Payment Entry")
     rpe.name = frappe.generate_hash(length=10)
-    rpe.customer = getattr(order_doc, "customer", None)
+    rpe.customer = customer or getattr(order_doc, "customer", None)
+    if sales_invoice:
+        rpe.sales_invoice = sales_invoice
     rpe.razorpay_order_id = rz_order_id
     rpe.amount = float(amount) / 100  # paise → rupees for Frappe Currency field
     rpe.currency = "INR"

@@ -5,6 +5,8 @@ import frappe
 import requests
 from frappe import _
 
+from property_core.property_core.api.ecommerce import billing_context
+
 MSWIPE_ATTEMPT_BY_TRANSID_PREFIX = "mswipe_ecom_attempt:"
 MSWIPE_RETURN_URL_CACHE_PREFIX = "mswipe_ecom_return_url:"
 
@@ -233,7 +235,16 @@ def order_payment(order_id, amount, mobileno=None, email=None,
                   store_id=None, owner_id=None, return_url=None):
     try:
         gateway = MswipeGateway()
-        order_doc = frappe.get_doc(_get_doctype(order_id), order_id)
+        doctype = _get_doctype(order_id)
+        order_doc = frappe.get_doc(doctype, order_id)
+
+        # A booking and an instalment carry no outstanding of their own -- the
+        # amount owed lives on the invoice behind them, which is also what the
+        # webhook will settle.
+        if doctype in billing_context.PROPERTY_DOCTYPES:
+            order_doc = frappe.get_doc(
+                "Sales Invoice", billing_context.resolve_sales_invoice(order_id, doctype)
+            )
 
         outstanding = getattr(order_doc, "outstanding_amount", None)
         grand_total = getattr(order_doc, "grand_total", None)
@@ -362,9 +373,4 @@ def create_payment_entry_from_mswipe(mswipe_payment_entry, system_user=None, mod
 # ─── Internal utilities ───────────────────────────────────────────────────────
 
 def _get_doctype(doc_name):
-    for dt in ("Sales Order", "Sales Invoice", "Quotation"):
-        if frappe.db.exists(dt, doc_name):
-            return dt
-    frappe.throw(
-        _("Document {0} not found as Sales Order, Sales Invoice, or Quotation").format(doc_name)
-    )
+    return billing_context.get_doctype(doc_name)

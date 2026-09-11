@@ -24,6 +24,15 @@ def ensure_portal_user(customer):
         mobile = frappe.db.get_value("Contact", contact, "mobile_no")
 
     if not email:
+        # A Customer made straight from a Lead may carry the address and email
+        # itself without a Contact ever being created.
+        values = frappe.db.get_value(
+            "Customer", customer, ["email_id", "mobile_no"], as_dict=True
+        ) or {}
+        email = values.get("email_id")
+        mobile = mobile or values.get("mobile_no")
+
+    if not email:
         return
 
     email = email.strip().lower()
