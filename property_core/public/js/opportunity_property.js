@@ -45,7 +45,13 @@ frappe.ui.form.on("Opportunity", {
 			const number = frm.doc.contact_mobile || frm.doc.contact_no;
 			frm.add_custom_button(
 				__("WhatsApp"),
-				() => property_core.follow_up.whatsapp(number),
+				() =>
+					property_core.follow_up.whatsapp_dialog(
+						"Opportunity",
+						frm.doc.name,
+						number,
+						frm.doc.party_name
+					),
 				__("Contact")
 			);
 			frm.add_custom_button(

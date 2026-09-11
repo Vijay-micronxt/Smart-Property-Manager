@@ -198,6 +198,7 @@ property_core.follow_up = {
 		});
 	},
 
+	// Straight to WhatsApp, no template, no dialog.
 	whatsapp(number, message) {
 		if (!number) {
 			frappe.msgprint(__("No mobile number on this record."));
@@ -207,6 +208,112 @@ property_core.follow_up = {
 		const normalised = digits.length === 10 ? `91${digits}` : digits;
 		const text = message ? `?text=${encodeURIComponent(message)}` : "";
 		window.open(`https://wa.me/${normalised}${text}`, "_blank");
+	},
+
+	// Pick a template, read exactly what will be sent, edit it, send it.
+	// The preview comes from the server because the template is rich text and
+	// the browser has no business guessing how it collapses to a message.
+	whatsapp_dialog(doctype, docname, number, display_name) {
+		if (!number) {
+			frappe.msgprint(__("No mobile number on this record."));
+			return;
+		}
+
+		const d = new frappe.ui.Dialog({
+			title: __("WhatsApp {0}", [display_name || docname]),
+			size: "large",
+			fields: [
+				{
+					fieldname: "template",
+					fieldtype: "Link",
+					label: __("Template"),
+					options: "WhatsApp Message Template",
+					get_query: () => ({ filters: { is_active: 1 } }),
+					onchange: () => this._load_template(d, doctype, docname, number),
+				},
+				{ fieldname: "preview", fieldtype: "HTML", label: __("Preview") },
+				{ fieldtype: "Section Break" },
+				{
+					fieldname: "message",
+					fieldtype: "Small Text",
+					label: __("Message"),
+					reqd: 1,
+					onchange: () => this._paint_preview(d, number),
+				},
+			],
+			primary_action_label: __("Send"),
+			primary_action: (values) => this._send(d, doctype, docname, number, values),
+		});
+
+		d.show();
+		this._paint_preview(d, number);
+	},
+
+	_load_template(d, doctype, docname, number) {
+		const template = d.get_value("template");
+		if (!template) {
+			d.set_value("message", "");
+			return;
+		}
+		frappe.call({
+			method: "property_core.property_core.crm.whatsapp.render_template",
+			args: { doctype: doctype, docname: docname, template: template },
+			freeze: true,
+			callback: (r) => {
+				d.set_value("message", r.message || "");
+				this._paint_preview(d, number);
+			},
+		});
+	},
+
+	_paint_preview(d, number) {
+		const field = d.fields_dict.preview;
+		if (!field || !field.$wrapper) return;
+
+		const message = d.get_value("message") || "";
+		const body = message
+			? `<div style="white-space:pre-wrap">${frappe.utils.escape_html(message)}</div>`
+			: `<div class="text-muted">${__("Pick a template, or type a message below.")}</div>`;
+
+		field.$wrapper.html(`
+			<div style="background:#dcf8c6;color:#111;border-radius:8px;padding:12px 14px;line-height:1.5">
+				${body}
+				<div style="text-align:right;font-size:11px;opacity:.6;margin-top:8px">${__("To")}: ${frappe.utils.escape_html(
+					String(number)
+				)}</div>
+			</div>`);
+	},
+
+	_send(d, doctype, docname, number, values) {
+		frappe.call({
+			method: "property_core.property_core.crm.whatsapp.send",
+			args: {
+				doctype: doctype,
+				docname: docname,
+				phone_number: number,
+				message: values.message,
+				template: values.template || null,
+			},
+			freeze: true,
+			freeze_message: __("Sending..."),
+			callback: (r) => {
+				const result = r.message || {};
+				d.hide();
+				if (result.sent) {
+					frappe.show_alert({
+						message: __("Sent to {0}", [result.phone || number]),
+						indicator: "green",
+					});
+					if (cur_list) cur_list.refresh();
+					return;
+				}
+				// Not configured, or the gateway refused -- hand it to WhatsApp itself.
+				if (result.error) {
+					frappe.show_alert({ message: result.error, indicator: "orange" });
+				}
+				if (result.link) window.open(result.link, "_blank");
+			},
+		});
 	},
 
 	call(doctype, docname, number) {

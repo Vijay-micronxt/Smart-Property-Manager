@@ -61,7 +61,10 @@ doctype_js = {
 }
 
 doctype_list_js = {
-    "Lead": "public/js/lead_crm_list.js",
+    "Lead": [
+        "public/js/follow_up_widget.js",
+        "public/js/lead_crm_list.js",
+    ],
 }
 
 scheduler_events = {

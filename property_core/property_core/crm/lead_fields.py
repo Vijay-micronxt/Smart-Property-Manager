@@ -359,6 +359,10 @@ def _apply_property_setters():
     make_property_setter(
         "Lead", "mobile_no", "reqd", 1, "Check", validate_fields_for_doctype=False
     )
+    # The list view draws the call and WhatsApp icons into this column.
+    make_property_setter(
+        "Lead", "mobile_no", "in_list_view", 1, "Check", validate_fields_for_doctype=False
+    )
     make_property_setter(
         "Lead",
         "main",
