@@ -114,7 +114,7 @@ on the Work Order, so a customer token cannot reach them:
 | `...work_order_update.post_update` | `work_order`, `progress`, `note`, `update_type` | **report progress from site** |
 | `...work_order_update.updates` | `work_order` | full trail for one job, with proof |
 
-Full path: `property_core.property_core.property_operations.doctype.work_order_update.work_order_update`
+Full path: `property_core.property_operations.doctype.work_order_update.work_order_update`
 
 ---
 

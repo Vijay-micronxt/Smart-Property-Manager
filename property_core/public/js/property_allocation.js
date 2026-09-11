@@ -28,7 +28,7 @@ frappe.ui.form.on("Property Allocation", {
                     primary_action_label: __("Renew"),
                     primary_action(values) {
                         frappe.call({
-                            method: "property_core.property_core.property_core.doctype.property_allocation.property_allocation.renew_lease",
+                            method: "property_core.property_core.doctype.property_allocation.property_allocation.renew_lease",
                             args: {
                                 allocation_name: frm.doc.name,
                                 new_end_date: values.new_end_date,
