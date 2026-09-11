@@ -83,7 +83,28 @@ Frontend                  Your server / ERPNext            Razorpay
 
 ### 2.1 Create Order & get Razorpay key
 
-Supports `Sales Order`, `Sales Invoice`, or `Quotation` as `order_id`.
+Accepts any of these as `order_id`:
+
+| `order_id` | What gets charged |
+|---|---|
+| `Sales Invoice` | that invoice |
+| `Sales Order` | the invoice raised from it |
+| `Quotation` | the sales order, then the invoice, both raised if missing |
+| **`Property Booking`** (`BKG-…`) | the booking's **next unpaid instalment** |
+| **`Payment Plan`** (`PP-…`) | that one instalment |
+
+A customer does not think in invoices — they open their booking and pay what is
+due — so a booking id is the normal thing for a property portal to send. It
+resolves to the earliest unpaid instalment and, if that instalment has not been
+billed yet, the invoice is raised there and then.
+
+> **`amount` is the instalment, not the booking.** It is in **paise**, and it
+> should match the instalment being paid, not the agreement value. Sending the
+> full booking value against a single instalment invoice overpays it. Read the
+> amount off the Payment Plan row (₹2,00,000 → `20000000`).
+
+A booking with nothing left to pay is refused with
+`Booking BKG-0003 has no unpaid instalment. Nothing to pay.`
 
 **Endpoint:** `POST /api/method/property_core.property_core.api.ecommerce.razorpay_integration.order_payment`  
 **Auth:** Guest (no session cookie needed)
@@ -96,6 +117,20 @@ curl -s -X POST \
     "order_id": "SAL-ORD-2026-00042",
     "amount": 25000,
     "store_id": "STORE-01",
+    "owner_id": "customer@example.com"
+  }'
+```
+
+Paying a booking instead — same endpoint, same shape:
+
+```bash
+curl -s -X POST \
+  "https://your-site.example.com/api/method/property_core.property_core.api.ecommerce.razorpay_integration.order_payment" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "order_id": "BKG-0003",
+    "amount": 20000000,
+    "store_id": "",
     "owner_id": "customer@example.com"
   }'
 ```
@@ -278,8 +313,30 @@ Your server / ERPNext              mSwipe PBL
 
 ### 3.1 Initiate Payment
 
-Accepts `Sales Order`, `Sales Invoice`, or `Quotation` as `order_id`.  
-`mobile` is mandatory — mSwipe sends the SMS/link to this number.
+Accepts any of these as `order_id`:
+
+| `order_id` | What gets charged |
+|---|---|
+| `Sales Invoice` | that invoice |
+| `Sales Order` | the invoice raised from it |
+| `Quotation` | the sales order, then the invoice, both raised if missing |
+| **`Property Booking`** (`BKG-…`) | the booking's **next unpaid instalment** |
+| **`Payment Plan`** (`PP-…`) | that one instalment |
+
+A customer does not think in invoices — they open their booking and pay what is
+due — so a booking id is the normal thing for a property portal to send. It
+resolves to the earliest unpaid instalment and, if that instalment has not been
+billed yet, the invoice is raised there and then.
+
+> **`amount` is the instalment, not the booking.** It is in **paise**, and it
+> should match the instalment being paid, not the agreement value. Sending the
+> full booking value against a single instalment invoice overpays it. Read the
+> amount off the Payment Plan row (₹2,00,000 → `20000000`).
+
+A booking with nothing left to pay is refused with
+`Booking BKG-0003 has no unpaid instalment. Nothing to pay.`
+
+`mobileno` is mandatory — mSwipe sends the SMS/link to this number.
 
 **Endpoint:** `POST /api/method/property_core.property_core.api.ecommerce.mswipe_integration.order_payment`  
 **Auth:** Guest

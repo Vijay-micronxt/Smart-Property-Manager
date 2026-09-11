@@ -26,6 +26,10 @@
   "layout_annotations",
   "section_geo",
   "geo_location",
+  "latitude",
+  "longitude",
+  "column_break_geo",
+  "map_link",
   "drive_folder_id"
  ],
  "fields": [
@@ -167,6 +171,32 @@
    "label": "Geo Location"
   },
   {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6",
+   "read_only": 1,
+   "description": "Taken from the map. Use Set Location to change it."
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_geo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "map_link",
+   "fieldtype": "Data",
+   "label": "Google Maps",
+   "read_only": 1,
+   "options": "URL"
+  },
+  {
    "fieldname": "drive_folder_id",
    "fieldtype": "Data",
    "label": "Drive Folder ID",
@@ -175,18 +205,7 @@
    "no_copy": 1
   }
  ],
- "links": [
-  {
-   "group": "Units",
-   "link_doctype": "Property Unit",
-   "link_fieldname": "property"
-  },
-  {
-   "group": "CRM",
-   "link_doctype": "Opportunity",
-   "link_fieldname": "property"
-  }
- ],
+ "links": [],
  "modified": "2024-01-01 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",

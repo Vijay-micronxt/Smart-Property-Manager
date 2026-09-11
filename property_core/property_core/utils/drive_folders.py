@@ -87,7 +87,10 @@ BOOKING_PARENT_PATH = ("06 - Sales & CRM", "Booking Documents")
 
 
 def drive_installed():
-    return frappe.db.table_exists("Drive File")
+    # The tables outlive an uninstall, so the table alone is not proof: a site
+    # that once had Drive still has `tabDrive File` sitting there, and building
+    # folders into it would fail on the missing python module.
+    return "drive" in frappe.get_installed_apps() and frappe.db.table_exists("Drive File")
 
 
 def _personal_team(user=None):
@@ -131,9 +134,71 @@ def get_or_create_folder(title, parent, team):
     return folder.name
 
 
+def _find_folder(title, parent, team):
+    return frappe.db.get_value(
+        "Drive File",
+        {"title": title, "is_group": 1, "team": team, "parent_entity": parent, "is_active": 1},
+        "name",
+    )
+
+
+def _has_children(folder, team):
+    return bool(
+        frappe.db.exists("Drive File", {"parent_entity": folder, "team": team, "is_active": 1})
+    )
+
+
+def _folder_team(folder):
+    """The team a folder lives in -- None if it is gone or deactivated."""
+    if not folder:
+        return None
+    return frappe.db.get_value(
+        "Drive File", {"name": folder, "is_group": 1, "is_active": 1}, "team"
+    )
+
+
+def _adopt_existing(property_name, team, root):
+    """A tree that already belongs to this development, as (folder, team).
+
+    Checked strongest first. The ids beat the titles because JD's project
+    names carry stray whitespace (" Prashantha Vana "), and they point at the
+    shared team drive where the real documents already sit rather than at
+    whichever personal drive happened to be open when someone pressed submit.
+    """
+    folder = frappe.db.get_value("Property", property_name, "drive_folder_id")
+    folder_team = _folder_team(folder)
+    if folder_team:
+        return folder, folder_team
+
+    project = frappe.db.get_value("Property", property_name, "project")
+    if project:
+        if frappe.db.has_column("Project", "drive_folder_id"):
+            folder = frappe.db.get_value("Project", project, "drive_folder_id")
+            folder_team = _folder_team(folder)
+            if folder_team:
+                return folder, folder_team
+
+        project_name = (frappe.db.get_value("Project", project, "project_name") or "").strip()
+        if project_name:
+            folder = _find_folder(project_name, root, team)
+            if folder:
+                return folder, team
+
+    folder = _find_folder(property_name, root, team)
+    if folder:
+        return folder, team
+
+    return None, None
+
+
 def ensure_property_folders(property_name, user=None):
-    """Root folder for the property plus the nine-department tree. Returns the
-    root folder id, or None when Drive is not usable for this user."""
+    """The development's folder tree. Returns the root folder id, or None when
+    Drive is not usable for this user.
+
+    An existing tree is adopted rather than duplicated -- JD built one per
+    Project long before Property existed, and a team should not end up with two
+    folders for one development that differ by a couple of words.
+    """
     if not drive_installed():
         return None
 
@@ -152,15 +217,28 @@ def ensure_property_folders(property_name, user=None):
     previous_mute = frappe.flags.get("mute_emails")
     frappe.flags.mute_emails = True
     try:
-        property_folder = get_or_create_folder(property_name, root, team)
+        property_folder, folder_team = _adopt_existing(property_name, team, root)
+
+        if not property_folder:
+            property_folder, folder_team = get_or_create_folder(property_name, root, team), team
+
         frappe.db.set_value(
             "Property", property_name, "drive_folder_id", property_folder, update_modified=False
         )
 
-        for department, subfolders in PROPERTY_STRUCTURE.items():
-            department_id = get_or_create_folder(department, property_folder, team)
-            for subfolder in subfolders:
-                get_or_create_folder(subfolder, department_id, team)
+        # Only lay out the departments in a folder nobody has filled yet -- an
+        # adopted tree already has its own, and ours would sit beside them as
+        # near-duplicates.
+        if not _has_children(property_folder, folder_team):
+            for department, subfolders in PROPERTY_STRUCTURE.items():
+                department_id = get_or_create_folder(department, property_folder, folder_team)
+                for subfolder in subfolders:
+                    get_or_create_folder(subfolder, department_id, folder_team)
+
+        # Bookings need this path whichever tree we ended up in.
+        parent = property_folder
+        for segment in BOOKING_PARENT_PATH:
+            parent = get_or_create_folder(segment, parent, folder_team)
 
         return property_folder
     except Exception:
@@ -178,23 +256,32 @@ def ensure_booking_folder(booking):
     if not drive_installed() or not booking.get("unit_property"):
         return None
 
-    team = _personal_team()
-    if not team:
-        return None
-
     previous_mute = frappe.flags.get("mute_emails")
     frappe.flags.mute_emails = True
     try:
         parent = frappe.db.get_value("Property", booking.unit_property, "drive_folder_id")
-        if not parent:
+        if not _folder_team(parent):
             parent = ensure_property_folders(booking.unit_property)
         if not parent:
+            return None
+
+        # The property's tree may have been adopted from a shared team drive,
+        # so the subfolders belong to that team -- not to whoever happens to be
+        # submitting the booking.
+        team = _folder_team(parent)
+        if not team:
             return None
 
         for segment in BOOKING_PARENT_PATH:
             parent = get_or_create_folder(segment, parent, team)
 
-        title = f"{booking.customer} - {booking.property_unit}"
+        # Named for the property and the unit, not the booking id -- that is
+        # what people look for when they go hunting for a plot's papers.
+        unit_number = (
+            frappe.db.get_value("Property Unit", booking.property_unit, "unit_number")
+            or booking.property_unit
+        )
+        title = f"{booking.unit_property} - {unit_number}"
         folder = get_or_create_folder(title, parent, team)
         frappe.db.set_value(
             "Property Booking", booking.name, "drive_folder_id", folder, update_modified=False

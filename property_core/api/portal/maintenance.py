@@ -20,6 +20,9 @@ from property_core.api.portal.base import (
     serialize,
 )
 from property_core.api.utils import ok
+from property_core.property_operations.doctype.work_order_update.work_order_update import (
+    proof_files,
+)
 
 
 @frappe.whitelist()
@@ -178,3 +181,51 @@ def inspections(property_unit=None, limit=20):
             )
 
     return ok(data={"inspections": rows, "total": len(rows)})
+
+
+@frappe.whitelist()
+def work_updates(work_order=None, property_unit=None, limit=100):
+    """Progress reported from site, with the photos and video proving it.
+
+    This is the "kitna kaam hua" feed. A customer sees it only for their own
+    units -- the same scoping every other portal endpoint uses.
+    """
+    customer = get_customer()
+
+    filters = scope(customer, property_unit)
+    if filters is None:
+        return ok(data={"updates": [], "total": 0})
+
+    if work_order:
+        owned = frappe.db.get_value("Work Order", work_order, "property_unit")
+        if not owned or owned not in customer_units(customer):
+            frappe.throw(frappe._("This work order is not on one of your units."))
+        filters = {"work_order": work_order}
+
+    rows = get_list(
+        "Work Order Update", filters,
+        order_by="posted_on desc",
+        limit_page_length=as_int(limit, 100),
+    )
+
+    for row in rows:
+        row["posted_by_name"] = frappe.db.get_value(
+            "User", row.get("posted_by"), "full_name"
+        ) or row.get("posted_by")
+        row["proof"] = serialize_proof(proof_files(row["name"]))
+        if row.get("property_unit"):
+            row["unit_number"] = frappe.db.get_value(
+                "Property Unit", row["property_unit"], "unit_number"
+            )
+
+    latest = rows[0] if rows else None
+
+    return ok(data={
+        "updates": rows,
+        "total": len(rows),
+        "latest_progress": flt(latest.get("progress")) if latest else 0,
+    })
+
+
+def serialize_proof(files):
+    return [serialize(row) for row in files]

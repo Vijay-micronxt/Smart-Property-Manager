@@ -3,6 +3,7 @@
  "creation": "2024-01-01 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
+ "issingle": 1,
  "field_order": [
   "base_url",
   "cust_code",
@@ -31,7 +32,7 @@
    "fieldtype": "Data",
    "label": "Mswipe API User ID",
    "reqd": 1,
-   "description": "API user ID issued by Mswipe for the Pay-by-Link service — not your ERPNext login."
+   "description": "API user ID issued by Mswipe for the Pay-by-Link service \u2014 not your ERPNext login."
   },
   {
    "fieldname": "client_id",
@@ -45,7 +46,7 @@
    "fieldtype": "Password",
    "label": "Mswipe API Password",
    "reqd": 1,
-   "description": "API password issued by Mswipe for the Pay-by-Link service — not your ERPNext login."
+   "description": "API password issued by Mswipe for the Pay-by-Link service \u2014 not your ERPNext login."
   },
   {
    "fieldname": "mode_of_payment",

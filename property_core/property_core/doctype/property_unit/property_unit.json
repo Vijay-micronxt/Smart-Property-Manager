@@ -28,7 +28,11 @@
   "layout_rotation",
   "layout_points",
   "section_geo",
-  "geo_location"
+  "geo_location",
+  "latitude",
+  "longitude",
+  "column_break_geo",
+  "map_link"
  ],
  "fields": [
   {
@@ -186,20 +190,35 @@
    "fieldname": "geo_location",
    "fieldtype": "Geolocation",
    "label": "Geo Location"
-  }
- ],
- "links": [
-  {
-   "group": "Transactions",
-   "link_doctype": "Property Booking",
-   "link_fieldname": "property_unit"
   },
   {
-   "group": "Transactions",
-   "link_doctype": "Property Allocation",
-   "link_fieldname": "property_unit"
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude",
+   "precision": "6",
+   "read_only": 1,
+   "description": "Taken from the map. Use Set Location to change it."
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude",
+   "precision": "6",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_geo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "map_link",
+   "fieldtype": "Data",
+   "label": "Google Maps",
+   "read_only": 1,
+   "options": "URL"
   }
  ],
+ "links": [],
  "modified": "2024-01-01 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",

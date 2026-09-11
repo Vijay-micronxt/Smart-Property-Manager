@@ -21,10 +21,14 @@ add_to_apps_screen = [
 
 doctype_js = {
     # property_core module
-    "Property": "public/js/property.js",
+    "Property": [
+        "public/js/property.js",
+        "public/js/geo_search.js",
+    ],
     "Property Unit": [
         "public/js/property_unit.js",
         "public/js/property_unit_maintenance.js",
+        "public/js/geo_search.js",
     ],
     "Payment Plan": "public/js/payment_plan.js",
     "Property Allocation": "public/js/property_allocation.js",
@@ -58,10 +62,14 @@ doctype_js = {
         "public/js/opportunity_property.js",
     ],
     "Property Booking": "public/js/follow_up_widget.js",
+    "Project": "public/js/project_property.js",
 }
 
 doctype_list_js = {
-    "Lead": "public/js/lead_crm_list.js",
+    "Lead": [
+        "public/js/follow_up_widget.js",
+        "public/js/lead_crm_list.js",
+    ],
 }
 
 scheduler_events = {
@@ -107,10 +115,20 @@ doc_events = {
         "on_update": [
             "property_core.property_core.notifications.lead_followup.on_lead_update",
             "property_core.property_core.crm.call_log.keep_single_assignment",
+            "property_core.property_core.crm.customer_from_lead.sync_lead_address",
         ],
+    },
+    "Customer": {
+        "after_insert": "property_core.property_core.crm.customer_from_lead.link_lead_records",
     },
     "Call Log": {
         "after_insert": "property_core.property_core.crm.call_log.after_insert",
+    },
+    "Property": {
+        "validate": "property_core.property_core.geo.sync_location_fields",
+    },
+    "Property Unit": {
+        "validate": "property_core.property_core.geo.sync_location_fields",
     },
 }
 
@@ -139,6 +157,7 @@ after_migrate = [
     # relative to custom_property_unit, which that one creates
     "property_core.property_core.crm.lead_fields.sync_lead_crm_fields",
     "property_core.property_core.crm.telephony.sync_telephony_fields",
+    "property_core.property_core.crm.customer_from_lead.sync_address_fields",
     "property_core.property_core.doctype.property_notification_settings.property_notification_settings.seed_default_reminder_rules",
 ]
 
@@ -150,6 +169,7 @@ before_uninstall = [
     "property_core.property_core.notifications.custom_fields.delete_notification_fields",
     "property_core.property_core.crm.lead_fields.delete_lead_crm_fields",
     "property_core.property_core.crm.telephony.delete_telephony_fields",
+    "property_core.property_core.crm.customer_from_lead.delete_address_fields",
 ]
 
 fixtures = [

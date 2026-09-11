@@ -36,9 +36,11 @@ function add_contact_actions(frm) {
 	frm.add_custom_button(
 		__("WhatsApp"),
 		() =>
-			property_core.follow_up.whatsapp(
+			property_core.follow_up.whatsapp_dialog(
+				"Lead",
+				frm.doc.name,
 				frm.doc.mobile_no,
-				__("Hello {0},", [frm.doc.lead_name || ""])
+				frm.doc.lead_name
 			),
 		__("Contact")
 	);

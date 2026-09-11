@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import getdate, today
 from frappe.model.document import Document
 
 
@@ -19,9 +20,21 @@ class PaymentPlan(Document):
 
         item_code = _resolve_item(unit)
 
+        # An invoice raised today cannot have fallen due last month. An
+        # overdue milestone kept failing ERPNext's "Due Date cannot be before
+        # Posting Date" every single night, so it never billed at all -- the
+        # milestone row already records how late it is.
+        posting_date = getdate(today())
+        due_date = max(getdate(self.due_date), posting_date)
+
         invoice = frappe.new_doc("Sales Invoice")
         invoice.customer = booking.customer
-        invoice.due_date = self.due_date
+        invoice.posting_date = posting_date
+        invoice.due_date = due_date
+        # Payment reminders default to "Property-Linked Invoices Only", so an
+        # instalment invoice without this gets silently skipped by the chaser.
+        if invoice.meta.has_field("property_unit"):
+            invoice.property_unit = unit.name
         invoice.append("items", {
             "item_code": item_code,
             "description": "{} — {} ({})".format(
@@ -31,6 +44,17 @@ class PaymentPlan(Document):
             "rate": self.amount,
         })
         invoice.insert(ignore_permissions=True)
+
+        # A draft carries no outstanding, so nothing downstream works: no
+        # payment reminder, no Payment Entry against it, and the invoice
+        # notification never fires. The customer is being asked to pay this, so
+        # it has to be a real invoice.
+        try:
+            invoice.submit()
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(), f"Payment Plan invoice left as draft: {self.name}"
+            )
 
         self.db_set("invoice", invoice.name)
         self.db_set("payment_status", "Invoiced")

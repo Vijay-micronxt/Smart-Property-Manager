@@ -1,149 +1,203 @@
 {
-  "actions": [],
-  "autoname": "naming_series:",
-  "creation": "2024-01-01 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "field_order": [
-    "naming_series",
-    "issue",
-    "property_unit",
-    "status",
-    "description",
-    "column_break_1",
-    "assigned_to",
-    "vendor",
-    "scheduled_date",
-    "completed_date",
-    "section_cost",
-    "estimated_cost",
-    "actual_cost",
-    "section_notes",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "naming_series",
-      "fieldtype": "Select",
-      "label": "Series",
-      "options": "WO-.####"
-    },
-    {
-      "fieldname": "issue",
-      "fieldtype": "Link",
-      "label": "Issue",
-      "options": "Issue",
-      "in_list_view": 1,
-      "in_standard_filter": 1,
-      "description": "Optional -- link the customer query/complaint this work order resolves. Leave blank for internal/preventive work with no customer complaint behind it."
-    },
-    {
-      "fieldname": "property_unit",
-      "fieldtype": "Link",
-      "label": "Property Unit",
-      "options": "Property Unit",
-      "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "status",
-      "fieldtype": "Select",
-      "label": "Status",
-      "options": "Draft\nAssigned\nIn Progress\nCompleted\nCancelled",
-      "default": "Draft",
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "description",
-      "fieldtype": "Text",
-      "label": "Work Description",
-      "reqd": 1
-    },
-    {
-      "fieldname": "column_break_1",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "assigned_to",
-      "fieldtype": "Link",
-      "label": "Assigned To",
-      "options": "User"
-    },
-    {
-      "fieldname": "vendor",
-      "fieldtype": "Link",
-      "label": "Vendor / Contractor",
-      "options": "Supplier"
-    },
-    {
-      "fieldname": "scheduled_date",
-      "fieldtype": "Date",
-      "label": "Scheduled Date",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "completed_date",
-      "fieldtype": "Date",
-      "label": "Completed Date"
-    },
-    {
-      "fieldname": "section_cost",
-      "fieldtype": "Section Break",
-      "label": "Cost"
-    },
-    {
-      "fieldname": "estimated_cost",
-      "fieldtype": "Currency",
-      "label": "Estimated Cost"
-    },
-    {
-      "fieldname": "actual_cost",
-      "fieldtype": "Currency",
-      "label": "Actual Cost"
-    },
-    {
-      "fieldname": "section_notes",
-      "fieldtype": "Section Break",
-      "label": "Notes"
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Text",
-      "label": "Notes"
-    }
-  ],
-  "links": [],
-  "modified": "2024-01-01 00:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "Property Operations",
-  "name": "Work Order",
-  "naming_rule": "By \"Naming Series\" field",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "Property Manager",
-      "share": 1,
-      "write": 1
-    },
-    {
-      "create": 1,
-      "read": 1,
-      "report": 1,
-      "role": "Operations User",
-      "write": 1
-    }
-  ],
-  "sort_field": "scheduled_date",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "issue",
+  "work_type",
+  "sales_invoice",
+  "maintenance_period",
+  "property_unit",
+  "status",
+  "last_update_on",
+  "progress",
+  "description",
+  "column_break_1",
+  "assigned_to",
+  "vendor",
+  "scheduled_date",
+  "completed_date",
+  "section_cost",
+  "estimated_cost",
+  "actual_cost",
+  "section_notes",
+  "notes",
+  "section_updates",
+  "updates_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "WO-.####"
+  },
+  {
+   "fieldname": "issue",
+   "fieldtype": "Link",
+   "label": "Issue",
+   "options": "Issue",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Optional -- link the customer query/complaint this work order resolves. Leave blank for internal/preventive work with no customer complaint behind it."
+  },
+  {
+   "fieldname": "work_type",
+   "fieldtype": "Select",
+   "label": "Work Type",
+   "options": "Complaint\nMaintenance\nOther",
+   "default": "Complaint",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Charged On",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "description": "The maintenance charge this work was billed under."
+  },
+  {
+   "fieldname": "maintenance_period",
+   "fieldtype": "Data",
+   "label": "Maintenance Period",
+   "read_only": 1,
+   "description": "e.g. 2026-09 -- one work order per unit per period."
+  },
+  {
+   "fieldname": "property_unit",
+   "fieldtype": "Link",
+   "label": "Property Unit",
+   "options": "Property Unit",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nAssigned\nIn Progress\nCompleted\nCancelled",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "last_update_on",
+   "fieldtype": "Datetime",
+   "label": "Last Update From Site",
+   "read_only": 1
+  },
+  {
+   "fieldname": "progress",
+   "fieldtype": "Percent",
+   "label": "Work Done",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Latest figure reported from site. Set by Work Order Update."
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Work Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "label": "Assigned To",
+   "options": "User"
+  },
+  {
+   "fieldname": "vendor",
+   "fieldtype": "Link",
+   "label": "Vendor / Contractor",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "scheduled_date",
+   "fieldtype": "Date",
+   "label": "Scheduled Date",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "completed_date",
+   "fieldtype": "Date",
+   "label": "Completed Date"
+  },
+  {
+   "fieldname": "section_cost",
+   "fieldtype": "Section Break",
+   "label": "Cost"
+  },
+  {
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost"
+  },
+  {
+   "fieldname": "actual_cost",
+   "fieldtype": "Currency",
+   "label": "Actual Cost"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_updates",
+   "fieldtype": "Section Break",
+   "label": "Progress From Site"
+  },
+  {
+   "fieldname": "updates_html",
+   "fieldtype": "HTML",
+   "label": "Updates"
+  }
+ ],
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Property Operations",
+ "name": "Work Order",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Property Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Operations User",
+   "write": 1
+  }
+ ],
+ "sort_field": "scheduled_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }

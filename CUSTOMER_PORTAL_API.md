@@ -96,6 +96,7 @@ see §9.
 | `billing` | `payment_schedule` | `booking` | milestone plan |
 | `maintenance` | `work_history` | `property_unit`, `status`, `limit` | **what work was done** |
 | `maintenance` | `schedule` | `property_unit` | what is due next |
+| `maintenance` | `work_updates` | `work_order`, `property_unit`, `limit` | **progress from site, with photos** |
 | `maintenance` | `inspections` | `property_unit`, `limit` | inspection results |
 | `support` | `issues` | `property_unit`, `status`, `limit` | tickets + work orders |
 | `support` | `issue` | `issue` | one ticket + conversation |
@@ -104,6 +105,16 @@ see §9.
 | `documents` | `list_documents` | `property_unit`, `limit` | document index |
 
 Write endpoints are bold. Everything else is read-only.
+
+Two more are used by staff rather than customers — they need write permission
+on the Work Order, so a customer token cannot reach them:
+
+| Method | Args | Purpose |
+|---|---|---|
+| `...work_order_update.post_update` | `work_order`, `progress`, `note`, `update_type` | **report progress from site** |
+| `...work_order_update.updates` | `work_order` | full trail for one job, with proof |
+
+Full path: `property_core.property_core.property_operations.doctype.work_order_update.work_order_update`
 
 ---
 
@@ -272,7 +283,46 @@ complaint it came from.
 }
 ```
 
-### 6.2 `maintenance.schedule`
+### 6.2 `maintenance.work_updates` — progress, with proof
+
+What the people on site have reported: how far the job has got, what they did,
+and the photos or clips they took. Call it with no arguments for a feed across
+every unit the customer has, or with `work_order` for one job.
+
+`proof[].kind` is already worked out for you — `image`, `video` or `file` — so
+the app can render a gallery without sniffing extensions. URLs are private
+files; fetch them with the same token.
+
+```json
+{
+ "updates": [
+  {"name": "WOU-2026-00014", "work_order": "WO-0006", "property_unit": "UNIT-0004",
+   "update_type": "Progress", "progress": 60.0,
+   "note": "Tank cleaned, painting left",
+   "posted_on": "2026-09-11 16:20:04", "posted_by": "ops@jdhomes.co.in",
+   "posted_by_name": "Ravi Kumar", "unit_number": "E-401",
+   "proof": [
+     {"name": "abc123", "file_name": "tank-after.jpg",
+      "file_url": "/private/files/tank-after.jpg", "file_size": 184320,
+      "is_private": 1, "kind": "image", "creation": "2026-09-11 16:20:09"},
+     {"name": "def456", "file_name": "walkthrough.mp4",
+      "file_url": "/private/files/walkthrough.mp4", "file_size": 4210688,
+      "is_private": 1, "kind": "video", "creation": "2026-09-11 16:20:31"}
+   ]}
+ ],
+ "total": 1,
+ "latest_progress": 60.0
+}
+```
+
+`update_type` is one of `Progress`, `Completed`, `Blocked`, `Note`. At 100% (or
+on a `Completed` update) the Work Order closes itself and stamps its completion
+date, so `work_history` and this feed always agree.
+
+A work order on somebody else's unit is refused, the same as every other
+endpoint here.
+
+### 6.3 `maintenance.schedule`
 
 What the unit's Maintenance Plan Template will service and bill next. Periods
 already invoiced come back with `billed: 1`.
@@ -297,7 +347,7 @@ already invoiced come back with `billed: 1`.
 when the template row carries no fixed date. `kind: "Recurring"` rows describe
 the repeat cycle and carry no date.
 
-### 6.3 `maintenance.inspections`
+### 6.4 `maintenance.inspections`
 
 Inspection Checklists with their line items (`item_name`, `category`,
 `condition`, `remarks`).
@@ -312,7 +362,24 @@ Inspection Checklists with their line items (`item_name`, `category`,
 `percent_complete`), `amenities`, `property_documents`, `allocation`,
 `agreement` and `booking` in one payload.
 
-### 7.2 `properties.site_map`
+### 7.2 Where a property or unit actually is
+
+Both `properties.my_units` and `properties.unit` carry the location as plain
+numbers, so an app can drop a pin or open navigation without parsing GeoJSON:
+
+```json
+{"name": "UNIT-0007", "unit_number": "A-4", "property": "DUMMY Sunrise Meadows Property",
+ "latitude": 12.9716, "longitude": 77.5946,
+ "map_link": "https://www.google.com/maps/search/?api=1&query=12.9716,77.5946"}
+```
+
+All three are `null` until somebody sets the location on the record. `map_link`
+opens Google Maps on any phone, which is usually what a site visit needs.
+
+The raw `geo_location` GeoJSON is still on the document for anyone who wants
+the drawn shape rather than a single point.
+
+### 7.3 `properties.site_map`
 
 Layout geometry for the map view — the same engine data the desk Layout Editor
 writes.
@@ -341,7 +408,7 @@ writes.
 Other customers' identities are never exposed — the `customer` field is stripped
 and replaced by `mine`.
 
-### 7.3 `bookings.book_unit` — request a booking
+### 7.4 `bookings.book_unit` — request a booking
 
 Creates a **draft** Property Booking for staff to verify and submit, and a
 high-priority ToDo for every enabled Property Manager. Price comes from the
@@ -377,8 +444,16 @@ To re-test, cancel and delete the booking and set the unit back to `Available`.
 
 ```json
 {"status": "ok", "message": "Ticket raised. Our team will get back to you.",
- "data": {"issue": "ISS-2026-00003", "status": "Open"}}
+ "data": {"issue": "ISS-2026-00003", "status": "Open",
+          "upload_to": "/api/method/upload_file",
+          "upload_args": {"doctype": "Issue", "docname": "ISS-2026-00003", "is_private": 1}}}
 ```
+
+`raise_issue` hands back where to put the photos of the fault — see
+[§ 9. Uploading photos and video](#9-uploading-photos-and-video). Reading the
+ticket back with `support.issue` returns them as `attachments[]`, and any
+progress reported against work orders on that ticket as `work_updates[]`, so
+the customer sees the fix in the same place they reported the fault.
 
 `documents.list_documents` returns a flat index of what the estate already
 attaches — Property Document rows, the agreement PDF, and File attachments on
@@ -399,7 +474,53 @@ file permission check.
 
 ---
 
-## 9. Errors
+## 9. Uploading photos and video
+
+There is no custom upload endpoint. Files go through Frappe's own
+`/api/method/upload_file`, attached to the record they belong to — so
+permission on a file follows permission on that record, and nothing has to be
+re-implemented.
+
+Always two calls, and the first one tells you the arguments for the second:
+
+**1. Create the record.** `support.raise_issue` and `work_order_update.post_update`
+both return `upload_to` and `upload_args`. Use them exactly as given rather than
+building the arguments yourself — the doctype differs by case.
+
+```json
+{"name": "WOU-2026-00014", "work_order": "WO-0006", "progress": 60.0,
+ "work_order_status": "In Progress",
+ "upload_to": "/api/method/upload_file",
+ "upload_args": {"doctype": "Work Order Update", "docname": "WOU-2026-00014", "is_private": 1}}
+```
+
+**2. Post each file** as `multipart/form-data` to `upload_to`, with the same
+token and the fields from `upload_args` plus the file itself:
+
+```bash
+curl -X POST "https://your-site.example.com/api/method/upload_file" \
+  -H "Authorization: token <key>:<secret>" \
+  -F "file=@tank-after.jpg" \
+  -F "doctype=Work Order Update" \
+  -F "docname=WOU-2026-00014" \
+  -F "is_private=1"
+```
+
+One call per file. The response carries the `File` record including `file_url`,
+which is what later appears in `proof[]` and `attachments[]`.
+
+**Who posts what.** Customers photograph the fault on the ticket. Staff report
+progress on the work order — `post_update` needs write permission on the Work
+Order, so a customer cannot post progress on their own job.
+
+> **Size limit.** Frappe rejects anything above `max_file_size` (default
+> **10 MB**). Photos are fine; video from a phone usually is not. Either raise
+> the limit in site config or compress before upload — and handle the rejection,
+> because an upload that fails still leaves the update or ticket in place.
+
+---
+
+## 10. Errors
 
 Frappe returns **HTTP 417** for `frappe.throw()`, **403** for unauthenticated
 calls.
@@ -440,7 +561,7 @@ Guard messages worth handling explicitly:
 
 ---
 
-## 10. Adding fields later
+## 11. Adding fields later
 
 Payload field lists live in one place — `property_core/api/portal/fields.py` —
 not inside the queries. Three ways to extend, cheapest first:
@@ -470,7 +591,7 @@ unit at read time.
 
 ---
 
-## 11. Legacy endpoints
+## 12. Legacy endpoints
 
 `property_core.property_core.api.customer_portal.*` (11 methods:
 `customer_portal_get`, `get_maintenance_requests`, `get_utility_bills`,
@@ -482,7 +603,7 @@ are what the bundled `/customer-portal` page calls. New clients should use
 
 ---
 
-## 12. Test data used above
+## 13. Test data used above
 
 `review.site`, customer `Portal Test Customer`, login `portal.test@example.com`.
 

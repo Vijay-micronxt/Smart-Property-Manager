@@ -66,7 +66,11 @@ SALES_INVOICE_FIELDS = [
         "label": "Property Unit",
         "options": "Property Unit",
         "insert_after": "customer",
-        "description": "Set by the maintenance and rent billing runs. Set it by hand on a manually raised invoice so payment reminders can find it.",
+        # Classifies the invoice for the reminder scope; it touches no
+        # accounting figure, and the field's whole purpose is to be fixable on
+        # an invoice that was already submitted without it.
+        "allow_on_submit": 1,
+        "description": "Set by the maintenance, rent and instalment billing runs. Set it by hand on a manually raised invoice so payment reminders can find it.",
     },
     {
         "fieldname": "maintenance_period",

@@ -31,11 +31,27 @@ frappe.ui.form.on("Opportunity", {
 			__("Create")
 		);
 
+		// A booking needs a Customer. Offer it from here too, so the chain does
+		// not stall at the one step that has no button.
+		if (frm.doc.opportunity_from === "Lead" && frm.doc.party_name) {
+			frm.add_custom_button(
+				__("Customer"),
+				() => property_core.follow_up.create_customer(frm.doc.party_name),
+				__("Create")
+			);
+		}
+
 		if (frm.doc.contact_mobile || frm.doc.contact_no) {
 			const number = frm.doc.contact_mobile || frm.doc.contact_no;
 			frm.add_custom_button(
 				__("WhatsApp"),
-				() => property_core.follow_up.whatsapp(number),
+				() =>
+					property_core.follow_up.whatsapp_dialog(
+						"Opportunity",
+						frm.doc.name,
+						number,
+						frm.doc.party_name
+					),
 				__("Contact")
 			);
 			frm.add_custom_button(
