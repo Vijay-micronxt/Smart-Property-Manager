@@ -183,6 +183,7 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
     si_name = None
     pe_name = None
     pe_error = None
+    si_error = None
 
     if entry_name and payment_status in ("CAPTURED", "AUTHORIZED"):
         rpe = frappe.get_doc("Razorpay Payment Entry", entry_name)
@@ -203,11 +204,13 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
                     rpe.db_set("sales_invoice", si_name)
                     rpe.reload()
                 except Exception:
+                    si_error = f"Could not resolve an invoice for {original_order_id}"
                     frappe.log_error(
                         title=f"verify_payment_signature - SI creation failed for {original_order_id}",
                         message=frappe.get_traceback(),
                     )
             else:
+                si_error = "Could not work out which document this payment was for"
                 frappe.log_error(
                     title="verify_payment_signature - original order_id not found",
                     message=f"razorpay_order_id={razorpay_order_id} razorpay_payment_id={razorpay_payment_id}",
@@ -228,15 +231,22 @@ def verify_payment_signature(razorpay_payment_id, razorpay_order_id, razorpay_si
         else:
             pe_name = rpe.payment_entry
 
+    # The payment itself is real either way, but a caller that is told
+    # "success" and nothing else will never find out the money was never
+    # reconciled -- which is exactly how an unlinked payment goes unnoticed.
+    reconciled = bool(pe_name)
+
     return {
         "success": True,
-        "message": "Payment verified",
+        "reconciled": reconciled,
+        "message": "Payment verified" if reconciled else "Payment verified but not yet reconciled",
         "payment_status": payment_status,
         "razorpay_payment_id": razorpay_payment_id,
         "razorpay_order_id": razorpay_order_id,
         "sales_invoice": si_name,
         "payment_entry": pe_name,
         **({"pe_error": "Payment Entry creation failed — check Error Log"} if pe_error else {}),
+        **({"invoice_error": si_error} if si_error else {}),
     }
 
 
