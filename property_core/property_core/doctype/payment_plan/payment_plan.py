@@ -22,6 +22,10 @@ class PaymentPlan(Document):
         invoice = frappe.new_doc("Sales Invoice")
         invoice.customer = booking.customer
         invoice.due_date = self.due_date
+        # Payment reminders default to "Property-Linked Invoices Only", so an
+        # instalment invoice without this gets silently skipped by the chaser.
+        if invoice.meta.has_field("property_unit"):
+            invoice.property_unit = unit.name
         invoice.append("items", {
             "item_code": item_code,
             "description": "{} — {} ({})".format(
