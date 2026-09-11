@@ -69,6 +69,17 @@ def issue(issue):
         row["unit_number"] = frappe.db.get_value(
             "Property Unit", row["property_unit"], "unit_number"
         )
+    row["attachments"] = attachments("Issue", issue)
+
+    # Proof from site, gathered across every work order on this ticket, so the
+    # customer sees the fix in the same place they reported the fault.
+    row["work_updates"] = []
+    for work_order in row["work_orders"]:
+        for update in get_list(
+            "Work Order Update", {"work_order": work_order["name"]}, order_by="posted_on desc"
+        ):
+            update["proof"] = attachments("Work Order Update", update["name"])
+            row["work_updates"].append(update)
 
     return ok(data=row)
 
@@ -101,7 +112,17 @@ def raise_issue(subject, description=None, property_unit=None, priority=None):
 
     return ok(
         message=frappe._("Ticket raised. Our team will get back to you."),
-        data={"issue": doc.name, "status": doc.status},
+        data={
+            "issue": doc.name,
+            "status": doc.status,
+            # Photograph the fault and attach it to the ticket you just made.
+            "upload_to": "/api/method/upload_file",
+            "upload_args": {
+                "doctype": "Issue",
+                "docname": doc.name,
+                "is_private": 1,
+            },
+        },
     )
 
 
@@ -127,3 +148,29 @@ def add_comment(issue, message):
     comment.insert(ignore_permissions=True)
 
     return ok(message=frappe._("Comment added"), data={"comment": comment.name})
+
+
+IMAGE_TYPES = (".jpg", ".jpeg", ".png", ".webp", ".heic", ".gif")
+VIDEO_TYPES = (".mp4", ".mov", ".webm", ".m4v", ".3gp", ".avi")
+
+
+def attachments(doctype, name):
+    """Files on a record, tagged image / video / file so a client can render
+    them without sniffing the extension itself."""
+    rows = frappe.get_all(
+        "File",
+        filters={"attached_to_doctype": doctype, "attached_to_name": name},
+        fields=["name", "file_name", "file_url", "file_size", "is_private", "creation"],
+        order_by="creation asc",
+    )
+
+    for row in rows:
+        lowered = (row.get("file_name") or "").lower()
+        if lowered.endswith(IMAGE_TYPES):
+            row["kind"] = "image"
+        elif lowered.endswith(VIDEO_TYPES):
+            row["kind"] = "video"
+        else:
+            row["kind"] = "file"
+
+    return serialize(rows)

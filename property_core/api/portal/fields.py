@@ -88,7 +88,7 @@ REGISTRY = {
     "Work Order": [
         "name", "issue", "property_unit", "status", "description",
         "scheduled_date", "completed_date", "actual_cost", "notes",
-        "progress", "last_update_on",
+        "progress", "last_update_on", "work_type", "sales_invoice", "maintenance_period",
     ],
     "Work Order Update": [
         "name", "work_order", "property_unit", "update_type", "progress",
