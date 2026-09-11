@@ -43,11 +43,12 @@ def ensure_portal_user(customer):
             "first_name": frappe.db.get_value("Customer", customer, "customer_name") or customer,
             "mobile_no": mobile,
             "user_type": "Website User",
-            "send_welcome_email": 1,
+            "send_welcome_email": 1 if _can_send_welcome_mail() else 0,
             "roles": [{"role": "Customer"}],
         })
         user.flags.ignore_permissions = True
         user.insert(ignore_permissions=True)
+        keep_as_website_user(email)
     elif mobile and not frappe.db.get_value("User", email, "mobile_no"):
         frappe.db.set_value("User", email, "mobile_no", mobile)
 
@@ -60,3 +61,27 @@ def ensure_portal_user(customer):
     })
     link.flags.ignore_permissions = True
     link.insert(ignore_permissions=True)
+
+
+def _can_send_welcome_mail():
+    """No default outgoing account means User.insert() dies inside the welcome
+    mail and takes the whole portal user with it."""
+    return bool(frappe.db.exists("Email Account", {"default_outgoing": 1, "enabled": 1}))
+
+
+def keep_as_website_user(email):
+    """Strip desk access from a portal login we just created.
+
+    Frappe Drive hooks User.after_insert and appends its own "Drive User" role,
+    which carries desk_access -- and Frappe promotes any user holding a
+    desk-access role to System User. A customer who only needs the portal would
+    otherwise end up with a desk login and a paid seat.
+
+    Only ever called on a user this function created, so an existing staff
+    account is never demoted.
+    """
+    desk_roles = frappe.get_all("Role", filters={"desk_access": 1}, pluck="name")
+    if desk_roles:
+        frappe.db.delete("Has Role", {"parent": email, "role": ["in", desk_roles]})
+
+    frappe.db.set_value("User", email, "user_type", "Website User", update_modified=False)
