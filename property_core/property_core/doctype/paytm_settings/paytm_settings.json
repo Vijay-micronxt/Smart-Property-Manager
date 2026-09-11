@@ -3,6 +3,7 @@
  "creation": "2024-01-01 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
+ "issingle": 1,
  "field_order": [
   "merchant_id",
   "merchant_key",
@@ -24,7 +25,7 @@
    "fieldtype": "Password",
    "label": "Merchant Key (Secret)",
    "reqd": 1,
-   "description": "Paytm Merchant Key from the Business Dashboard. Used to sign API requests — keep this confidential."
+   "description": "Paytm Merchant Key from the Business Dashboard. Used to sign API requests \u2014 keep this confidential."
   },
   {
    "fieldname": "payment_account",

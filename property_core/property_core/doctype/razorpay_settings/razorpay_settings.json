@@ -3,6 +3,7 @@
  "creation": "2024-01-01 00:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
+ "issingle": 1,
  "field_order": [
   "api_key",
   "api_secret",
@@ -16,7 +17,7 @@
    "fieldtype": "Data",
    "label": "API Key (Key ID)",
    "reqd": 1,
-   "description": "Razorpay Key ID from Dashboard → Settings → API Keys. Starts with 'rzp_live_' or 'rzp_test_'."
+   "description": "Razorpay Key ID from Dashboard \u2192 Settings \u2192 API Keys. Starts with 'rzp_live_' or 'rzp_test_'."
   },
   {
    "fieldname": "api_secret",

@@ -36,6 +36,17 @@ class PaymentPlan(Document):
         })
         invoice.insert(ignore_permissions=True)
 
+        # A draft carries no outstanding, so nothing downstream works: no
+        # payment reminder, no Payment Entry against it, and the invoice
+        # notification never fires. The customer is being asked to pay this, so
+        # it has to be a real invoice.
+        try:
+            invoice.submit()
+        except Exception:
+            frappe.log_error(
+                frappe.get_traceback(), f"Payment Plan invoice left as draft: {self.name}"
+            )
+
         self.db_set("invoice", invoice.name)
         self.db_set("payment_status", "Invoiced")
 
