@@ -58,6 +58,7 @@ doctype_js = {
         "public/js/opportunity_property.js",
     ],
     "Property Booking": "public/js/follow_up_widget.js",
+    "Project": "public/js/project_property.js",
 }
 
 doctype_list_js = {
