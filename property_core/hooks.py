@@ -7,7 +7,7 @@ app_description = "Property Lifecycle Management — Inventory, Booking, Operati
 app_email = "admin@smartproperty.com"
 app_license = "MIT"
 
-app_include_js = []
+app_include_js = ["/assets/property_core/js/notification_result.js"]
 app_include_css = []
 
 add_to_apps_screen = [
@@ -43,6 +43,25 @@ doctype_js = {
     "Commission Rule": "public/js/commission_rule.js",
     "Commission Entry": "public/js/commission_entry.js",
     "Commission Settlement": "public/js/commission_settlement.js",
+    # notifications
+    "Sales Invoice": "public/js/sales_invoice_notifications.js",
+    "Payment Entry": "public/js/payment_entry_notifications.js",
+    "Property Notification Log": "public/js/property_notification_log.js",
+    # crm -- the funnel that used to run on Frappe CRM's CRM Lead
+    "Lead": [
+        "public/js/follow_up_widget.js",
+        "public/js/lead_follow_up.js",
+        "public/js/lead_crm.js",
+    ],
+    "Opportunity": [
+        "public/js/follow_up_widget.js",
+        "public/js/opportunity_property.js",
+    ],
+    "Property Booking": "public/js/follow_up_widget.js",
+}
+
+doctype_list_js = {
+    "Lead": "public/js/lead_crm_list.js",
 }
 
 scheduler_events = {
@@ -50,6 +69,10 @@ scheduler_events = {
         "property_core.property_core.utils.billing_engine.run_daily_billing",
         "property_core.property_core.utils.payment_plan_billing.run_daily_payment_plan_billing",
         "property_core.property_operations.utils.maintenance_billing.run_daily_maintenance_billing",
+        "property_core.property_core.notifications.payment_reminders.run_daily_payment_reminders",
+        "property_core.property_core.notifications.lead_followup.run_daily_lead_follow_ups",
+        "property_core.property_core.notifications.dispatcher.retry_failed",
+        "property_core.property_core.notifications.dispatcher.purge_old_logs",
     ]
 }
 
@@ -71,10 +94,39 @@ doc_events = {
     "Work Order": {
         "on_update": "property_core.property_operations.doctype.work_order.work_order.on_update",
     },
+    "Sales Invoice": {
+        "on_submit": "property_core.property_core.notifications.invoice.on_submit",
+    },
+    "Payment Entry": {
+        "validate": "property_core.property_core.notifications.receipts.validate",
+        "on_submit": "property_core.property_core.notifications.receipts.on_submit",
+    },
+    "Lead": {
+        "validate": "property_core.property_core.crm.lead_events.validate",
+        "after_insert": "property_core.property_core.crm.lead_events.after_insert",
+        "on_update": [
+            "property_core.property_core.notifications.lead_followup.on_lead_update",
+            "property_core.property_core.crm.call_log.keep_single_assignment",
+        ],
+    },
+    "Call Log": {
+        "after_insert": "property_core.property_core.crm.call_log.after_insert",
+    },
 }
 
 custom_fields = {
     "Customer": CUSTOMER_KYC_FIELDS,
+}
+
+permission_query_conditions = {
+    "Lead": "property_core.property_core.crm.lead_permissions.get_permission_query_conditions",
+}
+
+override_doctype_dashboards = {
+    "Project": "property_core.property_core.dashboards.get_project_dashboard_data",
+    "Lead": "property_core.property_core.dashboards.get_lead_dashboard_data",
+    "Opportunity": "property_core.property_core.dashboards.get_opportunity_dashboard_data",
+    "Customer": "property_core.property_core.dashboards.get_customer_dashboard_data",
 }
 
 after_migrate = [
@@ -82,6 +134,12 @@ after_migrate = [
     "property_core.property_core.crm_links.sync_crm_link_fields",
     "property_core.property_operations.issue_links.sync_issue_link_fields",
     "property_core.property_operations.property_unit_links.sync_property_unit_link_fields",
+    "property_core.property_core.notifications.custom_fields.sync_notification_fields",
+    # must follow sync_notification_fields -- the CRM fields are positioned
+    # relative to custom_property_unit, which that one creates
+    "property_core.property_core.crm.lead_fields.sync_lead_crm_fields",
+    "property_core.property_core.crm.telephony.sync_telephony_fields",
+    "property_core.property_core.doctype.property_notification_settings.property_notification_settings.seed_default_reminder_rules",
 ]
 
 before_uninstall = [
@@ -89,6 +147,9 @@ before_uninstall = [
     "property_core.property_core.crm_links.delete_crm_link_fields",
     "property_core.property_operations.issue_links.delete_issue_link_fields",
     "property_core.property_operations.property_unit_links.delete_property_unit_link_fields",
+    "property_core.property_core.notifications.custom_fields.delete_notification_fields",
+    "property_core.property_core.crm.lead_fields.delete_lead_crm_fields",
+    "property_core.property_core.crm.telephony.delete_telephony_fields",
 ]
 
 fixtures = [

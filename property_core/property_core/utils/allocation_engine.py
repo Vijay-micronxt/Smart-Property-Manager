@@ -11,9 +11,36 @@ DEFAULT_MILESTONES = [
 ]
 
 
+def resolve_template(booking_doc):
+    """Booking beats unit beats property. A villa and a plot in the same
+    township rarely share a payment schedule, and a negotiated deal can differ
+    from both."""
+    if booking_doc.get("payment_plan_template"):
+        return booking_doc.payment_plan_template
+
+    unit = frappe.db.get_value(
+        "Property Unit",
+        booking_doc.property_unit,
+        ["payment_plan_template", "property"],
+        as_dict=True,
+    )
+    if not unit:
+        return None
+    if unit.payment_plan_template:
+        return unit.payment_plan_template
+
+    return frappe.db.get_value("Property", unit.property, "payment_plan_template")
+
+
+def resolve_total_price(booking_doc):
+    """The agreed value drives the plan, not the list price."""
+    if booking_doc.get("total_price"):
+        return booking_doc.total_price
+    return frappe.db.get_value("Property Unit", booking_doc.property_unit, "base_price") or 0
+
+
 def _get_milestones(booking_doc):
-    unit = frappe.get_doc("Property Unit", booking_doc.property_unit)
-    template_name = frappe.db.get_value("Property", unit.property, "payment_plan_template")
+    template_name = resolve_template(booking_doc)
 
     if template_name:
         template = frappe.get_doc("Payment Plan Template", template_name)
@@ -30,8 +57,7 @@ def _get_milestones(booking_doc):
 
 
 def generate_payment_plan(booking_doc):
-    unit = frappe.get_doc("Property Unit", booking_doc.property_unit)
-    total_price = unit.base_price or 0
+    total_price = resolve_total_price(booking_doc)
 
     if not total_price:
         return

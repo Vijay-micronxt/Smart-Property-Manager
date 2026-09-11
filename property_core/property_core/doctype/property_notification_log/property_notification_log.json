@@ -1,0 +1,232 @@
+{
+  "actions": [],
+  "autoname": "hash",
+  "creation": "2026-07-31 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 0,
+  "engine": "InnoDB",
+  "field_order": [
+    "event",
+    "channel",
+    "status",
+    "column_break_head",
+    "reference_doctype",
+    "reference_name",
+    "rule_label",
+    "section_recipient",
+    "recipient",
+    "recipient_name",
+    "column_break_recipient",
+    "party_type",
+    "party",
+    "section_content",
+    "subject",
+    "message",
+    "attachment",
+    "section_delivery",
+    "sent_on",
+    "attempt",
+    "column_break_delivery",
+    "dedupe_key",
+    "error",
+    "provider_response"
+  ],
+  "fields": [
+    {
+      "fieldname": "event",
+      "fieldtype": "Data",
+      "label": "Event",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "channel",
+      "fieldtype": "Select",
+      "label": "Channel",
+      "options": "Email\nWhatsApp",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Queued\nSent\nFailed\nSkipped",
+      "default": "Queued",
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_head",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "reference_doctype",
+      "fieldtype": "Link",
+      "label": "Reference DocType",
+      "options": "DocType",
+      "in_standard_filter": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "reference_name",
+      "fieldtype": "Dynamic Link",
+      "label": "Reference Name",
+      "options": "reference_doctype",
+      "in_list_view": 1,
+      "search_index": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "rule_label",
+      "fieldtype": "Data",
+      "label": "Rule",
+      "read_only": 1,
+      "description": "Which reminder rule produced this message"
+    },
+    {
+      "fieldname": "section_recipient",
+      "fieldtype": "Section Break",
+      "label": "Recipient"
+    },
+    {
+      "fieldname": "recipient",
+      "fieldtype": "Data",
+      "label": "Recipient",
+      "in_list_view": 1,
+      "read_only": 1,
+      "description": "Email address or mobile number the message was addressed to"
+    },
+    {
+      "fieldname": "recipient_name",
+      "fieldtype": "Data",
+      "label": "Recipient Name",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_recipient",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "party_type",
+      "fieldtype": "Link",
+      "label": "Party Type",
+      "options": "DocType",
+      "read_only": 1
+    },
+    {
+      "fieldname": "party",
+      "fieldtype": "Dynamic Link",
+      "label": "Party",
+      "options": "party_type",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_content",
+      "fieldtype": "Section Break",
+      "label": "Content"
+    },
+    {
+      "fieldname": "subject",
+      "fieldtype": "Data",
+      "label": "Subject",
+      "read_only": 1
+    },
+    {
+      "fieldname": "message",
+      "fieldtype": "Long Text",
+      "label": "Message",
+      "read_only": 1
+    },
+    {
+      "fieldname": "attachment",
+      "fieldtype": "Data",
+      "label": "Attachment",
+      "read_only": 1
+    },
+    {
+      "fieldname": "section_delivery",
+      "fieldtype": "Section Break",
+      "label": "Delivery"
+    },
+    {
+      "fieldname": "sent_on",
+      "fieldtype": "Datetime",
+      "label": "Sent On",
+      "read_only": 1
+    },
+    {
+      "fieldname": "attempt",
+      "fieldtype": "Int",
+      "label": "Attempt",
+      "default": "1",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_delivery",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "dedupe_key",
+      "fieldtype": "Data",
+      "label": "Dedupe Key",
+      "read_only": 1,
+      "search_index": 1,
+      "description": "Guards against the same reminder going out twice"
+    },
+    {
+      "fieldname": "error",
+      "fieldtype": "Long Text",
+      "label": "Error",
+      "read_only": 1
+    },
+    {
+      "fieldname": "provider_response",
+      "fieldtype": "Long Text",
+      "label": "Provider Response",
+      "read_only": 1
+    }
+  ],
+  "in_create": 1,
+  "links": [],
+  "modified": "2026-07-31 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Property Notification Log",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "read": 1,
+      "delete": 1,
+      "role": "System Manager",
+      "report": 1,
+      "export": 1,
+      "share": 1,
+      "print": 1,
+      "email": 1
+    },
+    {
+      "read": 1,
+      "role": "Property Manager",
+      "report": 1,
+      "export": 1
+    },
+    {
+      "read": 1,
+      "role": "Finance User",
+      "report": 1
+    },
+    {
+      "read": 1,
+      "role": "Sales User",
+      "report": 1
+    }
+  ],
+  "sort_field": "creation",
+  "sort_order": "DESC",
+  "title_field": "event",
+  "track_changes": 0
+}

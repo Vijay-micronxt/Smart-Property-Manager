@@ -10,27 +10,27 @@ for the Customer KYC fields in customer_kyc.py).
 
 OPPORTUNITY_FIELDS = [
     {
-        "fieldname": "property_link_section",
+        "fieldname": "custom_property_link_section",
         "fieldtype": "Section Break",
         "label": "Property Interest",
         "insert_after": "opportunity_type",
-        "collapsible": 1,
     },
     {
-        "fieldname": "property",
+        "fieldname": "custom_property",
         "fieldtype": "Link",
         "label": "Property",
         "options": "Property",
-        "insert_after": "property_link_section",
+        "insert_after": "custom_property_link_section",
         "in_standard_filter": 1,
-        "description": "Which Property this opportunity is about, if known",
+        "reqd": 1,
+        "description": "Which development this enquiry is about. Mandatory -- an opportunity nobody can tie to a property cannot be worked or forecast.",
     },
     {
-        "fieldname": "property_unit",
+        "fieldname": "custom_property_unit",
         "fieldtype": "Link",
         "label": "Property Unit",
         "options": "Property Unit",
-        "insert_after": "property",
+        "insert_after": "custom_property",
         "description": "Which specific unit the prospect is interested in, if known",
     },
 ]
