@@ -23,6 +23,7 @@ from property_core.api.utils import ok
 from property_core.property_operations.doctype.work_order_update.work_order_update import (
     proof_files,
 )
+from property_core.property_operations.utils.maintenance_schedule import project_schedule
 
 
 @frappe.whitelist()
@@ -75,10 +76,15 @@ def _empty_summary():
 
 @frappe.whitelist()
 def schedule(property_unit=None):
-    """Upcoming maintenance for the customer's units, from their plan template.
+    """Every maintenance charge on the customer's units -- billed and to come.
 
-    Reads the template attached to each unit: fixed schedule rows first, then
-    the repeat cycle. Periods already invoiced are marked ``billed``.
+    The customer should see what they are signed up for the moment the unit is
+    theirs, not after the first night's billing run. So this projects the plan
+    itself: fixed rows and the repeat cycle expanded into real dates, each one
+    marked Billed, Due, Upcoming or Paused.
+
+    It shares project_schedule with the desk and the biller, so the portal, the
+    unit form and the invoices cannot tell the customer three different stories.
     """
     customer = get_customer()
 
@@ -86,76 +92,39 @@ def schedule(property_unit=None):
     if property_unit:
         assert_unit(customer, property_unit)
     if not units:
-        return ok(data={"schedule": [], "total": 0})
+        return ok(data={"schedule": [], "total": 0, "summary": _empty_schedule_summary()})
 
-    out = []
+    rows = []
     for unit_name in units:
-        unit = frappe.db.get_value(
-            "Property Unit", unit_name,
-            ["name", "unit_number", "maintenance_plan_template", "maintenance_start_date",
-             "pause_maintenance"],
-            as_dict=True,
-        )
-        if not unit or not unit.get("maintenance_plan_template"):
-            continue
+        rows.extend(project_schedule(unit_name))
 
-        template = frappe.db.get_value(
-            "Maintenance Plan Template", unit["maintenance_plan_template"],
-            ["name", "template_name", "disabled", "repeat_every_n_months", "repeat_amount"],
-            as_dict=True,
-        )
-        if not template or template.get("disabled"):
-            continue
+    rows.sort(key=lambda r: r["due_date"])
 
-        billed_periods = set(
-            frappe.get_all(
-                "Sales Invoice",
-                filters={"property_unit": unit_name, "docstatus": 1,
-                         "maintenance_period": ["is", "set"]},
-                pluck="maintenance_period",
-            )
-        )
+    summary = _empty_schedule_summary()
+    for row in rows:
+        summary["by_status"][row["status"]] = summary["by_status"].get(row["status"], 0) + 1
+        if row["status"] == "Billed":
+            summary["billed"] += row["amount"]
+            summary["outstanding"] += flt(row.get("outstanding"))
+        else:
+            summary["upcoming"] += row["amount"]
 
-        start = getdate(unit.get("maintenance_start_date")) if unit.get("maintenance_start_date") else None
-        for row in child_rows("Maintenance Schedule Row", template["name"],
-                              parenttype="Maintenance Plan Template"):
-            due = row.get("fixed_due_date")
-            if not due and start and row.get("month_no"):
-                due = str(add_months(start, int(row["month_no"]) - 1))
-            period = str(due)[:7] if due else None
-            out.append({
-                "property_unit": unit_name,
-                "unit_number": unit.get("unit_number"),
-                "template": template["template_name"],
-                "kind": "Scheduled",
-                "description": row.get("description"),
-                "month_no": row.get("month_no"),
-                "amount": flt(row.get("amount")),
-                "due_date": due,
-                "period": period,
-                "billed": 1 if (period and period in billed_periods) else 0,
-                "paused": 1 if unit.get("pause_maintenance") else 0,
-            })
+    next_due = next((r for r in rows if r["status"] in ("Due", "Upcoming")), None)
+    summary["next_due_date"] = next_due["due_date"] if next_due else None
+    summary["next_due_amount"] = next_due["amount"] if next_due else 0
 
-        if template.get("repeat_every_n_months"):
-            out.append({
-                "property_unit": unit_name,
-                "unit_number": unit.get("unit_number"),
-                "template": template["template_name"],
-                "kind": "Recurring",
-                "description": frappe._("Recurring maintenance every {0} month(s)").format(
-                    template["repeat_every_n_months"]
-                ),
-                "month_no": None,
-                "amount": flt(template.get("repeat_amount")),
-                "due_date": None,
-                "period": None,
-                "billed": 0,
-                "paused": 1 if unit.get("pause_maintenance") else 0,
-            })
+    return ok(data={"schedule": rows, "total": len(rows), "summary": summary})
 
-    out.sort(key=lambda r: (r.get("due_date") or "9999-12-31"))
-    return ok(data={"schedule": out, "total": len(out)})
+
+def _empty_schedule_summary():
+    return {
+        "billed": 0.0,
+        "outstanding": 0.0,
+        "upcoming": 0.0,
+        "next_due_date": None,
+        "next_due_amount": 0,
+        "by_status": {},
+    }
 
 
 @frappe.whitelist()
