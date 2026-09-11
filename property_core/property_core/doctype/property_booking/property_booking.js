@@ -1,9 +1,7 @@
 frappe.ui.form.on("Property Booking", {
 	setup(frm) {
 		frm.set_query("property_unit", () => ({
-			filters: {
-				availability_status: ["in", ["Available", "Reserved"]],
-			},
+			filters: { availability_status: "Available" },
 		}));
 	},
 

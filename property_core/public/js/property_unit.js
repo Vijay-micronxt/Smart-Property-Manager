@@ -31,7 +31,7 @@ frappe.ui.form.on("Property Unit", {
 	refresh(frm) {
 		if (frm.is_new()) return;
 
-		if (["Available", "Reserved"].includes(frm.doc.availability_status)) {
+		if (frm.doc.availability_status === "Available") {
 			frm.add_custom_button(
 				__("Property Booking"),
 				() =>

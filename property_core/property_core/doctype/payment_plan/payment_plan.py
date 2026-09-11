@@ -17,15 +17,7 @@ class PaymentPlan(Document):
         booking = frappe.get_doc("Property Booking", self.booking)
         unit = frappe.get_doc("Property Unit", booking.property_unit)
 
-        item_code = unit.item_code or unit.unit_type
-        if not frappe.db.exists("Item", item_code):
-            frappe.throw(
-                frappe._(
-                    "ERPNext Item '{0}' not found. "
-                    "Please create an Item named '{0}' in ERPNext Stock → Items, "
-                    "then set it in the 'ERPNext Item' field on Property Unit {1}."
-                ).format(item_code, unit.name)
-            )
+        item_code = _resolve_item(unit)
 
         invoice = frappe.new_doc("Sales Invoice")
         invoice.customer = booking.customer
@@ -51,3 +43,27 @@ def generate_invoice(payment_plan_name):
     doc = frappe.get_doc("Payment Plan", payment_plan_name)
     invoice_name = doc.generate_invoice()
     return invoice_name
+
+
+def _resolve_item(unit):
+    """The unit's own Item, else the one default sale item, else an Item named
+    after the unit type. Without the settings fallback every unit needed its
+    own Item before it could be invoiced, which stalled the whole payment plan.
+    """
+    candidates = [
+        unit.item_code,
+        frappe.db.get_single_value("Property Core Settings", "sale_item_code"),
+        unit.unit_type,
+    ]
+
+    for candidate in candidates:
+        if candidate and frappe.db.exists("Item", candidate):
+            return candidate
+
+    frappe.throw(
+        frappe._(
+            "No Item to invoice against for Property Unit {0}. "
+            "Set 'Default Sale Item' in Property Core Settings, "
+            "or set the ERPNext Item field on the unit itself."
+        ).format(unit.name)
+    )
