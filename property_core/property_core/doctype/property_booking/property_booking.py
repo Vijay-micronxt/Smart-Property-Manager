@@ -45,6 +45,7 @@ class PropertyBooking(Document):
         # moments earlier the Contact carrying their email may not have been
         # linked yet, and a booked customer must be able to log in.
         self.provision_portal_user()
+        self.start_maintenance()
 
     def on_cancel(self):
         self.booking_status = "Cancelled"
@@ -64,6 +65,38 @@ class PropertyBooking(Document):
                     frappe.format_value(self.total_price, {"fieldtype": "Currency"}),
                 )
             )
+
+    def start_maintenance(self):
+        """Maintenance runs from the day the unit is taken, and anything already
+        due is billed now.
+
+        Waiting for the nightly job meant a freshly booked unit showed no
+        charges at all until the next morning -- the owner could not see what
+        they had signed up for on the day they signed up for it.
+        """
+        unit = frappe.db.get_value(
+            "Property Unit", self.property_unit,
+            ["maintenance_plan_template", "maintenance_start_date", "pause_maintenance"],
+            as_dict=True,
+        )
+        if not unit or not unit.maintenance_plan_template or unit.pause_maintenance:
+            return
+
+        if not unit.maintenance_start_date:
+            frappe.db.set_value(
+                "Property Unit", self.property_unit,
+                "maintenance_start_date", self.booking_date, update_modified=False,
+            )
+
+        try:
+            from frappe.utils import getdate, today
+
+            from property_core.property_operations.utils.maintenance_billing import _bill_unit
+
+            _bill_unit(frappe.get_doc("Property Unit", self.property_unit), getdate(today()))
+        except Exception:
+            # The booking stands whether or not the first charge could be raised.
+            frappe.log_error(frappe.get_traceback(), f"Maintenance on booking: {self.name}")
 
     def close_opportunity(self):
         """A booked unit means the opportunity is won -- otherwise it sits in
