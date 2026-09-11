@@ -104,7 +104,13 @@ doc_events = {
     "Lead": {
         "validate": "property_core.property_core.crm.lead_events.validate",
         "after_insert": "property_core.property_core.crm.lead_events.after_insert",
-        "on_update": "property_core.property_core.notifications.lead_followup.on_lead_update",
+        "on_update": [
+            "property_core.property_core.notifications.lead_followup.on_lead_update",
+            "property_core.property_core.crm.call_log.keep_single_assignment",
+        ],
+    },
+    "Call Log": {
+        "after_insert": "property_core.property_core.crm.call_log.after_insert",
     },
 }
 

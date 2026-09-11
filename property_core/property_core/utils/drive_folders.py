@@ -205,3 +205,9 @@ def ensure_booking_folder(booking):
         return None
     finally:
         frappe.flags.mute_emails = previous_mute
+
+
+@frappe.whitelist()
+def create_folders_for_property(property_name):
+    frappe.has_permission("Property", "write", doc=property_name, throw=True)
+    return ensure_property_folders(property_name)
