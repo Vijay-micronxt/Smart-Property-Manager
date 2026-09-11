@@ -1,183 +1,228 @@
 {
-  "actions": [],
-  "autoname": "naming_series:",
-  "creation": "2024-01-01 00:00:00.000000",
-  "doctype": "DocType",
-  "engine": "InnoDB",
-  "is_submittable": 1,
-  "field_order": [
-    "naming_series",
-    "customer",
-    "property_unit",
-    "unit_property",
-    "project",
-    "unit_type",
-    "column_break_unit",
-    "unit_area",
-    "unit_base_price",
-    "booking_date",
-    "booking_status",
-    "column_break_1",
-    "sales_person",
-    "opportunity",
-    "booking_amount",
-    "section_notes",
-    "notes"
-  ],
-  "fields": [
-    {
-      "fieldname": "naming_series",
-      "fieldtype": "Select",
-      "label": "Series",
-      "options": "BKG-.####"
-    },
-    {
-      "fieldname": "customer",
-      "fieldtype": "Link",
-      "label": "Customer",
-      "options": "Customer",
-      "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "property_unit",
-      "fieldtype": "Link",
-      "label": "Property Unit",
-      "options": "Property Unit",
-      "reqd": 1,
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "unit_property",
-      "fieldtype": "Link",
-      "label": "Property",
-      "options": "Property",
-      "fetch_from": "property_unit.property",
-      "read_only": 1
-    },
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "label": "Project",
-      "options": "Project",
-      "fetch_from": "property_unit.project",
-      "fetch_if_empty": 1,
-      "read_only": 1
-    },
-    {
-      "fieldname": "unit_type",
-      "fieldtype": "Data",
-      "label": "Unit Type",
-      "fetch_from": "property_unit.unit_type",
-      "read_only": 1
-    },
-    {
-      "fieldname": "column_break_unit",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "unit_area",
-      "fieldtype": "Float",
-      "label": "Area (sq ft)",
-      "fetch_from": "property_unit.area",
-      "read_only": 1
-    },
-    {
-      "fieldname": "unit_base_price",
-      "fieldtype": "Currency",
-      "label": "Unit Base Price",
-      "fetch_from": "property_unit.base_price",
-      "read_only": 1
-    },
-    {
-      "fieldname": "booking_date",
-      "fieldtype": "Date",
-      "label": "Booking Date",
-      "reqd": 1,
-      "default": "Today"
-    },
-    {
-      "fieldname": "booking_status",
-      "fieldtype": "Select",
-      "label": "Booking Status",
-      "options": "Draft\nReserved\nConfirmed\nCancelled",
-      "default": "Draft",
-      "in_list_view": 1,
-      "in_standard_filter": 1
-    },
-    {
-      "fieldname": "column_break_1",
-      "fieldtype": "Column Break"
-    },
-    {
-      "fieldname": "sales_person",
-      "fieldtype": "Link",
-      "label": "Sales Person",
-      "options": "Sales Person"
-    },
-    {
-      "fieldname": "opportunity",
-      "fieldtype": "Link",
-      "label": "Opportunity",
-      "options": "Opportunity"
-    },
-    {
-      "fieldname": "booking_amount",
-      "fieldtype": "Currency",
-      "label": "Booking Amount",
-      "reqd": 1
-    },
-    {
-      "fieldname": "section_notes",
-      "fieldtype": "Section Break",
-      "label": "Notes"
-    },
-    {
-      "fieldname": "notes",
-      "fieldtype": "Text",
-      "label": "Notes"
-    }
-  ],
-  "links": [],
-  "modified": "2024-01-01 00:00:00.000000",
-  "modified_by": "Administrator",
-  "module": "Property Core",
-  "name": "Property Booking",
-  "naming_rule": "By \"Naming Series\" field",
-  "owner": "Administrator",
-  "permissions": [
-    {
-      "create": 1,
-      "delete": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "Property Manager",
-      "share": 1,
-      "submit": 1,
-      "cancel": 1,
-      "amend": 1,
-      "write": 1
-    },
-    {
-      "create": 1,
-      "email": 1,
-      "export": 1,
-      "print": 1,
-      "read": 1,
-      "report": 1,
-      "role": "Sales User",
-      "share": 1,
-      "submit": 1,
-      "write": 1
-    }
-  ],
-  "sort_field": "modified",
-  "sort_order": "DESC",
-  "states": [],
-  "track_changes": 1
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "field_order": [
+  "naming_series",
+  "customer",
+  "property_unit",
+  "unit_property",
+  "project",
+  "unit_type",
+  "column_break_unit",
+  "unit_area",
+  "unit_base_price",
+  "total_price",
+  "payment_plan_template",
+  "booking_date",
+  "booking_status",
+  "column_break_1",
+  "sales_person",
+  "opportunity",
+  "lead",
+  "booking_amount",
+  "section_notes",
+  "notes",
+  "drive_folder_id",
+  "follow_up_tab",
+  "follow_up_history"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "BKG-.####"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "property_unit",
+   "fieldtype": "Link",
+   "label": "Property Unit",
+   "options": "Property Unit",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "unit_property",
+   "fieldtype": "Link",
+   "label": "Property",
+   "options": "Property",
+   "fetch_from": "property_unit.property",
+   "read_only": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project",
+   "fetch_from": "property_unit.project",
+   "fetch_if_empty": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "unit_type",
+   "fieldtype": "Data",
+   "label": "Unit Type",
+   "fetch_from": "property_unit.unit_type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_unit",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "unit_area",
+   "fieldtype": "Float",
+   "label": "Area (sq ft)",
+   "fetch_from": "property_unit.area",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unit_base_price",
+   "fieldtype": "Currency",
+   "label": "Unit Base Price",
+   "fetch_from": "property_unit.base_price",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_price",
+   "fieldtype": "Currency",
+   "label": "Agreement Value",
+   "reqd": 1,
+   "description": "What the customer actually agreed to pay. Defaults to the unit base price; the payment plan is built off this, not off the list price."
+  },
+  {
+   "fieldname": "payment_plan_template",
+   "fieldtype": "Link",
+   "label": "Payment Plan Template",
+   "options": "Payment Plan Template",
+   "description": "Leave blank to inherit from the unit, then the property."
+  },
+  {
+   "fieldname": "booking_date",
+   "fieldtype": "Date",
+   "label": "Booking Date",
+   "reqd": 1,
+   "default": "Today"
+  },
+  {
+   "fieldname": "booking_status",
+   "fieldtype": "Select",
+   "label": "Booking Status",
+   "options": "Draft\nReserved\nConfirmed\nCancelled",
+   "default": "Draft",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_person",
+   "fieldtype": "Link",
+   "label": "Sales Person",
+   "options": "Sales Person"
+  },
+  {
+   "fieldname": "opportunity",
+   "fieldtype": "Link",
+   "label": "Opportunity",
+   "options": "Opportunity"
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "label": "Lead",
+   "options": "Lead",
+   "read_only": 1
+  },
+  {
+   "fieldname": "booking_amount",
+   "fieldtype": "Currency",
+   "label": "Booking Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "drive_folder_id",
+   "fieldtype": "Data",
+   "label": "Drive Folder ID",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "follow_up_tab",
+   "fieldtype": "Tab Break",
+   "label": "Follow Ups"
+  },
+  {
+   "fieldname": "follow_up_history",
+   "fieldtype": "HTML",
+   "label": "Follow Up History"
+  }
+ ],
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Property Core",
+ "name": "Property Booking",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Property Manager",
+   "share": 1,
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
 }
