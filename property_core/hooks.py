@@ -7,7 +7,7 @@ app_description = "Property Lifecycle Management — Inventory, Booking, Operati
 app_email = "admin@smartproperty.com"
 app_license = "MIT"
 
-app_include_js = []
+app_include_js = ["/assets/property_core/js/notification_result.js"]
 app_include_css = []
 
 add_to_apps_screen = [
@@ -43,6 +43,11 @@ doctype_js = {
     "Commission Rule": "public/js/commission_rule.js",
     "Commission Entry": "public/js/commission_entry.js",
     "Commission Settlement": "public/js/commission_settlement.js",
+    # notifications
+    "Sales Invoice": "public/js/sales_invoice_notifications.js",
+    "Payment Entry": "public/js/payment_entry_notifications.js",
+    "Lead": "public/js/lead_follow_up.js",
+    "Property Notification Log": "public/js/property_notification_log.js",
 }
 
 scheduler_events = {
@@ -50,6 +55,10 @@ scheduler_events = {
         "property_core.property_core.utils.billing_engine.run_daily_billing",
         "property_core.property_core.utils.payment_plan_billing.run_daily_payment_plan_billing",
         "property_core.property_operations.utils.maintenance_billing.run_daily_maintenance_billing",
+        "property_core.property_core.notifications.payment_reminders.run_daily_payment_reminders",
+        "property_core.property_core.notifications.lead_followup.run_daily_lead_follow_ups",
+        "property_core.property_core.notifications.dispatcher.retry_failed",
+        "property_core.property_core.notifications.dispatcher.purge_old_logs",
     ]
 }
 
@@ -71,6 +80,16 @@ doc_events = {
     "Work Order": {
         "on_update": "property_core.property_operations.doctype.work_order.work_order.on_update",
     },
+    "Sales Invoice": {
+        "on_submit": "property_core.property_core.notifications.invoice.on_submit",
+    },
+    "Payment Entry": {
+        "validate": "property_core.property_core.notifications.receipts.validate",
+        "on_submit": "property_core.property_core.notifications.receipts.on_submit",
+    },
+    "Lead": {
+        "on_update": "property_core.property_core.notifications.lead_followup.on_lead_update",
+    },
 }
 
 custom_fields = {
@@ -82,6 +101,8 @@ after_migrate = [
     "property_core.property_core.crm_links.sync_crm_link_fields",
     "property_core.property_operations.issue_links.sync_issue_link_fields",
     "property_core.property_operations.property_unit_links.sync_property_unit_link_fields",
+    "property_core.property_core.notifications.custom_fields.sync_notification_fields",
+    "property_core.property_core.doctype.property_notification_settings.property_notification_settings.seed_default_reminder_rules",
 ]
 
 before_uninstall = [
@@ -89,6 +110,7 @@ before_uninstall = [
     "property_core.property_core.crm_links.delete_crm_link_fields",
     "property_core.property_operations.issue_links.delete_issue_link_fields",
     "property_core.property_operations.property_unit_links.delete_property_unit_link_fields",
+    "property_core.property_core.notifications.custom_fields.delete_notification_fields",
 ]
 
 fixtures = [

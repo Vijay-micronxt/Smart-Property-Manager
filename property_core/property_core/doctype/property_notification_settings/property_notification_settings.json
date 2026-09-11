@@ -1,0 +1,411 @@
+{
+  "actions": [],
+  "creation": "2026-07-31 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "enabled",
+    "section_email",
+    "email_enabled",
+    "email_sender",
+    "column_break_email",
+    "email_reply_to",
+    "section_whatsapp",
+    "whatsapp_enabled",
+    "whatsapp_provider",
+    "default_country_code",
+    "borrow_external_credentials",
+    "column_break_whatsapp",
+    "botmaster_api_url",
+    "botmaster_sender_id",
+    "botmaster_auth_token",
+    "meta_api_version",
+    "meta_phone_number_id",
+    "meta_access_token",
+    "section_invoice",
+    "send_invoice_on_submit",
+    "invoice_channel",
+    "column_break_invoice",
+    "attach_invoice_pdf",
+    "invoice_print_format",
+    "section_receipt",
+    "send_receipt_on_payment",
+    "receipt_channel",
+    "auto_reconcile_payments",
+    "column_break_receipt",
+    "attach_receipt_pdf",
+    "receipt_print_format",
+    "section_payment_reminders",
+    "enable_payment_reminders",
+    "payment_reminder_scope",
+    "payment_reminder_rules",
+    "section_lead",
+    "enable_lead_follow_up_reminders",
+    "lead_follow_up_channel",
+    "lead_advance_reminder_days",
+    "column_break_lead",
+    "lead_repeat_overdue",
+    "lead_repeat_every_days",
+    "lead_stop_statuses",
+    "section_advanced",
+    "max_retries",
+    "log_retention_days",
+    "column_break_advanced",
+    "test_mode",
+    "test_mobile_no",
+    "test_email"
+  ],
+  "fields": [
+    {
+      "fieldname": "enabled",
+      "fieldtype": "Check",
+      "label": "Enable Property Notifications",
+      "default": "1",
+      "description": "Master switch. When off, nothing is sent and nothing is logged."
+    },
+    {
+      "fieldname": "section_email",
+      "fieldtype": "Section Break",
+      "label": "Email Channel"
+    },
+    {
+      "fieldname": "email_enabled",
+      "fieldtype": "Check",
+      "label": "Enable Email",
+      "default": "1",
+      "description": "Requires at least one Email Account with outgoing enabled."
+    },
+    {
+      "fieldname": "email_sender",
+      "fieldtype": "Data",
+      "label": "Sender Email",
+      "options": "Email",
+      "depends_on": "email_enabled",
+      "description": "Leave blank to use the site's default outgoing account."
+    },
+    {
+      "fieldname": "column_break_email",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "email_reply_to",
+      "fieldtype": "Data",
+      "label": "Reply To",
+      "options": "Email",
+      "depends_on": "email_enabled"
+    },
+    {
+      "fieldname": "section_whatsapp",
+      "fieldtype": "Section Break",
+      "label": "WhatsApp Channel"
+    },
+    {
+      "fieldname": "whatsapp_enabled",
+      "fieldtype": "Check",
+      "label": "Enable WhatsApp",
+      "default": "0"
+    },
+    {
+      "fieldname": "whatsapp_provider",
+      "fieldtype": "Select",
+      "label": "Provider",
+      "options": "BotMaster API\nMeta Cloud API",
+      "default": "BotMaster API",
+      "depends_on": "whatsapp_enabled"
+    },
+    {
+      "fieldname": "default_country_code",
+      "fieldtype": "Data",
+      "label": "Default Country Code",
+      "default": "91",
+      "depends_on": "whatsapp_enabled",
+      "description": "Prefixed to mobile numbers that are stored without one."
+    },
+    {
+      "fieldname": "borrow_external_credentials",
+      "fieldtype": "Check",
+      "label": "Fall Back to WhatsApp Settings",
+      "default": "1",
+      "depends_on": "whatsapp_enabled",
+      "description": "If the credentials below are blank and a 'WhatsApp Settings' DocType exists on this site (erpnext_enhancements), reuse its sender ID and auth token instead of asking you to re-enter them."
+    },
+    {
+      "fieldname": "column_break_whatsapp",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "botmaster_api_url",
+      "fieldtype": "Data",
+      "label": "API URL",
+      "default": "https://api.botmastersender.com/api/v2/?action=send",
+      "depends_on": "eval:doc.whatsapp_enabled && doc.whatsapp_provider=='BotMaster API'"
+    },
+    {
+      "fieldname": "botmaster_sender_id",
+      "fieldtype": "Data",
+      "label": "Sender ID",
+      "depends_on": "eval:doc.whatsapp_enabled && doc.whatsapp_provider=='BotMaster API'"
+    },
+    {
+      "fieldname": "botmaster_auth_token",
+      "fieldtype": "Password",
+      "label": "Auth Token",
+      "depends_on": "eval:doc.whatsapp_enabled && doc.whatsapp_provider=='BotMaster API'"
+    },
+    {
+      "fieldname": "meta_api_version",
+      "fieldtype": "Data",
+      "label": "Graph API Version",
+      "default": "v19.0",
+      "depends_on": "eval:doc.whatsapp_enabled && doc.whatsapp_provider=='Meta Cloud API'"
+    },
+    {
+      "fieldname": "meta_phone_number_id",
+      "fieldtype": "Data",
+      "label": "Phone Number ID",
+      "depends_on": "eval:doc.whatsapp_enabled && doc.whatsapp_provider=='Meta Cloud API'"
+    },
+    {
+      "fieldname": "meta_access_token",
+      "fieldtype": "Password",
+      "label": "Access Token",
+      "depends_on": "eval:doc.whatsapp_enabled && doc.whatsapp_provider=='Meta Cloud API'"
+    },
+    {
+      "fieldname": "section_invoice",
+      "fieldtype": "Section Break",
+      "label": "Sales Invoice Delivery"
+    },
+    {
+      "fieldname": "send_invoice_on_submit",
+      "fieldtype": "Check",
+      "label": "Send Invoice on Submit",
+      "default": "1",
+      "description": "Sends the invoice PDF to the customer when a Sales Invoice is submitted."
+    },
+    {
+      "fieldname": "invoice_channel",
+      "fieldtype": "Select",
+      "label": "Channel",
+      "options": "Both\nEmail\nWhatsApp",
+      "default": "Both",
+      "depends_on": "send_invoice_on_submit"
+    },
+    {
+      "fieldname": "column_break_invoice",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "attach_invoice_pdf",
+      "fieldtype": "Check",
+      "label": "Attach PDF",
+      "default": "1",
+      "depends_on": "send_invoice_on_submit"
+    },
+    {
+      "fieldname": "invoice_print_format",
+      "fieldtype": "Link",
+      "label": "Print Format",
+      "options": "Print Format",
+      "depends_on": "send_invoice_on_submit",
+      "description": "Leave blank to use the default print format for Sales Invoice."
+    },
+    {
+      "fieldname": "section_receipt",
+      "fieldtype": "Section Break",
+      "label": "Payment Receipt & Reconciliation"
+    },
+    {
+      "fieldname": "send_receipt_on_payment",
+      "fieldtype": "Check",
+      "label": "Send Receipt on Payment",
+      "default": "1",
+      "description": "Sends a receipt PDF to the customer when a Payment Entry is submitted."
+    },
+    {
+      "fieldname": "receipt_channel",
+      "fieldtype": "Select",
+      "label": "Channel",
+      "options": "Both\nEmail\nWhatsApp",
+      "default": "Both",
+      "depends_on": "send_receipt_on_payment"
+    },
+    {
+      "fieldname": "auto_reconcile_payments",
+      "fieldtype": "Check",
+      "label": "Auto-Reconcile Unallocated Payments",
+      "default": "1",
+      "description": "When a customer Payment Entry is submitted with no invoice references, allocate it against that customer's outstanding Sales Invoices, oldest due date first."
+    },
+    {
+      "fieldname": "column_break_receipt",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "attach_receipt_pdf",
+      "fieldtype": "Check",
+      "label": "Attach PDF",
+      "default": "1",
+      "depends_on": "send_receipt_on_payment"
+    },
+    {
+      "fieldname": "receipt_print_format",
+      "fieldtype": "Link",
+      "label": "Print Format",
+      "options": "Print Format",
+      "depends_on": "send_receipt_on_payment",
+      "description": "Leave blank to use the default print format for Payment Entry."
+    },
+    {
+      "fieldname": "section_payment_reminders",
+      "fieldtype": "Section Break",
+      "label": "Payment Reminders"
+    },
+    {
+      "fieldname": "enable_payment_reminders",
+      "fieldtype": "Check",
+      "label": "Enable Payment Reminders",
+      "default": "1",
+      "description": "Reminders stop automatically once the invoice outstanding reaches zero or the invoice is cancelled."
+    },
+    {
+      "fieldname": "payment_reminder_scope",
+      "fieldtype": "Select",
+      "label": "Remind For",
+      "options": "Property-Linked Invoices Only\nAll Sales Invoices",
+      "default": "Property-Linked Invoices Only",
+      "depends_on": "enable_payment_reminders",
+      "description": "'Property-Linked' covers invoices raised from a Payment Plan milestone, a rent/maintenance run, or any invoice with a Property Unit set. Switch to 'All' only if this site should chase every receivable."
+    },
+    {
+      "fieldname": "payment_reminder_rules",
+      "fieldtype": "Table",
+      "label": "Reminder Schedule",
+      "options": "Payment Reminder Rule",
+      "depends_on": "enable_payment_reminders"
+    },
+    {
+      "fieldname": "section_lead",
+      "fieldtype": "Section Break",
+      "label": "Lead Follow-Up Reminders"
+    },
+    {
+      "fieldname": "enable_lead_follow_up_reminders",
+      "fieldtype": "Check",
+      "label": "Enable Lead Follow-Up Reminders",
+      "default": "1",
+      "description": "Reminds the lead owner on the Next Follow-Up Date set on the Lead."
+    },
+    {
+      "fieldname": "lead_follow_up_channel",
+      "fieldtype": "Select",
+      "label": "Channel",
+      "options": "Both\nEmail\nWhatsApp",
+      "default": "Both",
+      "depends_on": "enable_lead_follow_up_reminders"
+    },
+    {
+      "fieldname": "lead_advance_reminder_days",
+      "fieldtype": "Int",
+      "label": "Advance Reminder (Days)",
+      "default": "1",
+      "depends_on": "enable_lead_follow_up_reminders",
+      "description": "Also remind this many days before the follow-up date. 0 = only on the day."
+    },
+    {
+      "fieldname": "column_break_lead",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "lead_repeat_overdue",
+      "fieldtype": "Check",
+      "label": "Keep Reminding When Overdue",
+      "default": "1",
+      "depends_on": "enable_lead_follow_up_reminders"
+    },
+    {
+      "fieldname": "lead_repeat_every_days",
+      "fieldtype": "Int",
+      "label": "Repeat Every (Days)",
+      "default": "2",
+      "depends_on": "eval:doc.enable_lead_follow_up_reminders && doc.lead_repeat_overdue"
+    },
+    {
+      "fieldname": "lead_stop_statuses",
+      "fieldtype": "Small Text",
+      "label": "Stop Reminders on Status",
+      "default": "Converted\nDo Not Contact\nLost Quotation",
+      "depends_on": "enable_lead_follow_up_reminders",
+      "description": "One Lead status per line. Reminders also stop when the Lead is disabled or already converted to a Customer."
+    },
+    {
+      "fieldname": "section_advanced",
+      "fieldtype": "Section Break",
+      "label": "Advanced"
+    },
+    {
+      "fieldname": "max_retries",
+      "fieldtype": "Int",
+      "label": "Max Retries",
+      "default": "2",
+      "description": "Retries for a failed send, attempted on the next scheduler run."
+    },
+    {
+      "fieldname": "log_retention_days",
+      "fieldtype": "Int",
+      "label": "Log Retention (Days)",
+      "default": "365",
+      "description": "Property Notification Log rows older than this are deleted by the daily job. 0 = keep forever."
+    },
+    {
+      "fieldname": "column_break_advanced",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "test_mode",
+      "fieldtype": "Check",
+      "label": "Test Mode",
+      "default": "0",
+      "description": "Redirect every message to the test recipients below instead of the real customer. Log records the intended recipient."
+    },
+    {
+      "fieldname": "test_mobile_no",
+      "fieldtype": "Data",
+      "label": "Test Mobile No",
+      "depends_on": "test_mode"
+    },
+    {
+      "fieldname": "test_email",
+      "fieldtype": "Data",
+      "label": "Test Email",
+      "options": "Email",
+      "depends_on": "test_mode"
+    }
+  ],
+  "issingle": 1,
+  "links": [],
+  "modified": "2026-07-31 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Property Core",
+  "name": "Property Notification Settings",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1,
+      "share": 1,
+      "print": 1,
+      "email": 1
+    },
+    {
+      "read": 1,
+      "role": "Property Manager",
+      "write": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

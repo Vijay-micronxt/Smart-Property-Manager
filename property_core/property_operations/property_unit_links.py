@@ -66,7 +66,7 @@ SALES_INVOICE_FIELDS = [
         "label": "Property Unit",
         "options": "Property Unit",
         "insert_after": "customer",
-        "read_only": 1,
+        "description": "Set by the maintenance and rent billing runs. Set it by hand on a manually raised invoice so payment reminders can find it.",
     },
     {
         "fieldname": "maintenance_period",
