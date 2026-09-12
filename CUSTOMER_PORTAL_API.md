@@ -114,7 +114,7 @@ on the Work Order, so a customer token cannot reach them:
 | `...work_order_update.post_update` | `work_order`, `progress`, `note`, `update_type` | **report progress from site** |
 | `...work_order_update.updates` | `work_order` | full trail for one job, with proof |
 
-Full path: `property_core.property_core.property_operations.doctype.work_order_update.work_order_update`
+Full path: `property_core.property_operations.doctype.work_order_update.work_order_update`
 
 ---
 
@@ -322,30 +322,39 @@ date, so `work_history` and this feed always agree.
 A work order on somebody else's unit is refused, the same as every other
 endpoint here.
 
-### 6.3 `maintenance.schedule`
+### 6.3 `maintenance.schedule` — every charge, billed and to come
 
-What the unit's Maintenance Plan Template will service and bill next. Periods
-already invoiced come back with `billed: 1`.
+What the customer is signed up for, visible the moment the unit is theirs
+rather than after the first night's billing run. Fixed rows and the repeat
+cycle are expanded into real dates, each marked `Billed`, `Due`, `Upcoming` or
+`Paused`.
+
+Same projection the desk and the biller use, so the portal, the unit form and
+the invoices cannot tell three different stories.
 
 ```json
 {
  "schedule": [
-  {"property_unit": "UNIT-0004", "unit_number": "E-401",
-   "template": "Standard Monthly - Emerald Heights", "kind": "Scheduled",
-   "description": null, "month_no": 1, "amount": 2000.0,
-   "due_date": "2026-05-23", "period": "2026-05", "billed": 1, "paused": 0},
-  {"property_unit": "UNIT-0004", "unit_number": "E-401",
-   "template": "Standard Monthly - Emerald Heights", "kind": "Scheduled",
-   "description": null, "month_no": 2, "amount": 2000.0,
-   "due_date": "2026-06-23", "period": "2026-06", "billed": 1, "paused": 0}
+  {"property_unit": "UNIT-0007", "unit_number": "A-4", "period": "2026-09",
+   "due_date": "2026-09-11", "amount": 1500.0,
+   "description": "Monthly upkeep - security, landscaping, common area",
+   "item_code": "Plot Maintenance Charge", "status": "Billed",
+   "invoice": "ACC-SINV-2026-00052", "invoice_status": "Unpaid", "outstanding": 1500.0},
+  {"property_unit": "UNIT-0007", "unit_number": "A-4", "period": "2026-10",
+   "due_date": "2026-10-11", "amount": 1500.0,
+   "description": "Recurring maintenance (month 2)",
+   "item_code": "Plot Maintenance Charge", "status": "Upcoming",
+   "invoice": null, "invoice_status": null, "outstanding": null}
  ],
- "total": 3
+ "total": 24,
+ "summary": {"billed": 1500.0, "outstanding": 1500.0, "upcoming": 34500.0,
+             "next_due_date": "2026-10-11", "next_due_amount": 1500.0,
+             "by_status": {"Billed": 1, "Upcoming": 23}}
 }
 ```
 
-`due_date` is derived from the unit's `maintenance_start_date` plus `month_no`
-when the template row carries no fixed date. `kind: "Recurring"` rows describe
-the repeat cycle and carry no date.
+Two years are projected by default. A unit with no plan, or no maintenance
+start date, contributes nothing rather than erroring.
 
 ### 6.4 `maintenance.inspections`
 

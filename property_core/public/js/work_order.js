@@ -71,7 +71,7 @@ function post_update(frm) {
         primary_action: (values) => {
             frappe.call({
                 method:
-                    "property_core.property_core.property_operations.doctype.work_order_update.work_order_update.post_update",
+                    "property_core.property_operations.doctype.work_order_update.work_order_update.post_update",
                 args: {
                     work_order: frm.doc.name,
                     update_type: values.update_type,
@@ -115,7 +115,7 @@ function render_updates(frm) {
 
     frappe.call({
         method:
-            "property_core.property_core.property_operations.doctype.work_order_update.work_order_update.updates",
+            "property_core.property_operations.doctype.work_order_update.work_order_update.updates",
         args: { work_order: frm.doc.name },
         callback: (r) => {
             const rows = r.message || [];

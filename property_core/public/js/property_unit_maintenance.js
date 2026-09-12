@@ -29,7 +29,7 @@ frappe.ui.form.on("Property Unit", {
 		frm.add_custom_button(__("Bill Due Charges Now"), () => {
 			frappe.call({
 				method:
-					"property_core.property_core.property_operations.utils.maintenance_schedule.bill_now",
+					"property_core.property_operations.utils.maintenance_schedule.bill_now",
 				args: { property_unit: frm.doc.name },
 				freeze: true,
 				freeze_message: __("Raising charges..."),
@@ -54,7 +54,7 @@ function render_maintenance_schedule(frm) {
 
 	frappe.call({
 		method:
-			"property_core.property_core.property_operations.utils.maintenance_schedule.unit_schedule",
+			"property_core.property_operations.utils.maintenance_schedule.unit_schedule",
 		args: { property_unit: frm.doc.name },
 		callback(r) {
 			const data = r.message || {};
