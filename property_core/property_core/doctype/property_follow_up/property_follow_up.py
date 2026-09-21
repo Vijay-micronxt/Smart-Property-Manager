@@ -123,8 +123,17 @@ class PropertyFollowUp(Document):
                 update_modified=False,
             )
         else:
+            # ERPNext 15.90 dropped Opportunity.contact_date -- writing to it
+            # threw "Unknown column 'contact_date'" and lost the whole
+            # follow-up. The app carries its own field now (crm_links.py).
+            if not frappe.get_meta("Opportunity").has_field("custom_next_follow_up_date"):
+                return
             frappe.db.set_value(
-                "Opportunity", self.reference_name, "contact_date", next_date, update_modified=False
+                "Opportunity",
+                self.reference_name,
+                "custom_next_follow_up_date",
+                self.next_follow_up_on,
+                update_modified=False,
             )
 
 

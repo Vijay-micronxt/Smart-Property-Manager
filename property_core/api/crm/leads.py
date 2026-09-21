@@ -258,7 +258,7 @@ def convert_to_opportunity(
     property_unit=None,
     opportunity_amount=None,
     expected_closing=None,
-    contact_date=None,
+    next_follow_up_on=None,
     notes=None,
 ):
     """Lead → Opportunity, with the property tagged on the way through.
@@ -300,8 +300,8 @@ def convert_to_opportunity(
         )
     if expected_closing:
         opportunity.expected_closing = expected_closing
-    if contact_date:
-        opportunity.contact_date = contact_date
+    if next_follow_up_on:
+        opportunity.custom_next_follow_up_date = next_follow_up_on
     if notes:
         opportunity.custom_follow_up_notes = notes
 

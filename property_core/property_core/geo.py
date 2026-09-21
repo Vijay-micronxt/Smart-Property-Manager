@@ -17,6 +17,7 @@ all reach the spot without opening the map at all.
 
 import json
 import re
+from urllib.parse import unquote, urlparse
 
 import frappe
 from frappe import _
@@ -33,9 +34,78 @@ _COORD_PATTERNS = (
     re.compile(r"[@?&](?:[a-z_]+=)?(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)"),
     re.compile(r"!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)"),
     re.compile(r"^\s*(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$"),
+    # what a shortened link expands to: /maps/search/18.642452,+81.260949
+    re.compile(r"/(?:search|dir|place)/(-?\d{1,3}\.\d+),\s*\+?\s*(-?\d{1,3}\.\d+)"),
+)
+
+#: Hosts a shortened map link may point at. Everything the user pastes is
+#: fetched by *this server*, so the list is closed on purpose -- an open one
+#: would let anyone aim it at an internal address.
+LINK_HOSTS = (
+    "maps.app.goo.gl",
+    "goo.gl",
+    "maps.google.com",
+    "www.google.com",
+    "google.com",
+    "g.co",
+    "share.google",
+    "osm.org",
+    "openstreetmap.org",
+    "www.openstreetmap.org",
 )
 
 LOCATION_DOCTYPES = ("Property", "Property Unit")
+
+
+def is_map_link(text):
+    parsed = urlparse((text or "").strip())
+    return parsed.scheme in ("http", "https") and parsed.netloc.lower().lstrip("www.") is not None
+
+
+def _allowed_link(url):
+    parsed = urlparse(url)
+    return parsed.scheme in ("http", "https") and parsed.netloc.lower() in LINK_HOSTS
+
+
+def follow_link(url):
+    """A shortened map link holds no coordinates -- the redirect does.
+
+    `https://maps.app.goo.gl/b2CTUbAooneHCcWx7` is what people paste from
+    WhatsApp; it answers a 302 to
+    `.../maps/search/18.642452,+81.260949?...`. Nothing can be read out of the
+    short form, which is why pasting one used to come back "Nothing found".
+
+    Returns (final_url, page_text). Only allow-listed hosts are fetched.
+    """
+    if not _allowed_link(url):
+        return None, None
+
+    try:
+        import requests
+
+        response = requests.get(
+            url,
+            allow_redirects=True,
+            timeout=10,
+            headers={"User-Agent": f"property_core/{frappe.local.site}"},
+        )
+        return response.url, response.text[:50000]
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Map link lookup failed")
+        return None, None
+
+
+def place_from_link(url):
+    """`/maps/place/Nandi+Hills,+Karnataka/...` -> "Nandi Hills, Karnataka"."""
+    match = re.search(r"/maps/(?:place|search)/([^/@?]+)", url or "")
+    if not match:
+        return None
+
+    name = unquote(match.group(1)).replace("+", " ").strip()
+    # a coordinate pair is not a place name
+    if re.match(r"^-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+$", name):
+        return None
+    return name or None
 
 
 def parse_coordinates(text):
@@ -125,20 +195,48 @@ def resolve(query):
 
     point = parse_coordinates(query)
     if point:
-        lat, lng = point
-        return {
-            "results": [
-                {
-                    "label": f"{lat}, {lng}",
-                    "latitude": lat,
-                    "longitude": lng,
-                    "geo_location": point_geojson(lat, lng),
-                    "source": "coordinates",
-                }
-            ]
-        }
+        return {"results": [_point_result(*point, source="coordinates")]}
+
+    if urlparse(query).scheme in ("http", "https"):
+        return {"results": _from_link(query)}
 
     return {"results": geocode(query)}
+
+
+def _from_link(url):
+    """Everything a map link can still be turned into, in order of certainty."""
+    final_url, page = follow_link(url)
+    if not final_url:
+        frappe.throw(
+            _("That link could not be opened. Paste the coordinates instead, e.g. 18.643818, 81.262629.")
+        )
+
+    point = parse_coordinates(final_url)
+    if point:
+        return [_point_result(*point, source="link", label=place_from_link(final_url))]
+
+    # Some links only carry the place, with the pin in the page itself.
+    point = parse_coordinates(page or "")
+    if point:
+        return [_point_result(*point, source="link", label=place_from_link(final_url))]
+
+    place = place_from_link(final_url)
+    if place:
+        return geocode(place)
+
+    frappe.throw(
+        _("No location in that link. Open it in Google Maps, copy the coordinates, and paste those.")
+    )
+
+
+def _point_result(lat, lng, source, label=None):
+    return {
+        "label": label or f"{lat}, {lng}",
+        "latitude": lat,
+        "longitude": lng,
+        "geo_location": point_geojson(lat, lng),
+        "source": source,
+    }
 
 
 def geocode(query, limit=5):
@@ -196,7 +294,7 @@ LOCATION_FIELDS = [
         "label": "Latitude",
         "precision": "6",
         "read_only": 1,
-        "description": "Taken from the map. Use Set Location to change it.",
+        "description": "Taken from the map. Search on the map itself to change it.",
     },
     {
         "fieldname": "longitude",

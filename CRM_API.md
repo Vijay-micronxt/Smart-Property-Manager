@@ -182,7 +182,7 @@ POST /api/method/property_core.api.crm.leads.convert_to_opportunity
 * Calling it twice does not make a second opportunity: the existing one comes
   back with `"already_existed": true`.
 * Optional: `property`, `opportunity_amount`, `expected_closing`,
-  `contact_date`, `notes`.
+  `next_follow_up_on`, `notes`.
 
 ---
 
@@ -300,6 +300,12 @@ before anybody sells.
 | `inventory.resolve_unit?property_unit=` | GET | **the auto-fill call**: property, project, price, plan, availability |
 | `inventory.availability` | GET | `project` or `property` — counts by status, inventory value |
 
+The map on Property and Property Unit takes a place name, a pasted coordinate
+pair, or a Google Maps link (the short `maps.app.goo.gl` kind included — the
+server follows the redirect). `latitude`, `longitude` and `map_link` come back
+on every unit and property payload, so the app never has to open a map to know
+where something is.
+
 ---
 
 ## 10. Bookings
@@ -370,8 +376,14 @@ of the payload rather than failing the request.
 11. projects.overview                      -> the development, updated
 ```
 
-Every step above is covered by the automated smoke suite (38 HTTP assertions),
-run against `review.site`.
+Every step above is covered by the automated suites, run against
+`review.site`:
+
+| suite | what it proves |
+|---|---|
+| `property_core/tests/crm_api_smoke.py` | the funnel end to end, 38 assertions |
+| `property_core/tests/crm_api_coverage.py` | the remaining endpoints, 59 assertions |
+| `property_core/tests/crm_data_verify.py` | what actually reached the database — address, contact, payment plan, unit status, portal login — 51 assertions |
 
 ---
 
@@ -387,6 +399,8 @@ run against `review.site`.
 * **Idempotency**: `convert_to_opportunity`, `convert_to_booking` and
   `create_from_lead` all return the existing record instead of creating a
   second one.
+* **Opportunity has no `contact_date`** — ERPNext 15.90 dropped it. The next
+  touch is `custom_next_follow_up_date`, which follow-ups keep in step.
 * **Do not** call `frappe.client.*` or the generic `/api/resource/…` routes for
   this data — they bypass the envelope and, for anything the app writes,
   the derivation rules above.
