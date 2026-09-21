@@ -121,6 +121,9 @@ doc_events = {
     "Customer": {
         "after_insert": "property_core.property_core.crm.customer_from_lead.link_lead_records",
     },
+    "Opportunity": {
+        "validate": "property_core.property_core.crm.opportunity_events.validate",
+    },
     "Call Log": {
         "after_insert": "property_core.property_core.crm.call_log.after_insert",
     },
@@ -136,8 +139,20 @@ custom_fields = {
     "Customer": CUSTOMER_KYC_FIELDS,
 }
 
+# Row-level visibility: admin sees the company, a sales manager sees their
+# reporting tree, an executive sees only their own. See crm/scope.py.
 permission_query_conditions = {
-    "Lead": "property_core.property_core.crm.lead_permissions.get_permission_query_conditions",
+    "Lead": "property_core.property_core.crm.scope.get_lead_conditions",
+    "Opportunity": "property_core.property_core.crm.scope.get_opportunity_conditions",
+    "Property Booking": "property_core.property_core.crm.scope.get_booking_conditions",
+    "Property Follow Up": "property_core.property_core.crm.scope.get_follow_up_conditions",
+}
+
+has_permission = {
+    "Lead": "property_core.property_core.crm.scope.has_lead_permission",
+    "Opportunity": "property_core.property_core.crm.scope.has_opportunity_permission",
+    "Property Booking": "property_core.property_core.crm.scope.has_booking_permission",
+    "Property Follow Up": "property_core.property_core.crm.scope.has_follow_up_permission",
 }
 
 override_doctype_dashboards = {
@@ -148,6 +163,8 @@ override_doctype_dashboards = {
 }
 
 after_migrate = [
+    # Roles first: everything below grants against them.
+    "property_core.property_core.setup.roles.sync_property_roles",
     "property_core.property_core.customer_kyc.sync_customer_kyc_fields",
     "property_core.property_core.crm_links.sync_crm_link_fields",
     "property_core.property_operations.issue_links.sync_issue_link_fields",

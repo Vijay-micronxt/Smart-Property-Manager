@@ -33,6 +33,24 @@ OPPORTUNITY_FIELDS = [
         "insert_after": "custom_property",
         "description": "Which specific unit the prospect is interested in, if known",
     },
+    {
+        "fieldname": "custom_next_follow_up_date",
+        "fieldtype": "Datetime",
+        "label": "Next Follow Up On",
+        "insert_after": "custom_property_unit",
+        "description": "Kept in step with the latest Property Follow Up. ERPNext dropped Opportunity.contact_date, so the funnel keeps its own.",
+    },
+    {
+        "fieldname": "custom_project",
+        "fieldtype": "Link",
+        "label": "Project",
+        "options": "Project",
+        "insert_after": "custom_next_follow_up_date",
+        "fetch_from": "custom_property.project",
+        "read_only": 1,
+        "in_standard_filter": 1,
+        "description": "The development this enquiry rolls up to. Filled from the property -- every project report reads this.",
+    },
 ]
 
 ISSUE_FIELDS = [

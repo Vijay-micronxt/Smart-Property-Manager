@@ -16,7 +16,11 @@ from frappe.utils import get_datetime, getdate, now_datetime
 # reference_doctype -> (name field, phone field, property field, unit field, status field)
 REFERENCE_MAP = {
     "Lead": ("lead_name", "mobile_no", "custom_property", "custom_property_unit", "custom_lead_status"),
-    "Opportunity": ("party_name", "contact_mobile", "property", "property_unit", "status"),
+    # Opportunity's property fields are custom_* -- renamed so ERPNext's
+    # Lead -> Opportunity mapper copies them across by itself. Reading the old
+    # names here threw "Unknown column 'property'" on every follow-up logged
+    # against an opportunity.
+    "Opportunity": ("party_name", "contact_mobile", "custom_property", "custom_property_unit", "status"),
     "Property Booking": ("customer", None, "unit_property", "property_unit", "booking_status"),
     "Property Unit": ("unit_number", None, "property", "name", "availability_status"),
     "Customer": ("customer_name", "mobile_no", None, None, None),
@@ -119,8 +123,17 @@ class PropertyFollowUp(Document):
                 update_modified=False,
             )
         else:
+            # ERPNext 15.90 dropped Opportunity.contact_date -- writing to it
+            # threw "Unknown column 'contact_date'" and lost the whole
+            # follow-up. The app carries its own field now (crm_links.py).
+            if not frappe.get_meta("Opportunity").has_field("custom_next_follow_up_date"):
+                return
             frappe.db.set_value(
-                "Opportunity", self.reference_name, "contact_date", next_date, update_modified=False
+                "Opportunity",
+                self.reference_name,
+                "custom_next_follow_up_date",
+                self.next_follow_up_on,
+                update_modified=False,
             )
 
 

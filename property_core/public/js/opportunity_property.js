@@ -5,6 +5,9 @@
 
 frappe.ui.form.on("Opportunity", {
 	setup(frm) {
+		// Pick a property first and only its own free units are offered; pick a
+		// unit first and any free unit in the company is fair game -- the
+		// property then fills itself in below.
 		frm.set_query("custom_property_unit", () => ({
 			filters: frm.doc.custom_property
 				? {
@@ -12,6 +15,10 @@ frappe.ui.form.on("Opportunity", {
 						availability_status: ["in", ["Available", "Reserved"]],
 				  }
 				: { availability_status: ["in", ["Available", "Reserved"]] },
+		}));
+
+		frm.set_query("custom_property", () => ({
+			filters: { status: ["!=", "Inactive"] },
 		}));
 	},
 
@@ -65,7 +72,40 @@ frappe.ui.form.on("Opportunity", {
 	},
 
 	custom_property(frm) {
-		if (frm.doc.custom_property_unit) frm.set_value("custom_property_unit", null);
+		// A unit from the old property cannot survive the switch.
+		if (frm.doc.custom_property_unit) {
+			frappe.db
+				.get_value("Property Unit", frm.doc.custom_property_unit, "property")
+				.then((r) => {
+					if (r.message && r.message.property !== frm.doc.custom_property) {
+						frm.set_value("custom_property_unit", null);
+					}
+				});
+		}
+	},
+
+	custom_property_unit(frm) {
+		// The unit knows its own development -- do not make the user tell the
+		// form something it can look up, and never leave the mandatory
+		// Property field empty just because the unit was chosen first.
+		if (!frm.doc.custom_property_unit) return;
+
+		frappe.call({
+			method: "property_core.property_core.crm.opportunity_events.resolve_unit",
+			args: { property_unit: frm.doc.custom_property_unit },
+			callback: ({ message }) => {
+				if (!message || !message.property) return;
+				if (frm.doc.custom_property !== message.property) {
+					frm.set_value("custom_property", message.property);
+				}
+				if (message.availability_status === "Booked") {
+					frm.dashboard.set_headline_alert(
+						__("Unit {0} is already booked.", [message.unit_number || message.name]),
+						"orange"
+					);
+				}
+			},
+		});
 	},
 });
 
