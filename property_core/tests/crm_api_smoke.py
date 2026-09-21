@@ -96,8 +96,14 @@ check("meta lists unit availability", "Available" in opts.get("unit", {}).get("a
 # ------------------------------------------------------------------ leads ---
 status, body = call("leads.get_leads", token=exec1_token, page_size=50)
 rows = body.get("message", {}).get("data", {}).get("rows", [])
-owners = {r.get("lead_owner") for r in rows}
-check("exec1 lead list is their own only", owners <= {EXEC1}, owners)
+# Ownership is any of lead_owner / creator / follow-up owner -- JD's rule. A
+# lead this user raised and handed on still shows for them.
+stray = [
+    r["name"]
+    for r in rows
+    if EXEC1 not in (r.get("lead_owner"), r.get("owner"), r.get("custom_follow_up_owner"))
+]
+check("exec1 lead list holds nothing that is not theirs", not stray, stray)
 
 status, body = call(
     "leads.create_lead",

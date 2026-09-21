@@ -48,7 +48,10 @@ class PropertyBooking(Document):
         self.start_maintenance()
 
     def on_cancel(self):
-        self.booking_status = "Cancelled"
+        # db_set, not a plain assignment: the document is already written by the
+        # time on_cancel runs, so a cancelled booking kept showing "Confirmed"
+        # in every list and on the portal.
+        self.db_set("booking_status", "Cancelled")
         release_unit(self.property_unit)
 
     # ------------------------------------------------------------------ #
