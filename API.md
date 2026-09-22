@@ -224,16 +224,19 @@ Details and setup: [PAYMENT_INTEGRATION.md](PAYMENT_INTEGRATION.md).
 ## 9. Deploying this
 
 ```bash
-bench --site <site> migrate            # required
-bench build --app property_core        # required — JavaScript changed
-bench --site <site> clear-cache        # required
-bench restart                          # or: sudo supervisorctl restart all
+cd ~/frappe-bench
+./apps/property_core/scripts/deploy.sh <site>
 ```
+
+One command: it fetches from GitHub, backs up anything that exists only on the
+server, puts the code at the GitHub commit, then migrates, builds, clears the
+cache and restarts. Never `git pull` in the app folder by hand. Full detail,
+including the first run on a server that has already diverged:
+**[DEPLOY.md](DEPLOY.md)**.
 
 `migrate` is what creates the two sales roles, grants their permissions,
 adds the new Opportunity fields (`custom_project`,
-`custom_next_follow_up_date`) and runs the patches. Nothing else has to be
-run by hand.
+`custom_next_follow_up_date`) and runs the patches.
 
 **After migrate, one manual step:** give each person their role — Property
 Manager, Property Sales Manager or Property Sales Executive — and make sure
