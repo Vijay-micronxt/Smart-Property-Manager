@@ -38,8 +38,13 @@ the desk, not for an app.
   (customers);
 * an ordinary Frappe session cookie, which is what the desk uses.
 
-`frappe.auth.get_logged_user` is **not** whitelisted on JD live. Use
-`crm.session.whoami` (staff) or `api.auth.get_logged_in_user` (customer).
+A call without a token or cookie answers *"Login to access — Function … is not
+whitelisted"*. That means **not logged in**, not that the endpoint is missing;
+a missing endpoint answers *"No module named …"* instead.
+
+`frappe.auth.get_logged_user` works once logged in but returns only the user
+id — use `crm.session.whoami` (staff) or `api.auth.get_logged_in_user`
+(customer), which return the profile as well.
 
 **Errors** are HTTP 4xx/5xx carrying Frappe's body: read `exc_type`
 (`ValidationError`, `PermissionError`, `AuthenticationError`,
