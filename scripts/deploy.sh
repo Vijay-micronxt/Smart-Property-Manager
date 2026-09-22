@@ -91,6 +91,31 @@ TARGET_SHA="$(git_app rev-parse --short "$TARGET")"
 TARGET_MSG="$(git_app log -1 --format=%s "$TARGET")"
 echo "   GitHub is at $TARGET_SHA  $TARGET_MSG"
 
+# ---------------------------------------------------- an unfinished pull ----
+# A pull that stopped on a conflict -- "Pulling is not possible because you
+# have unmerged files", "<<<<<<< HEAD" in a DocType JSON -- leaves the
+# checkout half-way through a merge or rebase. Abandoning it puts the server
+# back exactly as it was before that pull, which is the state worth backing
+# up below. Only a half-finished conflict resolution is dropped, never a
+# commit.
+GIT_DIR_ABS="$(git_app rev-parse --absolute-git-dir)"
+UNFINISHED=""
+[ -d "$GIT_DIR_ABS/rebase-merge" ] || [ -d "$GIT_DIR_ABS/rebase-apply" ] && UNFINISHED="rebase"
+[ -z "$UNFINISHED" ] && [ -f "$GIT_DIR_ABS/MERGE_HEAD" ] && UNFINISHED="merge"
+[ -z "$UNFINISHED" ] && [ -f "$GIT_DIR_ABS/CHERRY_PICK_HEAD" ] && UNFINISHED="cherry-pick"
+[ -z "$UNFINISHED" ] && [ -f "$GIT_DIR_ABS/REVERT_HEAD" ] && UNFINISHED="revert"
+
+if [ -n "$UNFINISHED" ]; then
+	warn "a git $UNFINISHED stopped half-way on this server (an earlier pull hit a conflict):"
+	git_app diff --name-only --diff-filter=U | sed 's/^/      conflict: /'
+	if [ "$CHECK_ONLY" -eq 1 ]; then
+		echo "   (check only: left as it is -- a real run abandons it first)"
+	else
+		git_app "$UNFINISHED" --abort
+		echo "   abandoned -- the server is back where it was before that pull"
+	fi
+fi
+
 # ------------------------------------------------------------------- drift --
 say "Looking for changes that exist only on this server"
 

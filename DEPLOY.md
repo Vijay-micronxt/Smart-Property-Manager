@@ -34,6 +34,10 @@ cause is always the same:
    of it** to `drift-backups/property_core/<timestamp>/` before touching
    anything. Each backup has a `README.txt` saying what was found and how to put
    it back.
+   If an earlier pull stopped half-way on a conflict — *"Pulling is not
+   possible because you have unmerged files"*, `<<<<<<< HEAD` inside a
+   DocType JSON — the script abandons that half-done merge or rebase first,
+   which puts the server back where it was before that pull.
 3. Puts the app folder exactly at the GitHub commit.
 4. Prints what `migrate` is about to change (`deploy_check`), then runs
    migrate, build, clear-cache and restart.
