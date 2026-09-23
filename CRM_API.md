@@ -60,10 +60,14 @@ anything that writes.
 
 ## 2. Login
 
-`frappe.auth.get_logged_user` is **not** callable on the live site — it answers
-*"Function frappe.auth.get_logged_user is not whitelisted"*. Use
-`session.whoami` instead; it returns the user, their roles, what they are
-allowed to see and every default the app needs, in one request.
+Every endpoint except `session.login` needs the token (or a session cookie).
+Called without one, Frappe answers *"You are not permitted to access this
+resource. Login to access — Function … is not whitelisted"*. That message means
+**not logged in**, not that the endpoint is missing.
+
+`frappe.auth.get_logged_user` works once logged in, but returns only the user
+id. `session.whoami` returns the user, their roles, what they are allowed to
+see and every default the app needs, in one request — use that.
 
 ### `session.login` (guest)
 
