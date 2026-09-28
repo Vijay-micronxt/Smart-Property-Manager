@@ -140,10 +140,47 @@ everyone except admins, so a sales list stays the live pipeline.
 
 | Endpoint | Returns |
 |---|---|
-| `meta.options` | every dropdown: lead statuses and sources, unit types, facings, opportunity statuses/stages, follow-up types and outcomes, booking statuses, payment plan templates, property types, companies, currency |
-| `meta.field_options?doctype=&fieldname=` | one field's Select options |
+| `meta.options` | every dropdown: lead statuses and sources, unit types, facings, opportunity statuses/stages, follow-up types and outcomes, booking statuses, payment plan templates, sales persons, property types, companies, currency |
+| `meta.field_options?doctype=&fieldname=` | one field's choices — Select options, or the values of the master a Link field points at |
 
 Never hardcode a status list — JD edits theirs.
+
+### Dropdowns are masters JD edits
+
+These are Link fields onto small DocTypes. A new value is a new record in the
+desk (or `POST /api/resource/<master>`), it shows up in `meta.options` on the
+next call, and it can be saved at once — no code change, no deploy.
+
+| `meta.options` key | Master |
+|---|---|
+| `lead.statuses` | Property Lead Status |
+| `lead.sources`, `opportunity.sources` | Lead Source (ERPNext's own) |
+| `follow_up.types` | Property Follow Up Type |
+| `follow_up.outcomes` | Property Follow Up Outcome |
+| `unit.types`, `lead.unit_types` | Property Unit Type |
+| `unit.facings`, `lead.facings` | Property Facing |
+| `property.types` | Property Type |
+
+The same mapping comes back in `meta.options.masters`, for a screen that
+wants a "+ new" button. Adding to a master needs Property Manager.
+
+* Each master has **Enabled** and **Sort Order**. A disabled value leaves the
+  dropdowns; records that already carry it keep it.
+* Each **Property Lead Status** also says which ERPNext status it maps to and
+  whether it is **hidden from the sales team**. `lead.status_details` returns
+  those rules (`status`, `erpnext_status`, `hide_from_sales`, `indicator`);
+  `lead.dead_statuses` is the hidden ones.
+* A value that is not in the master is refused with
+  `exc_type: LinkValidationError` (a kind of `ValidationError`) and the
+  message *"Could not find Lead Status: …"*.
+
+Workflow fields stay fixed lists, because the server acts on their values:
+unit `availability`, booking `statuses`, follow-up `statuses`, property
+`statuses`, opportunity `statuses`.
+
+New in the payload, nothing removed or renamed: `lead.status_details`,
+`booking.sales_persons` (the site's Sales Person records, groups left out —
+`bookings.*.sales_person` must be one of them), `masters`.
 
 ---
 
@@ -292,7 +329,8 @@ The booking is created as a **draft**. Confirming it is a separate call
 ## 9. Inventory
 
 Read-only for sales: the project, its properties and their units are set up
-before anybody sells.
+before anybody sells. The two create calls are for whoever sets that up
+(Property Manager); an executive gets `PermissionError`.
 
 | Endpoint | Method | Notes |
 |---|---|---|
@@ -303,6 +341,8 @@ before anybody sells.
 | `inventory.get_unit?name=` | GET | unit + open booking + live opportunities on it |
 | `inventory.resolve_unit?property_unit=` | GET | **the auto-fill call**: property, project, price, plan, availability |
 | `inventory.availability` | GET | `project` or `property` — counts by status, inventory value |
+| `inventory.create_property` | POST | `data`: `property_name`, `property_type` (a Property Type), `company` (defaults to the user's), `project`, `status`, `launch_date`, `address`, `payment_plan_template`, `latitude`, `longitude`, `map_link` |
+| `inventory.create_unit` | POST | `data`: `property`, `unit_number`, `unit_type` (a Property Unit Type), `area`, `base_price`, `facing`, `floor`, `availability_status` (defaults to Available), `payment_plan_template`, `latitude`, `longitude`, `map_link`; project comes off the property |
 
 The map on Property and Property Unit takes a place name, a pasted coordinate
 pair, or a Google Maps link (the short `maps.app.goo.gl` kind included — the
@@ -386,8 +426,9 @@ Every step above is covered by the automated suites, run against
 | suite | what it proves |
 |---|---|
 | `property_core/tests/crm_api_smoke.py` | the funnel end to end, 38 assertions |
-| `property_core/tests/crm_api_coverage.py` | the remaining endpoints, 59 assertions |
+| `property_core/tests/crm_api_coverage.py` | the remaining endpoints, 60 assertions |
 | `property_core/tests/crm_data_verify.py` | what actually reached the database — address, contact, payment plan, unit status, portal login — 51 assertions |
+| `property_core/tests/crm_masters_check.py` | dropdown masters: new values usable at once, disable, hide-from-sales, refusal of unknown values, inventory create — 58 assertions |
 
 ---
 

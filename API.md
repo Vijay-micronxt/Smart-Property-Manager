@@ -1,12 +1,12 @@
 # API reference — every endpoint in Smart Property Manager
 
-154 whitelisted endpoints across three surfaces:
+157 whitelisted endpoints across three surfaces:
 
 | Surface | For | Count | Detail |
 |---|---|---|---|
-| **Staff CRM API** — `property_core.api.crm.*` | the sales app: enquiry → booking | 64 | [CRM_API.md](CRM_API.md) |
+| **Staff CRM API** — `property_core.api.crm.*` | the sales app: enquiry → booking | 66 | [CRM_API.md](CRM_API.md) |
 | **Customer portal API** — `property_core.api.portal.*` + `api.auth.*` | buyers and tenants | 36 | [CUSTOMER_PORTAL_API.md](CUSTOMER_PORTAL_API.md) |
-| **Feature and integration endpoints** | the desk forms, payment gateways, notifications | 54 | this file, sections 5–8 |
+| **Feature and integration endpoints** | the desk forms, payment gateways, notifications | 55 | this file, sections 5–8 |
 
 This file is the index: what exists, where it lives, who may call it. The two
 linked documents carry request/response detail for the surfaces an outside app
@@ -85,7 +85,7 @@ itself.
 
 ---
 
-## 3. Staff CRM API — `property_core.api.crm.*` (64)
+## 3. Staff CRM API — `property_core.api.crm.*` (66)
 
 Full detail, payloads and the end-to-end flow: **[CRM_API.md](CRM_API.md)**.
 
@@ -97,7 +97,7 @@ Full detail, payloads and the end-to-end flow: **[CRM_API.md](CRM_API.md)**.
 | `follow_ups` (8) | `get_follow_ups` · `get_follow_up` · `create_follow_up` · `log_follow_up` · `complete_follow_up` · `reschedule` · `cancel_follow_up` · `my_agenda` |
 | `opportunities` (8) | `get_opportunities` · `get_opportunity` · `create_opportunity` · `update_opportunity` · `set_property` · `set_status` · `convert_to_booking` · `funnel` |
 | `customers` (4) | `get_customers` · `get_customer` · `create_customer` · `create_from_lead` |
-| `inventory` (7) | `get_properties` · `get_property` · `get_units` · `available_units` · `get_unit` · `resolve_unit` · `availability` |
+| `inventory` (9) | `get_properties` · `get_property` · `get_units` · `available_units` · `get_unit` · `resolve_unit` · `availability` · `create_property` · `create_unit` |
 | `bookings` (7) | `get_bookings` · `get_booking` · `create_booking` · `update_booking` · `submit_booking` · `cancel_booking` · `payment_plan` |
 | `projects` (8) | `get_projects` · `get_project` · `overview` · `project_inventory` · `project_funnel` · `project_bookings` · `project_operations` · `project_activity` |
 | `team` (3) | `my_team` · `assignable_users` · `performance` |
@@ -157,6 +157,7 @@ Called by the desk forms; usable by any client.
 | `...property_booking.make_from_property_unit` | `source_name` | the walk-in path: book a unit directly |
 | `...crm.whatsapp.templates` / `render_template` / `send` | see [CRM_API.md](CRM_API.md) | message templates, server-rendered preview, send |
 | `...crm.telephony.click_to_call` | `to_number`, `reference_doctype`, `reference_name` | dial through the configured provider |
+| `...crm.masters.lead_status_indicators` | — | lead status → list-view colour, from each Property Lead Status |
 
 ---
 
@@ -258,13 +259,15 @@ bench --site <site> execute property_core.property_core.setup.roles.assign_role 
 | Suite | Assertions | Proves |
 |---|---|---|
 | `property_core/tests/crm_api_smoke.py` | 38 | the funnel end to end over HTTP |
-| `property_core/tests/crm_api_coverage.py` | 59 | every remaining endpoint |
+| `property_core/tests/crm_api_coverage.py` | 60 | every remaining endpoint |
 | `property_core/tests/crm_data_verify.py` | 51 | what actually reached the database |
 | `property_core/tests/geo_resolve_check.py` | 7 | every kind of map input, and the internal-URL refusal |
+| `property_core/tests/crm_masters_check.py` | 58 | dropdown masters and the inventory create calls |
 
 ```bash
 SITE=http://127.0.0.1:8003 python property_core/tests/crm_api_smoke.py
 SITE=http://127.0.0.1:8003 python property_core/tests/crm_api_coverage.py
+SITE=http://127.0.0.1:8003 python property_core/tests/crm_masters_check.py
 bench --site <site> execute property_core.tests.crm_data_verify.run
 bench --site <site> execute property_core.tests.geo_resolve_check.run
 ```

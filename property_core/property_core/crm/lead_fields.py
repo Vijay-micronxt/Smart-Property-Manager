@@ -12,6 +12,10 @@ avoid. Native ``Lead.status`` stays in play underneath: STATUS_MAP collapses
 each JD status onto one of ERPNext's nine so set_status(), the Opportunity
 conversion and every stock report keep working.
 
+The lists below are now only seed data. Status, source, unit type and facing
+are Link fields onto masters (see crm/masters.py) that JD edits from the desk;
+the mapping and the hidden-from-sales flag live on each Property Lead Status.
+
 Applied through an after_migrate hook (see hooks.py) -- Frappe does not read
 the ``custom_fields`` hooks key on its own, the same reason customer_kyc.py,
 crm_links.py and notifications/custom_fields.py push theirs explicitly.
@@ -183,16 +187,12 @@ RESTRICTED_STATUSES = [
 UNIT_TYPES = ["Plot", "Flat", "Villa", "Office", "Warehouse", "Shop"]
 
 
-def _select(values):
-    return "\n".join([""] + values)
-
-
 LEAD_CRM_FIELDS = [
     {
         "fieldname": "custom_lead_status",
-        "fieldtype": "Select",
+        "fieldtype": "Link",
         "label": "Lead Status",
-        "options": _select(LEAD_STATUSES),
+        "options": "Property Lead Status",
         "default": "New",
         "reqd": 1,
         "insert_after": "status",
@@ -202,9 +202,9 @@ LEAD_CRM_FIELDS = [
     },
     {
         "fieldname": "custom_lead_source",
-        "fieldtype": "Select",
+        "fieldtype": "Link",
         "label": "Lead Source",
-        "options": _select(LEAD_SOURCES),
+        "options": "Lead Source",
         "default": "Website",
         "reqd": 1,
         "insert_after": "source",
@@ -221,9 +221,9 @@ LEAD_CRM_FIELDS = [
     },
     {
         "fieldname": "custom_unit_type",
-        "fieldtype": "Select",
+        "fieldtype": "Link",
         "label": "Looking For",
-        "options": _select(UNIT_TYPES),
+        "options": "Property Unit Type",
         "insert_after": "custom_requirement_section",
         "in_standard_filter": 1,
     },
@@ -246,11 +246,9 @@ LEAD_CRM_FIELDS = [
     },
     {
         "fieldname": "custom_preferred_facing",
-        "fieldtype": "Select",
+        "fieldtype": "Link",
         "label": "Preferred Facing",
-        "options": _select(
-            ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
-        ),
+        "options": "Property Facing",
         "insert_after": "custom_budget",
     },
     # -- follow-up timeline, rendered from Property Follow Up
@@ -271,9 +269,9 @@ LEAD_CRM_FIELDS = [
 OPPORTUNITY_REQUIREMENT_FIELDS = [
     {
         "fieldname": "custom_unit_type",
-        "fieldtype": "Select",
+        "fieldtype": "Link",
         "label": "Looking For",
-        "options": _select(UNIT_TYPES),
+        "options": "Property Unit Type",
         "insert_after": "custom_property_unit",
         "in_standard_filter": 1,
     },
@@ -296,11 +294,9 @@ OPPORTUNITY_REQUIREMENT_FIELDS = [
     },
     {
         "fieldname": "custom_preferred_facing",
-        "fieldtype": "Select",
+        "fieldtype": "Link",
         "label": "Preferred Facing",
-        "options": _select(
-            ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
-        ),
+        "options": "Property Facing",
         "insert_after": "custom_budget",
     },
     {
@@ -326,23 +322,7 @@ def sync_lead_crm_fields():
         ignore_validate=True,
         update=True,
     )
-    sync_lead_sources()
     _apply_property_setters()
-
-
-def sync_lead_sources():
-    """Every JD source also exists as a native Lead Source record, so the
-    mirrored ``source`` link never fails validation."""
-    existing = set(frappe.get_all("Lead Source", pluck="name"))
-    for source in LEAD_SOURCES:
-        if source in existing:
-            continue
-        try:
-            frappe.get_doc({"doctype": "Lead Source", "source_name": source}).insert(
-                ignore_permissions=True
-            )
-        except frappe.DuplicateEntryError:
-            pass
 
 
 def _apply_property_setters():
@@ -392,7 +372,9 @@ def apply_lead_status(doc, method=None):
     if not doc.get("custom_lead_status"):
         return
 
-    doc.status = STATUS_MAP.get(doc.custom_lead_status, "Open")
+    from property_core.property_core.crm.masters import erpnext_status_for
+
+    doc.status = erpnext_status_for(doc.custom_lead_status)
 
     if doc.get("custom_lead_source") and doc.custom_lead_source != doc.get("source"):
         if frappe.db.exists("Lead Source", doc.custom_lead_source):

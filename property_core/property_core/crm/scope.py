@@ -25,7 +25,7 @@ re-implementing the rule.
 
 import frappe
 
-from property_core.property_core.crm.lead_fields import RESTRICTED_STATUSES
+from property_core.property_core.crm.masters import hidden_lead_statuses
 
 ADMIN_ROLES = ("Super Admin", "System Manager", "Property Manager")
 MANAGER_ROLES = ("Property Sales Manager", "Sales Manager", "Sales Master Manager")
@@ -197,11 +197,11 @@ def get_lead_conditions(user=None):
     if not ownership:
         return ""
 
-    dead = " AND ".join(
-        f"IFNULL(`tabLead`.`custom_lead_status`, '') != {frappe.db.escape(status)}"
-        for status in RESTRICTED_STATUSES
-    )
-    return f"({ownership} AND ({dead}))"
+    hidden = hidden_lead_statuses()
+    if not hidden:
+        return f"({ownership})"
+    dead = ", ".join(frappe.db.escape(status) for status in hidden)
+    return f"({ownership} AND IFNULL(`tabLead`.`custom_lead_status`, '') NOT IN ({dead}))"
 
 
 def get_opportunity_conditions(user=None):

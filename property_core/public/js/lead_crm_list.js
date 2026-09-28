@@ -29,6 +29,11 @@ Object.assign(frappe.listview_settings["Lead"], {
 	add_fields: ["mobile_no", "lead_name", "custom_lead_status", "custom_next_follow_up_date"],
 
 	get_indicator(doc) {
+		const status = doc.custom_lead_status || doc.status;
+		// colours come from each Property Lead Status record, loaded in onload
+		const colour = (property_core.lead_status_indicators || {})[status];
+		if (colour) return [__(status), colour, "custom_lead_status,=," + status];
+
 		const dead = [
 			"Junk",
 			"Duplicate",
@@ -39,7 +44,6 @@ Object.assign(frappe.listview_settings["Lead"], {
 			"Dropped the Plan",
 		];
 		const won = ["Booked", "converted"];
-		const status = doc.custom_lead_status || doc.status;
 
 		if (won.includes(status)) return [__(status), "green", "custom_lead_status,=," + status];
 		if (dead.includes(status)) return [__(status), "red", "custom_lead_status,=," + status];
@@ -59,6 +63,15 @@ Object.assign(frappe.listview_settings["Lead"], {
 	},
 
 	onload(listview) {
+		if (!property_core.lead_status_indicators) {
+			frappe
+				.xcall("property_core.property_core.crm.masters.lead_status_indicators")
+				.then((map) => {
+					property_core.lead_status_indicators = map || {};
+					listview.refresh();
+				});
+		}
+
 		// Delegated, so rows rendered later are covered without re-scanning.
 		listview.$result
 			.off("click.property_core")
