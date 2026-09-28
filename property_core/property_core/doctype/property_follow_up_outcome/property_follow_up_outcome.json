@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:outcome_name",
+ "creation": "2026-09-28 15:00:00.000000",
+ "description": "What came out of a follow-up.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "outcome_name",
+  "enabled",
+  "sort_order"
+ ],
+ "fields": [
+  {
+   "fieldname": "outcome_name",
+   "fieldtype": "Data",
+   "label": "Outcome",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1,
+   "description": "Disabled values stay valid on old records but are no longer offered in dropdowns."
+  },
+  {
+   "fieldname": "sort_order",
+   "fieldtype": "Int",
+   "label": "Sort Order",
+   "in_list_view": 1,
+   "description": "Lower comes first in dropdowns."
+  }
+ ],
+ "links": [],
+ "modified": "2026-09-28 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Property Core",
+ "name": "Property Follow Up Outcome",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Property Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  }
+ ],
+ "quick_entry": 1,
+ "search_fields": "outcome_name",
+ "show_title_field_in_link": 0,
+ "sort_field": "sort_order",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "outcome_name",
+ "track_changes": 1
+}

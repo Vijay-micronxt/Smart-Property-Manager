@@ -50,6 +50,14 @@ PERMISSIONS = {
     "Property": {MANAGER: READ, EXECUTIVE: READ},
     "Property Unit": {MANAGER: READ, EXECUTIVE: READ},
     "Payment Plan Template": {MANAGER: READ, EXECUTIVE: READ},
+    # --- dropdown masters: admins maintain them, sales pick from them ---- #
+    "Property Lead Status": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
+    "Lead Source": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
+    "Property Follow Up Type": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
+    "Property Follow Up Outcome": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
+    "Property Unit Type": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
+    "Property Facing": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
+    "Property Type": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
     # --- money, read-only for sales --------------------------------------- #
     "Payment Plan": {MANAGER: READ, EXECUTIVE: READ},
     "Sales Invoice": {MANAGER: READ, EXECUTIVE: READ},

@@ -165,6 +165,9 @@ override_doctype_dashboards = {
 after_migrate = [
     # Roles first: everything below grants against them.
     "property_core.property_core.setup.roles.sync_property_roles",
+    # before sync_lead_crm_fields: turns the Lead dropdowns into Link fields
+    # and seeds the masters they point at
+    "property_core.property_core.crm.masters.setup_masters",
     "property_core.property_core.customer_kyc.sync_customer_kyc_fields",
     "property_core.property_core.crm_links.sync_crm_link_fields",
     "property_core.property_operations.issue_links.sync_issue_link_fields",

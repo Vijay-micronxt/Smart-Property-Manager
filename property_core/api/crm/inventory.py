@@ -2,8 +2,9 @@
 
 At JD the inventory is built before anybody sells anything — the project and
 its properties exist, the units are laid out, and only then do leads arrive.
-So these endpoints are read-only for sales: they pick from inventory, they do
-not create it.
+So these endpoints are read-only for sales: they pick from inventory. The two
+create endpoints are for the admin setting that inventory up; the doctype's
+own permissions decide who may call them (Property Manager by default).
 """
 
 import frappe
@@ -47,6 +48,64 @@ UNIT_FIELDS = [
 ]
 
 SELLABLE = ["Available", "Reserved"]
+
+PROPERTY_WRITABLE = {
+    "property_name",
+    "property_type",
+    "status",
+    "project",
+    "company",
+    "launch_date",
+    "total_area",
+    "address",
+    "payment_plan_template",
+    "latitude",
+    "longitude",
+    "map_link",
+}
+
+UNIT_WRITABLE = {
+    "property",
+    "unit_number",
+    "unit_type",
+    "availability_status",
+    "area",
+    "facing",
+    "floor",
+    "base_price",
+    "payment_plan_template",
+    "latitude",
+    "longitude",
+    "map_link",
+}
+
+
+@frappe.whitelist()
+def create_property(data=None, **kwargs):
+    """A new property. ``property_type`` is a Property Type record, so a new
+    kind of property is a new record, not a code change."""
+    payload = base.parse(data, default={}) or {}
+    payload.update({k: v for k, v in kwargs.items() if k in PROPERTY_WRITABLE})
+    if not payload.get("company"):
+        payload["company"] = frappe.defaults.get_user_default("company") or frappe.db.get_default(
+            "company"
+        )
+    doc = base.create_doc("Property", payload, PROPERTY_WRITABLE)
+    return ok(data=base.doc_payload(doc), message=frappe._("Property {0} created").format(doc.name))
+
+
+@frappe.whitelist()
+def create_unit(data=None, **kwargs):
+    """A new unit under an existing property; project comes off the property."""
+    payload = base.parse(data, default={}) or {}
+    payload.update({k: v for k, v in kwargs.items() if k in UNIT_WRITABLE})
+    if not payload.get("property"):
+        frappe.throw(frappe._("A unit needs a property"), frappe.MandatoryError)
+    base.read_doc("Property", payload["property"])
+    doc = base.create_doc(
+        "Property Unit", payload, UNIT_WRITABLE, defaults={"availability_status": "Available"}
+    )
+    return ok(data=base.doc_payload(doc), message=frappe._("Unit {0} created").format(doc.name))
 
 
 @frappe.whitelist()

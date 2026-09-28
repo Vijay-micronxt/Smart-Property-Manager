@@ -68,9 +68,9 @@
   },
   {
    "fieldname": "unit_type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Unit Type",
-   "options": "Plot\nFlat\nVilla\nOffice\nWarehouse\nShop",
+   "options": "Property Unit Type",
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1
@@ -96,9 +96,9 @@
   },
   {
    "fieldname": "facing",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Facing",
-   "options": "\nNorth\nSouth\nEast\nWest\nNorth-East\nNorth-West\nSouth-East\nSouth-West"
+   "options": "Property Facing"
   },
   {
    "fieldname": "floor",
@@ -219,7 +219,7 @@
   }
  ],
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-09-28 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Property Unit",

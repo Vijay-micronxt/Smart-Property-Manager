@@ -43,9 +43,9 @@
   },
   {
    "fieldname": "property_type",
-   "fieldtype": "Select",
+   "fieldtype": "Link",
    "label": "Property Type",
-   "options": "Township\nCommunity\nApartment\nFarmland\nCommercial Complex\nIndustrial",
+   "options": "Property Type",
    "reqd": 1,
    "in_list_view": 1,
    "in_standard_filter": 1
@@ -206,7 +206,7 @@
   }
  ],
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-09-28 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Property",
