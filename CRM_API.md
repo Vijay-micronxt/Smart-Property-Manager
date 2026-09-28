@@ -180,7 +180,10 @@ unit `availability`, booking `statuses`, follow-up `statuses`, property
 
 New in the payload, nothing removed or renamed: `lead.status_details`,
 `booking.sales_persons` (the site's Sales Person records, groups left out —
-`bookings.*.sales_person` must be one of them), `masters`.
+`bookings.*.sales_person` must be one of them), `masters`, and `defaults` —
+what a new record starts with, keyed like the lists
+(`{"unit.availability": "Available", "follow_up.types": "Call", "company": …}`),
+read off each field's own default so the app never picks one itself.
 
 ---
 
@@ -428,7 +431,7 @@ Every step above is covered by the automated suites, run against
 | `property_core/tests/crm_api_smoke.py` | the funnel end to end, 38 assertions |
 | `property_core/tests/crm_api_coverage.py` | the remaining endpoints, 60 assertions |
 | `property_core/tests/crm_data_verify.py` | what actually reached the database — address, contact, payment plan, unit status, portal login — 51 assertions |
-| `property_core/tests/crm_masters_check.py` | dropdown masters: new values usable at once, disable, hide-from-sales, refusal of unknown values, inventory create — 58 assertions |
+| `property_core/tests/crm_masters_check.py` | dropdown masters: new values usable at once, disable, hide-from-sales, refusal of unknown values, inventory create — 60 assertions |
 
 ---
 

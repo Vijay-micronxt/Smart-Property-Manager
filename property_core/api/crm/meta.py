@@ -68,6 +68,8 @@ def options():
             },
             "company": _link_options("Company", respect_permissions=True),
             "currency": frappe.db.get_default("currency"),
+            # what a new record starts with, read off each field's own default
+            "defaults": _defaults(),
             # which master to add a new value to, for a screen that offers "+ new"
             "masters": {
                 "lead.statuses": masters.LEAD_STATUS,
@@ -80,6 +82,47 @@ def options():
             },
         }
     )
+
+
+#: meta.options key -> the field whose default a new record starts with
+DEFAULT_FIELDS = {
+    "lead.statuses": ("Lead", "custom_lead_status"),
+    "lead.sources": ("Lead", "custom_lead_source"),
+    "lead.unit_types": ("Lead", "custom_unit_type"),
+    "lead.facings": ("Lead", "custom_preferred_facing"),
+    "opportunity.statuses": ("Opportunity", "status"),
+    "follow_up.types": ("Property Follow Up", "follow_up_type"),
+    "follow_up.statuses": ("Property Follow Up", "status"),
+    "follow_up.outcomes": ("Property Follow Up", "outcome"),
+    "booking.statuses": ("Property Booking", "booking_status"),
+    "booking.payment_plan_templates": ("Property Booking", "payment_plan_template"),
+    "unit.types": ("Property Unit", "unit_type"),
+    "unit.availability": ("Property Unit", "availability_status"),
+    "unit.facings": ("Property Unit", "facing"),
+    "property.types": ("Property", "property_type"),
+    "property.statuses": ("Property", "status"),
+}
+
+
+def _defaults():
+    """A Select field with no default starts on its first option, as the desk does."""
+    out = {}
+    for key, (doctype, fieldname) in DEFAULT_FIELDS.items():
+        if not frappe.db.exists("DocType", doctype):
+            continue
+        field = frappe.get_meta(doctype).get_field(fieldname)
+        if not field:
+            continue
+        value = field.default
+        if not value and field.fieldtype == "Select" and field.reqd:
+            options = [o for o in (field.options or "").split("\n") if o]
+            value = options[0] if options else None
+        if value:
+            out[key] = value
+    company = frappe.defaults.get_user_default("company") or frappe.db.get_default("company")
+    if company:
+        out["company"] = company
+    return out
 
 
 @frappe.whitelist()

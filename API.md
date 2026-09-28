@@ -262,7 +262,7 @@ bench --site <site> execute property_core.property_core.setup.roles.assign_role 
 | `property_core/tests/crm_api_coverage.py` | 60 | every remaining endpoint |
 | `property_core/tests/crm_data_verify.py` | 51 | what actually reached the database |
 | `property_core/tests/geo_resolve_check.py` | 7 | every kind of map input, and the internal-URL refusal |
-| `property_core/tests/crm_masters_check.py` | 58 | dropdown masters and the inventory create calls |
+| `property_core/tests/crm_masters_check.py` | 60 | dropdown masters and the inventory create calls |
 
 ```bash
 SITE=http://127.0.0.1:8003 python property_core/tests/crm_api_smoke.py

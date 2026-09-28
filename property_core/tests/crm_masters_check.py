@@ -112,6 +112,11 @@ def main():
     check("new: lead.status_details", isinstance(meta["lead"].get("status_details"), list))
     check("new: booking.sales_persons", isinstance(meta["booking"].get("sales_persons"), list))
     check("new: masters map", meta.get("masters", {}).get("lead.statuses") == "Property Lead Status")
+    defaults = meta.get("defaults") or {}
+    check("new: defaults from the doctypes", defaults.get("unit.availability") == "Available" and defaults.get("follow_up.types") == "Call", defaults)
+    check("every default is one of its own options", all(
+        v in meta[k.split(".")[0]][k.split(".")[1]] for k, v in defaults.items() if "." in k and k.split(".")[0] in meta and isinstance(meta[k.split(".")[0]].get(k.split(".")[1]), list)
+    ), defaults)
     exec_meta = data(api("GET", "meta.options", exec1))
     check(
         "executive gets the same dropdowns",
