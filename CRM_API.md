@@ -4,7 +4,12 @@ Staff-facing HTTP API for the CRM app — everything JD does on the ERPNext desk
 over JSON: leads, follow-ups, opportunities, customers, bookings; projects,
 tasks, properties, units, templates and charges; invoices and payments;
 agreement and allocation; attachments and Drive; plot layout and maps;
-complaints and site work; and the dashboards over all of it. 147 endpoints.
+complaints and site work; maintenance visits with photo proof; and the
+dashboards over all of it. 164 endpoints.
+
+**Building the app? Start with `CRM_APP_GUIDE.md`** — screen by screen: which
+call, when, with what payload, where each dropdown and auto-filled value comes
+from.
 
 This is a separate surface from the customer portal API
 (`CUSTOMER_PORTAL_API.md`). That one is for buyers; this one is for the sales
@@ -523,8 +528,33 @@ confirmed (anything already due is invoiced then), then nightly.
 | `layout.site_map` | GET | `project` / `property`, `availability` → properties and units with coordinates plus a `color` per unit, for Google Maps / Leaflet pins; `units_without_location` counts the rest |
 | `layout.resolve_location` | GET | `query` = coordinates (`12.97, 77.59`), any Google Maps link (short `maps.app.goo.gl` too) or a place name → `results: [{label, latitude, longitude}]` |
 | `layout.set_location` | POST | `doctype` (Property / Property Unit), `name`, and `latitude` + `longitude` or `query` (first match used) → saved with the map link |
+| `layout.get_layout?property_unit=` | GET | same, for the unit's property, with `focus` = that unit |
+| `layout.project_layouts?project=` | GET | every property of the project with `units`, `placed`, `has_image` — the project's Layout tab |
+| `layout.editor_assets` | GET | `{js, css}` of the site's PlotLayoutEngine (the desk / portal editor) for the app to load; usage in `CRM_APP_GUIDE.md` §5.8 |
+| `layout.set_unit_shape` | POST | one plot: `property_unit, layout_shape, layout_x, layout_y, layout_w, layout_h, layout_rotation, layout_points` |
+| `layout.clear_unit_shape` | POST | `property_unit` — take it off the layout |
 
 To upload a new layout image: `files.attach(doctype="Property", name, fieldname="layout_image", …)`, then `get_layout` again.
+
+`save_layout` writes exactly the units it is sent; send every unit (the
+engine's `getLayoutPayload()` does) so a plot removed in the editor goes out
+as `layout_shape: ""`.
+
+---
+
+### Booking form auto-fill — `bookings.prefill`
+
+`GET bookings.prefill?opportunity=` (or `property_unit=` + `customer=`) before
+the booking form is shown, and again when the agreement value
+(`total_price=`) or plan (`payment_plan_template=`) is changed. Returns
+`unit_base_price`, `total_price` (+ `total_price_source`: `given` /
+`opportunity` / `unit_base_price`, and `discount`), `payment_plan_template`,
+suggested `booking_amount` (first milestone), `booking_date`, the `schedule`,
+unit info and customer. Nothing is saved.
+
+`opportunities.convert_to_booking` now takes the opportunity's
+`opportunity_amount` as the agreement value when none is sent, instead of
+always the unit's list price.
 
 ---
 
@@ -639,6 +669,36 @@ Same doctypes as attachments.
 
 ---
 
+## 20a. Maintenance visits — `maintenance.*`
+
+A **Property Maintenance Task** opens by itself N days before each
+maintenance date on a unit's Maintenance Plan Template (Property Core
+Settings: `maintenance_task_lead_days` default 3, `maintenance_task_assignee`,
+`maintenance_proof_required` default on). One task per unit per period,
+linked to that period's invoice. It is also opened when a booking is
+confirmed, if a visit falls inside the window. This replaces the Work Order
+the billing run used to open (which never saved on JD).
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `maintenance.summary` | GET | `open, in_progress, overdue, due_this_week, completed_this_month, lead_days, proof_required` (`property`, `project`) |
+| `maintenance.get_tasks` | GET | `property_unit, property, project, customer, status, mine=1, assigned_to, overdue=1, from_date, to_date, search`, paging; rows carry `overdue`, `assigned_to_name` |
+| `maintenance.get_task` | GET | task + `updates[] {update_type, progress, note, posted_on, posted_by_name, proof[] {name, file_name, file_url, kind}}`, `task_files`, `proof_count`, `proof_required` |
+| `maintenance.create_task` | POST | off-schedule visit: `data: {property_unit*, subject, scheduled_date, assigned_to, description, show_to_customer}` |
+| `maintenance.update_task` | POST | `name, data` — same fields |
+| `maintenance.assign` | POST | `name, user` (desk ToDo follows) |
+| `maintenance.post_update` | POST | `name, note, progress, update_type` (Progress / Blocked / Note) + proof: multipart `file` (repeat) or `files: [{filename, content}]` base64. Open → In Progress |
+| `maintenance.complete` | POST | `name, work_done` + optional proof in the same call. Refused without any proof when proof is required |
+| `maintenance.cancel` / `reopen` | POST | `name, reason` |
+| `maintenance.unit_history` | GET | `property_unit` → `schedule` (charges billed / to come) + `tasks` with updates and proof + counts |
+| `maintenance.generate_now` | POST | `property_unit` or `property` — open whatever is due in the window now |
+
+Desk: Property Maintenance Task form has **Post Update** (then attach photos)
+and **Mark Completed**; the unit form lists every visit under the maintenance
+schedule.
+
+---
+
 ## 21. The whole flow, end to end
 
 ```
@@ -673,6 +733,7 @@ Every step above is covered by the automated suites, run against
 | `property_core/tests/crm_api_coverage.py` | the remaining endpoints, 60 assertions |
 | `property_core/tests/crm_data_verify.py` | what actually reached the database — address, contact, payment plan, unit status, portal login — 51 assertions |
 | `property_core/tests/crm_masters_check.py` | dropdown masters: new values usable at once, disable, hide-from-sales, refusal of unknown values, inventory create — 60 assertions |
+| `property_core/tests/crm_maintenance_check.py` | maintenance: task opened ahead of the date, proof required, updates, unit history, portal view + proof streaming + portal documents / Drive / handover / extra charges — 41 + 14 assertions |
 | `property_core/tests/crm_backend_check.py` | dashboards, tasks, templates, bulk units, layout/map, invoice → payment → allocation, attachments, Drive, comments, operations, and what an executive is refused — 97 assertions |
 
 ---

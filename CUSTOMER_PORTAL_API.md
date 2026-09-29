@@ -84,7 +84,7 @@ see §9.
 | `properties` | `site_map` | `property` | layout geometry for the map |
 | `properties` | `available_units` | `property`, `unit_type`, `limit` | bookable inventory |
 | `bookings` | `list_bookings` | `status`, `limit` | bookings + payment plan |
-| `bookings` | `booking_details` | `booking` | one booking in full |
+| `bookings` | `booking_details` | `booking` | one booking in full: plan, `statement`, `extra_charges`, `handover`, `maintenance_tasks` |
 | `bookings` | `book_unit` | `property_unit`, `note` | **request a booking** |
 | `billing` | `charges` | `property_unit`, `charge_type`, `status`, `limit` | **all charges, one feed** |
 | `billing` | `maintenance_charges` | `property_unit`, `status`, `limit` | recurring maintenance |
@@ -94,7 +94,11 @@ see §9.
 | `billing` | `payments` | `limit` | payments received |
 | `billing` | `invoice` | `invoice` | one invoice + items + payments |
 | `billing` | `payment_schedule` | `booking` | milestone plan |
-| `maintenance` | `work_history` | `property_unit`, `status`, `limit` | **what work was done** |
+| `billing` | `invoice_pdf` | `invoice`, `print_format` | the invoice as a PDF (own invoices only) |
+| `maintenance` | `tasks` | `property_unit`, `status`, `limit` | **maintenance visits — upcoming, in progress, done** |
+| `maintenance` | `task` | `name` | one visit: updates from site + proof photos with `download_url` |
+| `maintenance` | `proof` | `file` | stream one proof photo / video / file (private, ownership-checked) |
+| `maintenance` | `work_history` | `property_unit`, `status`, `limit` | complaint work orders (see note in §6) |
 | `maintenance` | `schedule` | `property_unit` | what is due next |
 | `maintenance` | `work_updates` | `work_order`, `property_unit`, `limit` | **progress from site, with photos** |
 | `maintenance` | `inspections` | `property_unit`, `limit` | inspection results |
@@ -102,7 +106,9 @@ see §9.
 | `support` | `issue` | `issue` | one ticket + conversation |
 | `support` | `raise_issue` | `subject`, `description`, `property_unit`, `priority` | **open a ticket** |
 | `support` | `add_comment` | `issue`, `message` | **reply on a ticket** |
-| `documents` | `list_documents` | `property_unit`, `limit` | document index |
+| `documents` | `list_documents` | `property_unit`, `limit` | document index — every row has a `download_url`; includes the booking's **Drive** folder files |
+| `documents` | `download` | `file_url` | stream one of the customer's own files (private ones too) |
+| `documents` | `drive_download` | `entity` | stream a file from the customer's booking Drive folder |
 
 Write endpoints are bold. Everything else is read-only.
 
@@ -115,6 +121,29 @@ on the Work Order, so a customer token cannot reach them:
 | `...work_order_update.updates` | `work_order` | full trail for one job, with proof |
 
 Full path: `property_core.property_operations.doctype.work_order_update.work_order_update`
+
+---
+
+### What changed on 2026-09-29
+
+- **Maintenance visits.** Each visit on a unit is now a *Property Maintenance
+  Task*. Office staff post progress on it with photo proof, and it is
+  completed only once proof is attached. Read it with `maintenance.tasks` /
+  `maintenance.task`, and show photos through `maintenance.proof`.
+  `dashboard.summary` has a new `maintenance` block (`next_visit`, `open`,
+  `completed`, `recent`).
+- **Documents open.** Private files never opened from their `file_url` for a
+  portal login. Use the new `download_url` on every `list_documents` row.
+  Files the office keeps in the booking's Drive folder now appear with
+  `source: "Drive"`.
+- **Booking details** now include `statement` (agreement value, billed,
+  paid, outstanding, not billed yet), `extra_charges` (ad-hoc invoices
+  such as a corner premium), `handover` (has the unit been allocated, and
+  when) and the unit's `maintenance_tasks`.
+- **Invoice PDF**: `billing.invoice_pdf?invoice=`.
+
+Loading private images in the app: `fetch(download_url, {headers: {Authorization: "token …"}})`
+→ `URL.createObjectURL(blob)`.
 
 ---
 
@@ -177,7 +206,15 @@ that tab.
    "due_date": "2026-06-23", "invoice": "ACC-SINV-2026-00009", "status": "Overdue"
  },
  "recent_bookings": [...], "recent_payments": [...],
- "recent_work_orders": [...], "open_issues": [...]
+ "recent_work_orders": [...], "open_issues": [...],
+ "maintenance": {
+   "next_visit": {"name": "MNT-2026-00025", "subject": "Maintenance 2026-10 - M-1",
+                  "property_unit": "UNIT-0124", "unit_number": "M-1", "status": "Open",
+                  "scheduled_date": "2026-10-01", "progress": 0.0},
+   "open": 1, "completed": 2,
+   "recent": [{"name": "MNT-2026-00024", "subject": "Maintenance 2026-09 - M-1",
+               "status": "Completed", "completed_on": "2026-09-29", "progress": 100.0}]
+ }
 }
 ```
 
@@ -261,6 +298,34 @@ deliberately not part of this API yet.
 ---
 
 ## 6. Maintenance — what was done, what is next
+
+### 6.0 `maintenance.tasks` / `maintenance.task` — the visits, with proof
+
+Every maintenance visit on the customer's units (only ones the office marked
+*Show on Customer Portal*). The list carries `proof_count`, and one task
+returns the trail from site:
+
+```json
+{
+ "name": "MNT-2026-00024", "subject": "Maintenance 2026-09 - M-1",
+ "property_unit": "UNIT-0124", "unit_number": "M-1", "status": "Completed",
+ "scheduled_date": "2026-09-29", "progress": 100.0, "completed_on": "2026-09-29",
+ "work_done": "Clean-up finished", "maintenance_period": "2026-09",
+ "updates": [
+  {"update_type": "Progress", "progress": 40.0, "note": "Weeds cleared on the east side",
+   "posted_on": "2026-09-29 16:55:44", "posted_by_name": "CRM Admin",
+   "proof": [{"name": "c4a47bbc04", "file_name": "east.png", "kind": "image",
+              "download_url": "/api/method/property_core.api.portal.maintenance.proof?file=c4a47bbc04"}]}
+ ],
+ "task_files": []
+}
+```
+
+`kind` is `image` / `video` / `file`. Open the `download_url` with the token
+header (it is private).
+
+> `work_history` and `work_updates` below read the Work Order doctype, which is
+> now the complaint path only. Maintenance is in `tasks` / `task`.
 
 ### 6.1 `maintenance.work_history`
 

@@ -385,3 +385,16 @@ def payment_schedule(booking=None):
         "total_amount": sum(flt(r.get("amount")) for r in rows),
         "total_unpaid": sum(flt(r.get("amount")) for r in rows if r["status"] != "Paid"),
     })
+
+
+@frappe.whitelist()
+def invoice_pdf(invoice, print_format=None):
+    """The invoice as a PDF, for the customer's own invoices only."""
+    customer = get_customer()
+    assert_doc(customer, "Sales Invoice", invoice)
+    if frappe.db.get_value("Sales Invoice", invoice, "docstatus") != 1:
+        frappe.throw(frappe._("Only submitted invoices can be downloaded."))
+    pdf = frappe.get_print("Sales Invoice", invoice, print_format=print_format, as_pdf=True, no_letterhead=0)
+    frappe.local.response.filename = f"{invoice}.pdf"
+    frappe.local.response.filecontent = pdf
+    frappe.local.response.type = "pdf"

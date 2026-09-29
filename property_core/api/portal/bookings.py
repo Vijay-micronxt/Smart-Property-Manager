@@ -88,6 +88,48 @@ def booking_details(booking):
         {"booking": booking, "docstatus": ["<", 2]},
         order_by="creation desc",
     )
+    live = frappe.get_all(
+        "Property Allocation",
+        filters={"booking": booking, "docstatus": 1},
+        fields=["name", "start_date", "allocation_type"],
+        order_by="creation desc",
+    )
+    row["handover"] = {
+        "handed_over": bool(live),
+        "allocation": live[0]["name"] if live else None,
+        "start_date": live[0].get("start_date") if live else None,
+        "allocation_type": live[0].get("allocation_type") if live else None,
+    }
+
+    # the money on this deal: milestones plus extra charges billed on the unit
+    invoices = frappe.get_all(
+        "Sales Invoice",
+        filters={"customer": customer, "property_unit": row.get("property_unit"), "docstatus": 1},
+        fields=["name", "posting_date", "due_date", "grand_total", "outstanding_amount", "status",
+                "maintenance_period"],
+        order_by="posting_date asc",
+    ) if frappe.get_meta("Sales Invoice").has_field("property_unit") else []
+    plan_invoices = {p.get("invoice") for p in row["payment_plan"] if p.get("invoice")}
+    row["extra_charges"] = serialize([
+        i for i in invoices if i.name not in plan_invoices and not i.maintenance_period
+    ])
+    billed = sum(i.grand_total for i in invoices)
+    outstanding = sum(i.outstanding_amount for i in invoices)
+    row["statement"] = {
+        "agreement_value": row.get("total_price"),
+        "billed": billed,
+        "paid": billed - outstanding,
+        "outstanding": outstanding,
+        "not_billed_yet": sum(float(p.get("amount") or 0) for p in row["payment_plan"] if not p.get("invoice")),
+    }
+
+    if frappe.db.exists("DocType", "Property Maintenance Task") and row.get("property_unit"):
+        row["maintenance_tasks"] = serialize(frappe.get_all(
+            "Property Maintenance Task",
+            filters={"property_unit": row["property_unit"], "show_to_customer": 1},
+            fields=["name", "subject", "status", "scheduled_date", "progress", "completed_on"],
+            order_by="scheduled_date desc", limit=10,
+        ))
 
     return ok(data=row)
 

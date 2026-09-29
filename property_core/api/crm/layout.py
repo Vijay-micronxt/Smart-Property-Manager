@@ -22,11 +22,39 @@ LOCATABLE = {"Property", "Property Unit"}
 
 
 @frappe.whitelist()
-def get_layout(property):
+def get_layout(property=None, property_unit=None):
+    """The plot layout of a property -- or of the property a unit sits in,
+    with ``focus`` set to that unit so the screen can zoom to it."""
     base.require_user()
     from property_core.property_core.api.layout import get_layout as _get
 
-    return ok(data=base.serialize(_get(property)))
+    if not property and property_unit:
+        property = frappe.db.get_value("Property Unit", property_unit, "property")
+    if not property:
+        frappe.throw(_("Give a property or a property_unit"), frappe.MandatoryError)
+    data = _get(property)
+    data["focus"] = property_unit
+    return ok(data=base.serialize(data))
+
+
+@frappe.whitelist()
+def project_layouts(project):
+    """Every property of a project with its layout state -- for the project
+    screen's Layout tab, so nobody has to search for a property first. Open
+    one with ``get_layout(property)``."""
+    base.read_doc("Project", project)
+    props = frappe.get_list(
+        "Property",
+        filters={"project": project},
+        fields=["name", "property_name", "property_type", "status", "layout_image", "latitude", "longitude"],
+        order_by="property_name asc",
+    )
+    for p in props:
+        shapes = frappe.get_all("Property Unit", filters={"property": p.name}, pluck="layout_shape")
+        p["units"] = len(shapes)
+        p["placed"] = sum(1 for s in shapes if s)
+        p["has_image"] = bool(p.pop("layout_image"))
+    return ok(data=base.serialize(props))
 
 
 @frappe.whitelist()

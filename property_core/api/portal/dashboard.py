@@ -80,5 +80,28 @@ def summary(recent_limit=5):
         "recent_bookings": bookings,
         "recent_payments": recent_payments,
         "recent_work_orders": recent_work,
+        "maintenance": _maintenance(units, recent_limit),
         "open_issues": open_issues,
     }))
+
+
+def _maintenance(units, limit):
+    """Next visit, what is open, and the last visits done -- from the
+    Property Maintenance Task trail (Work Order is the complaint path)."""
+    empty = {"next_visit": None, "open": 0, "completed": 0, "recent": []}
+    if not units or not frappe.db.exists("DocType", "Property Maintenance Task"):
+        return empty
+    rows = frappe.get_all(
+        "Property Maintenance Task",
+        filters={"property_unit": ["in", units], "show_to_customer": 1},
+        fields=["name", "subject", "property_unit", "unit_number", "status", "scheduled_date", "progress",
+                "completed_on"],
+        order_by="scheduled_date desc",
+    )
+    live = sorted((r for r in rows if r.status in ("Open", "In Progress")), key=lambda r: r.scheduled_date)
+    return {
+        "next_visit": live[0] if live else None,
+        "open": len(live),
+        "completed": sum(1 for r in rows if r.status == "Completed"),
+        "recent": [r for r in rows if r.status == "Completed"][:limit],
+    }

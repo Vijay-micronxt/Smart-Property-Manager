@@ -109,11 +109,25 @@ def main():
     check("summary counts", s and s["completed_this_month"] == 2 and s["open"] == 1, s)
     ex = ok(exe, "maintenance.get_tasks", get=True, property_unit=u_now)
     check("executive can read the trail", ex and ex["total"] == 2, ex)
+    print("== paperwork the buyer should see on the portal")
+    bk = ok(admin, "bookings.get_bookings", get=True, property_unit=u_now)["rows"][0]["name"]
+    ok(admin, "files.attach", doctype="Property Booking", name=bk, filename="receipt.txt",
+       content=base64.b64encode(b"token receipt").decode())
+    df = ok(admin, "files.drive_folder", doctype="Property Booking", name=bk)
+    if df and df.get("folder"):
+        ok(admin, "files.drive_upload", doctype="Property Booking", name=bk, filename="agreement.txt",
+           content=base64.b64encode(b"signed agreement").decode())
+    ok(admin, "billing.create_invoice", booking=bk, items=[{"rate": 25000, "description": "Corner premium"}])
+    ok(admin, "allocations.create_from_booking", booking=bk)
     ok(admin, "maintenance.cancel", name=t_soon[0]["name"], reason="customer away")
     ok(admin, "maintenance.reopen", name=t_soon[0]["name"])
 
     print(f"\n{passed} passed, {len(failed)} failed  (portal check: task={task} unit={u_now})")
     return task
+
+
+def _bytes(v):
+    return v.encode() if isinstance(v, str) else v
 
 
 def portal(task):
@@ -143,6 +157,35 @@ def portal(task):
             check("other customer refused", False)
         except Exception:
             check("other customer refused", True)
+    frappe.set_user(user)
+    from property_core.api.portal import bookings as pb, dashboard as pd, documents as pdoc
+
+    dash = pd.summary()["data"]
+    check("dashboard has maintenance block", dash["maintenance"]["completed"] >= 2, dash.get("maintenance"))
+    booking = frappe.get_all("Property Booking", filters={"property_unit": unit, "docstatus": 1}, pluck="name")[0]
+    det = pb.booking_details(booking)["data"]
+    check("booking shows handover", det["handover"]["handed_over"], det.get("handover"))
+    check("booking shows extra charge + statement", any(abs(float(x["grand_total"]) - 25000) < 1 for x in det["extra_charges"])
+          and det["statement"]["billed"] > 0, (det.get("extra_charges"), det.get("statement")))
+    check("booking shows maintenance visits", len(det.get("maintenance_tasks") or []) >= 2)
+    docs = pdoc.list_documents()["data"]["documents"]
+    att = [d for d in docs if d["title"] == "receipt.txt"]
+    check("attachment listed with download_url", att and att[0]["download_url"], [d["title"] for d in docs])
+    frappe.local.response = frappe._dict()
+    pdoc.download(att[0]["file_url"])
+    check("attachment streams", _bytes(frappe.local.response.filecontent) == b"token receipt")
+    drv = [d for d in docs if d["source"] == "Drive" and d["title"] == "agreement.txt"]
+    check("drive file listed", bool(drv), [d["title"] for d in docs if d["source"] == "Drive"])
+    if drv:
+        frappe.local.response = frappe._dict()
+        pdoc.drive_download(drv[0]["download_url"].rsplit("=", 1)[1])
+        check("drive file streams", _bytes(frappe.local.response.filecontent) == b"signed agreement")
+    try:
+        pdoc.download("/private/files/someone-else.pdf")
+        check("foreign file refused", False)
+    except frappe.PermissionError:
+        check("foreign file refused", True)
+
     frappe.set_user("Administrator")
     print(f"portal: {passed} passed, {len(failed)} failed")
     return {"passed": passed, "failed": failed}
