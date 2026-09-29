@@ -134,6 +134,8 @@ def _permissions():
         "Payment Entry",
         "Work Order",
         "Issue",
+        "Property Maintenance Task",
+        "Property Maintenance Update",
     ):
         if not frappe.db.exists("DocType", doctype):
             continue

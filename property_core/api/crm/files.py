@@ -41,6 +41,7 @@ ATTACHABLE = {
     "Payment Entry",
     "Work Order",
     "Issue",
+    "Property Maintenance Task",
 }
 
 MAX_BYTES = 25 * 1024 * 1024

@@ -61,6 +61,8 @@ PERMISSIONS = {
     # --- project work ---------------------------------------------------- #
     "Task": {ADMIN: FULL, MANAGER: {**WRITE, "delete": 1}, EXECUTIVE: WRITE},
     "Maintenance Plan Template": {MANAGER: READ, EXECUTIVE: READ},
+    "Property Maintenance Task": {MANAGER: READ, EXECUTIVE: READ},
+    "Property Maintenance Update": {MANAGER: READ, EXECUTIVE: READ},
     "Property Allocation": {MANAGER: READ, EXECUTIVE: READ},
     "Property Agreement": {MANAGER: READ, EXECUTIVE: READ},
     "Mode of Payment": {ADMIN: READ, MANAGER: READ, EXECUTIVE: READ},

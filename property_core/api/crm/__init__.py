@@ -24,6 +24,7 @@ Modules:
     billing       milestone / ad-hoc invoices, payments, booking statement
     files         attachments on records + Frappe Drive folders
     layout        plot layout, site map, map search
+    maintenance   maintenance visits per unit: auto-opened tasks, updates, photo proof
     operations    Issue + Work Order
     activity      comments, assignment, timeline on any record
 

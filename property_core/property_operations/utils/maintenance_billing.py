@@ -29,6 +29,12 @@ def run_daily_maintenance_billing():
 
     frappe.db.commit()
 
+    # Visits are opened a few days ahead of their date, before anything is
+    # billed -- so they need their own pass, not just the billing one.
+    from property_core.property_operations.utils.maintenance_tasks import run_daily
+
+    run_daily()
+
 
 def _bill_unit(unit, today_date):
     if not unit.customer:
@@ -113,40 +119,15 @@ def _create_invoice_if_new(unit, item_code, amount, due, period, description):
     invoice.insert(ignore_permissions=True)
     invoice.submit()
 
-    _create_work_order_if_new(unit, invoice, due, period, description)
-
-
-def _create_work_order_if_new(unit, invoice, due, period, description):
-    """The charge alone told nobody whether the work happened.
-
-    Billing a maintenance period now opens the Work Order for that period, so
-    there is somewhere for the people doing the job to report progress and post
-    photos -- and somewhere for the customer's portal to read them from. One
-    per unit per period, so a re-run adds nothing.
-    """
-    existing = frappe.db.exists(
-        "Work Order",
-        {"property_unit": unit.name, "maintenance_period": period, "status": ["!=", "Cancelled"]},
-    )
-    if existing:
-        return existing
-
+    # The visit itself is a Property Maintenance Task, opened ahead of the
+    # date by maintenance_tasks; this only ties the charge to it. (It used to
+    # open a Work Order here -- the name ERPNext Manufacturing also uses, so
+    # on JD every one of them failed to insert.)
     try:
-        work_order = frappe.get_doc({
-            "doctype": "Work Order",
-            "work_type": "Maintenance",
-            "property_unit": unit.name,
-            "sales_invoice": invoice.name,
-            "maintenance_period": period,
-            "status": "Assigned",
-            "scheduled_date": due,
-            "description": description,
-        })
-        work_order.flags.ignore_permissions = True
-        work_order.insert(ignore_permissions=True)
-        return work_order.name
+        from property_core.property_operations.utils.maintenance_tasks import generate_for_unit, link_invoice
+
+        generate_for_unit(unit.name)
+        link_invoice(unit.name, period, invoice.name)
     except Exception:
-        # A missing work order must never undo an invoice that already posted.
-        frappe.log_error(
-            frappe.get_traceback(), f"Maintenance Work Order: {unit.name} {period}"
-        )
+        frappe.log_error(frappe.get_traceback(), f"Maintenance Task: {unit.name} {period}")
+

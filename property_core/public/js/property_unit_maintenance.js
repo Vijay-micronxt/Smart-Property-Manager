@@ -45,8 +45,57 @@ frappe.ui.form.on("Property Unit", {
 				},
 			});
 		}, __("Maintenance"));
+
+		frm.add_custom_button(__("Open Due Maintenance Tasks"), () => {
+			frappe.call({
+				method: "property_core.property_operations.utils.maintenance_tasks.generate_now",
+				args: { property_unit: frm.doc.name },
+				freeze: true,
+				callback: (r) => {
+					const n = ((r.message || {}).created || []).length;
+					frappe.show_alert({ message: n ? __("{0} task(s) opened", [n]) : __("No visit due yet"), indicator: n ? "green" : "blue" });
+					render_maintenance_schedule(frm);
+				},
+			});
+		}, __("Maintenance"));
+		frm.add_custom_button(__("New Maintenance Task"), () =>
+			frappe.new_doc("Property Maintenance Task", { property_unit: frm.doc.name, source: "Manual" }), __("Maintenance"));
 	},
 });
+
+const TASK_STATUS_COLOR = { Open: "orange", "In Progress": "blue", Completed: "green", Cancelled: "gray" };
+
+// What was actually done on the unit, visit by visit, next to what was charged.
+function render_maintenance_tasks(frm, $wrapper) {
+	frappe.call({
+		method: "frappe.client.get_list",
+		args: {
+			doctype: "Property Maintenance Task",
+			filters: { property_unit: frm.doc.name },
+			fields: ["name", "subject", "scheduled_date", "status", "progress", "assigned_to", "completed_on"],
+			order_by: "scheduled_date desc",
+			limit_page_length: 50,
+		},
+		callback(r) {
+			const rows = r.message || [];
+			const body = rows.map((t) => `
+				<tr>
+					<td><a href="/app/property-maintenance-task/${t.name}">${frappe.utils.escape_html(t.subject || t.name)}</a></td>
+					<td>${frappe.datetime.str_to_user(t.scheduled_date)}</td>
+					<td><span class="indicator-pill ${TASK_STATUS_COLOR[t.status] || "gray"}">${__(t.status)}</span></td>
+					<td>${t.progress || 0}%</td>
+					<td>${frappe.utils.escape_html(t.assigned_to || "")}</td>
+					<td>${t.completed_on ? frappe.datetime.str_to_user(t.completed_on) : ""}</td>
+				</tr>`).join("");
+			$wrapper.append(`
+				<div style="margin-top:14px"><b>${__("Maintenance work")}</b></div>
+				${rows.length ? `<div style="overflow-x:auto"><table class="table table-bordered" style="margin:6px 0 0">
+					<thead><tr><th>${__("Task")}</th><th>${__("Date")}</th><th>${__("Status")}</th><th>${__("Done")}</th><th>${__("Assigned")}</th><th>${__("Completed")}</th></tr></thead>
+					<tbody>${body}</tbody></table></div>`
+				: `<div class="text-muted">${__("No maintenance task yet. One opens a few days before each maintenance date.")}</div>`}`);
+		},
+	});
+}
 
 function render_maintenance_schedule(frm) {
 	const $wrapper = frm.get_field("maintenance_billing_history").$wrapper;
@@ -66,6 +115,7 @@ function render_maintenance_schedule(frm) {
 						"This plan has no charges scheduled. Set a Maintenance Start Date, or check the template."
 					)}</div>`
 				);
+				render_maintenance_tasks(frm, $wrapper);
 				return;
 			}
 
@@ -111,6 +161,7 @@ function render_maintenance_schedule(frm) {
 						<tbody>${body}</tbody>
 					</table>
 				</div>`);
+			render_maintenance_tasks(frm, $wrapper);
 		},
 	});
 }

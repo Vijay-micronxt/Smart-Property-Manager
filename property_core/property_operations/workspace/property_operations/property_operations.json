@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\": \"dNaDQJbB3K\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"7BiACaQ0Xq\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Issue\", \"col\": 4}}, {\"id\": \"rNwap1ie18\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Work Order\", \"col\": 4}}, {\"id\": \"RcvjyP9LRQ\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"cdbLhuoyS0\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters & Documents</b></span>\", \"col\": 12}}, {\"id\": \"JR3A4y2bI7\", \"type\": \"card\", \"data\": {\"card_name\": \"Maintenance & Complaints\", \"col\": 4}}, {\"id\": \"ZzGeQQkTvJ\", \"type\": \"card\", \"data\": {\"card_name\": \"Inspections\", \"col\": 4}}, {\"id\": \"VQthgEfKNP\", \"type\": \"card\", \"data\": {\"card_name\": \"Utilities\", \"col\": 4}}]",
+ "content": "[{\"id\": \"dNaDQJbB3K\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"7BiACaQ0Xq\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Issue\", \"col\": 4}}, {\"id\": \"mntTask01\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Property Maintenance Task\", \"col\": 4}}, {\"id\": \"rNwap1ie18\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Work Order\", \"col\": 4}}, {\"id\": \"RcvjyP9LRQ\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"cdbLhuoyS0\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Masters & Documents</b></span>\", \"col\": 12}}, {\"id\": \"JR3A4y2bI7\", \"type\": \"card\", \"data\": {\"card_name\": \"Maintenance & Complaints\", \"col\": 4}}, {\"id\": \"ZzGeQQkTvJ\", \"type\": \"card\", \"data\": {\"card_name\": \"Inspections\", \"col\": 4}}, {\"id\": \"VQthgEfKNP\", \"type\": \"card\", \"data\": {\"card_name\": \"Utilities\", \"col\": 4}}]",
  "developer_mode_only": 0,
  "disable_user_customization": 0,
  "doctype": "Workspace",
@@ -11,7 +11,7 @@
   {
    "hidden": 0,
    "label": "Maintenance & Complaints",
-   "link_count": 3,
+   "link_count": 4,
    "name": "po-break-maintenance",
    "type": "Card Break"
   },
@@ -23,6 +23,17 @@
    "link_to": "Issue",
    "link_type": "DocType",
    "name": "po-link-issue",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Property Maintenance Task",
+   "link_count": 0,
+   "link_to": "Property Maintenance Task",
+   "link_type": "DocType",
+   "name": "po-lk-maintenance-task",
    "onboard": 1,
    "type": "Link"
   },
@@ -113,6 +124,15 @@
   },
   {
    "color": "Blue",
+   "format": "{} Open",
+   "label": "Property Maintenance Task",
+   "link_to": "Property Maintenance Task",
+   "name": "po-sc-maintenance-task",
+   "stats_filter": "[[\"Property Maintenance Task\",\"status\",\"in\",[\"Open\",\"In Progress\"]]]",
+   "type": "DocType"
+  },
+  {
+   "color": "Blue",
    "format": "{} Work Orders",
    "label": "Work Order",
    "link_to": "Work Order",
@@ -121,5 +141,6 @@
    "type": "DocType"
   }
  ],
- "title": "Property Operations"
+ "title": "Property Operations",
+ "modified": "2026-09-29 12:00:00.000000"
 }
