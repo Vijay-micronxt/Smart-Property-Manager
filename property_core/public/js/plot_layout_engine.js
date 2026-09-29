@@ -152,14 +152,13 @@
     };
 
     PlotLayoutEngine.prototype.getLayoutPayload = function () {
+        /* every unit, placed or not: a shape removed in the editor has to reach
+           the server as an empty shape, or the old one stays on the unit */
         return this.units
-            .filter(function (u) {
-                return u.shape;
-            })
             .map(function (u) {
                 return {
                     name: u.name,
-                    layout_shape: u.shape,
+                    layout_shape: u.shape || "",
                     layout_x: u.x,
                     layout_y: u.y,
                     layout_w: u.w,
