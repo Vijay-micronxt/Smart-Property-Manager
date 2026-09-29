@@ -39,7 +39,10 @@ def settings():
         "features": {
             "booking": True,
             "issues": True,
-            "maintenance": frappe.db.exists("DocType", "Work Order") and True or False,
+            "maintenance": bool(
+                frappe.db.exists("DocType", "Property Maintenance Task")
+                or frappe.db.exists("DocType", "Work Order")
+            ),
             "utilities": frappe.db.exists("DocType", "Utility Bill") and True or False,
             "inspections": frappe.db.exists("DocType", "Inspection Checklist") and True or False,
             "site_map": True,

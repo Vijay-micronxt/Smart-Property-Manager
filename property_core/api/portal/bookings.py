@@ -116,7 +116,8 @@ def booking_details(booking):
     billed = sum(i.grand_total for i in invoices)
     outstanding = sum(i.outstanding_amount for i in invoices)
     row["statement"] = {
-        "agreement_value": row.get("total_price"),
+        # total_price is not in the portal field registry, so read it directly
+        "agreement_value": frappe.db.get_value("Property Booking", booking, "total_price"),
         "billed": billed,
         "paid": billed - outstanding,
         "outstanding": outstanding,
