@@ -124,6 +124,18 @@ def _permissions():
         "Property",
         "Property Unit",
         "Project",
+        "Task",
+        "Payment Plan",
+        "Payment Plan Template",
+        "Maintenance Plan Template",
+        "Property Allocation",
+        "Property Agreement",
+        "Sales Invoice",
+        "Payment Entry",
+        "Work Order",
+        "Issue",
+        "Property Maintenance Task",
+        "Property Maintenance Update",
     ):
         if not frappe.db.exists("DocType", doctype):
             continue

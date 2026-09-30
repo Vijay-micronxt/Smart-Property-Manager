@@ -97,6 +97,11 @@ class PropertyBooking(Document):
             from property_core.property_operations.utils.maintenance_billing import _bill_unit
 
             _bill_unit(frappe.get_doc("Property Unit", self.property_unit), getdate(today()))
+
+            # a visit due in the next few days gets its task now, not tonight
+            from property_core.property_operations.utils.maintenance_tasks import generate_for_unit
+
+            generate_for_unit(self.property_unit)
         except Exception:
             # The booking stands whether or not the first charge could be raised.
             frappe.log_error(frappe.get_traceback(), f"Maintenance on booking: {self.name}")

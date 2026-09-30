@@ -64,6 +64,16 @@ PROPERTY_WRITABLE = {
     "map_link",
 }
 
+#: child tables an admin may replace wholesale on update_property
+PROPERTY_TABLES = {"amenities", "property_documents"}
+
+#: recurring-maintenance fields property_operations adds to Property Unit
+MAINTENANCE_FIELDS = {"maintenance_plan_template", "maintenance_start_date", "pause_maintenance"}
+
+#: statuses an admin may set by hand -- the rest (Booked, Allocated, Leased)
+#: only come from a booking / allocation, or the unit and its deal disagree
+MANUAL_STATUSES = {"Available", "Reserved", "Maintenance Blocked"}
+
 UNIT_WRITABLE = {
     "property",
     "unit_number",
@@ -77,7 +87,7 @@ UNIT_WRITABLE = {
     "latitude",
     "longitude",
     "map_link",
-}
+} | MAINTENANCE_FIELDS
 
 
 @frappe.whitelist()
@@ -106,6 +116,93 @@ def create_unit(data=None, **kwargs):
         "Property Unit", payload, UNIT_WRITABLE, defaults={"availability_status": "Available"}
     )
     return ok(data=base.doc_payload(doc), message=frappe._("Unit {0} created").format(doc.name))
+
+
+@frappe.whitelist()
+def update_property(name, data=None, **kwargs):
+    """Change a property. ``amenities`` / ``property_documents`` replace the
+    whole table: ``[{"amenity_name": "Clubhouse", "amenity_type": "Recreation"}]``."""
+    payload = base.parse(data, default={}) or {}
+    payload.update({k: v for k, v in kwargs.items() if k in PROPERTY_WRITABLE | PROPERTY_TABLES})
+    tables = {k: payload.pop(k) for k in list(payload) if k in PROPERTY_TABLES}
+
+    doc, changed = base.write_doc("Property", name, payload, PROPERTY_WRITABLE)
+    if tables:
+        for table, rows in tables.items():
+            doc.set(table, base.parse(rows, default=[]) or [])
+        doc.save()
+        changed += list(tables)
+    return ok(data=base.doc_payload(doc), message=frappe._("Updated {0}").format(", ".join(changed) or "nothing"))
+
+
+@frappe.whitelist()
+def update_unit(name, data=None, **kwargs):
+    """Change a unit. ``availability_status`` is not taken here -- use
+    ``set_unit_status``; bookings and allocations move it themselves."""
+    payload = base.parse(data, default={}) or {}
+    payload.update({k: v for k, v in kwargs.items() if k in UNIT_WRITABLE})
+    payload.pop("availability_status", None)
+    doc, changed = base.write_doc("Property Unit", name, payload, UNIT_WRITABLE)
+    return ok(data=base.doc_payload(doc), message=frappe._("Updated {0}").format(", ".join(changed) or "nothing"))
+
+
+@frappe.whitelist()
+def set_unit_status(name, status, reason=None):
+    """Hold, release or block a unit by hand (Available / Reserved /
+    Maintenance Blocked). A unit with a live booking or allocation cannot be
+    moved here -- cancel that instead."""
+    if status not in MANUAL_STATUSES:
+        frappe.throw(
+            frappe._("Status can only be set to {0} by hand").format(", ".join(sorted(MANUAL_STATUSES)))
+        )
+    doc = base.read_doc("Property Unit", name)
+    doc.check_permission("write")
+    live = frappe.db.get_value("Property Booking", {"property_unit": name, "docstatus": 1}, "name") or (
+        frappe.db.get_value("Property Allocation", {"property_unit": name, "docstatus": 1}, "name")
+    )
+    if live and status == "Available":
+        frappe.throw(frappe._("{0} is still active on this unit; cancel it first").format(live))
+    doc.set_availability_status(status)
+    if reason:
+        doc.add_comment("Comment", text=frappe._("Status set to {0}: {1}").format(status, reason))
+    return ok(data={"name": name, "availability_status": status}, message=frappe._("Unit is now {0}").format(status))
+
+
+@frappe.whitelist()
+def bulk_create_units(property, units=None, prefix=None, start=1, count=0, defaults=None):
+    """Lay out many units in one go -- either an explicit JSON list of
+    ``units`` (each like create_unit's data), or ``count`` numbered units
+    ``{prefix}{start}`` … with the shared ``defaults`` (unit_type, area,
+    base_price, facing, payment_plan_template …). Existing unit numbers
+    under the property are skipped, so it is safe to re-run."""
+    base.read_doc("Property", property)
+    if not frappe.has_permission("Property Unit", "create"):
+        frappe.throw(frappe._("Not permitted to create units"), frappe.PermissionError)
+
+    shared = base.parse(defaults, default={}) or {}
+    rows = base.parse(units, default=[]) or []
+    if not rows and int(count or 0) > 0:
+        rows = [{"unit_number": f"{prefix or ''}{n}"} for n in range(int(start or 1), int(start or 1) + int(count))]
+    if not rows:
+        frappe.throw(frappe._("Give units or a count"), frappe.MandatoryError)
+    if len(rows) > 500:
+        frappe.throw(frappe._("At most 500 units per call"))
+
+    existing = set(frappe.get_all("Property Unit", filters={"property": property}, pluck="unit_number"))
+    created, skipped = [], []
+    for row in rows:
+        payload = {**shared, **row, "property": property}
+        if payload.get("unit_number") in existing:
+            skipped.append(payload.get("unit_number"))
+            continue
+        doc = base.create_doc(
+            "Property Unit", payload, UNIT_WRITABLE, defaults={"availability_status": "Available"}
+        )
+        created.append({"name": doc.name, "unit_number": doc.unit_number})
+    return ok(
+        data={"created": created, "skipped": skipped},
+        message=frappe._("{0} unit(s) created, {1} skipped").format(len(created), len(skipped)),
+    )
 
 
 @frappe.whitelist()

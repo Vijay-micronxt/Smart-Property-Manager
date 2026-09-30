@@ -198,3 +198,93 @@ def work_updates(work_order=None, property_unit=None, limit=100):
 
 def serialize_proof(files):
     return [serialize(row) for row in files]
+
+
+# --------------------------------------------------------------------------- #
+# maintenance visits (Property Maintenance Task) -- "kya maintenance hua"
+# --------------------------------------------------------------------------- #
+
+TASK = "Property Maintenance Task"
+TASK_FIELDS = [
+    "name", "subject", "property_unit", "unit_number", "property", "status", "scheduled_date",
+    "progress", "last_update_on", "maintenance_period", "work_done", "completed_on", "description",
+]
+
+
+@frappe.whitelist()
+def tasks(property_unit=None, status=None, limit=100):
+    """Every maintenance visit on the customer's units -- upcoming, in progress
+    and done -- newest first, each with how many proof files it carries."""
+    customer = get_customer()
+    filters = scope(customer, property_unit)
+    if filters is None:
+        return ok(data={"tasks": [], "total": 0, "summary": {"completed": 0, "open": 0}})
+    filters["show_to_customer"] = 1
+    if status:
+        filters["status"] = status
+
+    from property_core.property_operations.doctype.property_maintenance_task.property_maintenance_task import (
+        proof_files,
+    )
+
+    rows = frappe.get_all(TASK, filters=filters, fields=TASK_FIELDS, order_by="scheduled_date desc",
+                          limit_page_length=as_int(limit, 100))
+    for row in rows:
+        row["proof_count"] = len(proof_files(row.name))
+    return ok(
+        data={
+            "tasks": serialize(rows),
+            "total": len(rows),
+            "summary": {
+                "completed": sum(1 for r in rows if r.status == "Completed"),
+                "open": sum(1 for r in rows if r.status in ("Open", "In Progress")),
+            },
+        }
+    )
+
+
+@frappe.whitelist()
+def task(name):
+    """One visit with its updates from site and the photos / files proving
+    the work. Each proof carries a ``download_url`` the customer can open."""
+    customer = get_customer()
+    row = frappe.db.get_value(TASK, name, TASK_FIELDS + ["show_to_customer"], as_dict=True)
+    if not row or not row.show_to_customer or row.property_unit not in customer_units(customer):
+        frappe.throw(frappe._("This maintenance visit is not on one of your units."), frappe.PermissionError)
+
+    from property_core.property_operations.doctype.property_maintenance_task.property_maintenance_task import (
+        updates_of,
+    )
+
+    updates, task_files = updates_of(name)
+    for f in task_files + [p for u in updates for p in u["proof"]]:
+        f["download_url"] = f"/api/method/property_core.api.portal.maintenance.proof?file={f['name']}"
+    for u in updates:
+        u.pop("posted_by", None)
+    row.pop("show_to_customer")
+    row["updates"] = updates
+    row["task_files"] = task_files
+    return ok(data=serialize(row))
+
+
+@frappe.whitelist()
+def proof(file):
+    """Stream one proof file (photo / video / document) of a maintenance visit
+    on the customer's own unit. Proof is stored private, so the portal cannot
+    open its file_url directly; this checks ownership and serves the bytes."""
+    customer = get_customer()
+    f = frappe.db.get_value("File", file, ["name", "attached_to_doctype", "attached_to_name", "file_name"],
+                            as_dict=True)
+    if not f or f.attached_to_doctype not in (TASK, "Property Maintenance Update"):
+        frappe.throw(frappe._("File not found"), frappe.DoesNotExistError)
+    task_name = f.attached_to_name if f.attached_to_doctype == TASK else frappe.db.get_value(
+        "Property Maintenance Update", f.attached_to_name, "maintenance_task")
+    unit, visible = frappe.db.get_value(TASK, task_name, ["property_unit", "show_to_customer"]) or (None, 0)
+    if not visible or unit not in customer_units(customer):
+        frappe.throw(frappe._("This file is not on one of your units."), frappe.PermissionError)
+
+    doc = frappe.get_doc("File", f.name)
+    frappe.local.response.filename = doc.file_name
+    frappe.local.response.filecontent = doc.get_content()
+    frappe.local.response.type = "download"
+    frappe.local.response.display_content_as = "inline"

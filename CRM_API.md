@@ -1,8 +1,15 @@
 # CRM API — enquiry to booking
 
-Staff-facing HTTP API for the sales app: leads, follow-ups, opportunities,
-customers, inventory, bookings, and the project roll-up everything is read
-through.
+Staff-facing HTTP API for the CRM app — everything JD does on the ERPNext desk,
+over JSON: leads, follow-ups, opportunities, customers, bookings; projects,
+tasks, properties, units, templates and charges; invoices and payments;
+agreement and allocation; attachments and Drive; plot layout and maps;
+complaints and site work; maintenance visits with photo proof; and the
+dashboards over all of it. 164 endpoints.
+
+**Building the app? Start with `CRM_APP_GUIDE.md`** — screen by screen: which
+call, when, with what payload, where each dropdown and auto-filled value comes
+from.
 
 This is a separate surface from the customer portal API
 (`CUSTOMER_PORTAL_API.md`). That one is for buyers; this one is for the sales
@@ -396,18 +403,303 @@ of the payload rather than failing the request.
 
 ---
 
-## 12. Dashboard and team
+## 12. Dashboards and team
+
+All dashboards take the same filters the old JD `get_dashboard_data` script took:
+
+| Arg | Values |
+|---|---|
+| `view_type` | `my` (own + assigned to me) · `team` (my reporting tree) · `organisation` (everything this login may see) |
+| `team_member` | `team` only: `"a@x.com,b@y.com"` narrows to those people (a manager can only pick people under them) |
+| `date_range` | `all` · `today` · `yesterday` · `week` · `month` · `custom` |
+| `date_from` / `date_to` | `custom` only, `YYYY-MM-DD`, both inclusive |
+
+Every response also carries `user_type` (`admin` / `supervisor` / `regular`),
+`view_type` and `team_members` (`[{user_id, name}]`, for the team switcher).
+A `regular` login asking for `team` or `organisation` gets empty numbers, not
+an error. The permission engine sits under all of it, so a manager asking for
+`organisation` still only sees their own tree.
 
 | Endpoint | Method | Returns |
 |---|---|---|
-| `dashboard.summary` | GET | `today` (overdue / today's follow-ups / untouched leads), `leads`, `opportunities`, `bookings`, `conversion` rates, `projects` — all scoped to the caller |
+| `dashboard.lead_dashboard` | GET | **drop-in for `/api/method/get_dashboard_data`** — same keys (`total_leads`, `pending_leads`, `status_counts[{status,count}]`, `source_counts[{source,count}]`, `filters`, `team_members`, `user_type`, `view_type`) but read from ERPNext **Lead**, not Frappe CRM's `CRM Lead`. Extra arg `date_field`: `creation` (default) / `modified` / `custom_next_follow_up_date` |
+| `dashboard.flow` | GET | **the whole business, lead to money**, one call — see below. Extra arg `project` |
+| `dashboard.trend` | GET | month by month (`months`, default 6, max 24): `leads`, `opportunities`, `bookings`, `booked_value`, `collected`. Also `project` |
+| `dashboard.summary` | GET | the home screen: today's follow-ups, untouched leads, funnel, conversion, top projects (`from_date` / `to_date`) |
 | `team.my_team` | GET | the people under this login, flat list and nested tree |
 | `team.assignable_users` | GET | who this login may assign work to |
 | `team.performance` | GET | per person: leads, opportunities, bookings, confirmed value, open follow-ups (`from_date` / `to_date`) |
 
+Frontend switch for the old dashboard — change only the URL:
+
+```
+before: /api/method/get_dashboard_data?view_type=my
+after:  /api/method/property_core.api.crm.dashboard.lead_dashboard?view_type=my
+        (payload now at message.data instead of message)
+```
+
+`dashboard.flow?view_type=organisation&date_range=month` (trimmed):
+
+```json
+{
+  "user_type": "admin", "view_type": "organisation", "team_members": [...],
+  "leads":         {"total": 55, "converted": 33, "open_now": 22, "without_follow_up": 20,
+                    "by_status": [{"status": "Interested", "count": 22}], "by_source": [...]},
+  "follow_ups":    {"open": 12, "overdue": 3, "today": 4, "upcoming": 5},
+  "opportunities": {"total": 46, "open": 22, "won": 20, "lost": 4, "pipeline_value": 20900000.0, "by_status": [...]},
+  "customers":     {"new": 98, "with_booking": 57},
+  "bookings":      {"total": 62, "draft": 4, "confirmed": 58, "from_opportunity": 17, "from_lead": 17,
+                    "walk_in": 41, "booked_value": 171400000.0, "booking_amount": 14605000.0, "by_status": [...]},
+  "allocations":   {"active": 1, "draft": 0, "pending_allocation": 57},
+  "money":         {"billed": 21735000.0, "collected": 2560000.0, "outstanding": 19175000.0,
+                    "overdue": 25855000.0, "due_next_30_days": 32145000.0, "collected_in_period": 2560000.0,
+                    "unbilled_milestones": 227, "fully_paid_bookings": 0},
+  "inventory":     {"total_units": 105, "available": 40, "sold": 64, "available_value": 90500000.0, "by_status": [...]},
+  "conversion":    {"lead_to_opportunity": 83.6, "opportunity_to_booking": 37.0, "lead_to_booking": 30.9, "collection_rate": 11.8},
+  "stages": [{"stage": "Leads", "count": 55}, {"stage": "Opportunities", "count": 46}, {"stage": "Bookings", "count": 62},
+             {"stage": "Confirmed", "count": 58}, {"stage": "Allocated", "count": 1}, {"stage": "Fully paid", "count": 0}]
+}
+```
+
+Counts inside the period are "new in the period" (lead created, opportunity
+opened, booking dated, payment received). Pipeline numbers — `open_now`,
+follow-ups, `outstanding`, `overdue` — are as of now. Money covers the
+confirmed bookings in view. Conversion only counts bookings that came through
+the funnel; walk-ins are reported separately.
+
 ---
 
-## 13. The whole flow, end to end
+## 13. Projects and tasks
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `projects.create_project` | POST | `data: {project_name*, status, project_type, expected_start_date, expected_end_date, estimated_costing, priority, department, customer, notes, company}` (company defaults to the user's) |
+| `projects.update_project` | POST | `name`, `data` — same fields |
+| `tasks.get_tasks` | GET | `project`, `status` (one or JSON list), `mine=1`, `assigned_to`, `overdue=1`, `parent_task`, `search`, paging. Rows carry `assigned_to: [{user, full_name}]` |
+| `tasks.get_task` | GET | task + `assigned_to` + `subtasks` + `comments` |
+| `tasks.create_task` | POST | `data: {subject*, project, status, priority, type, exp_start_date, exp_end_date, expected_time, parent_task, is_group, is_milestone, description, department, issue}`, `assign_to` (user or JSON list) |
+| `tasks.update_task` | POST | `name`, `data` |
+| `tasks.set_status` | POST | `name`, `status` (Open / Working / Pending Review / Overdue / Completed / Cancelled), `note`. Completed sets progress 100 |
+| `tasks.assign_task` | POST | `name`, `user` (or list), `note`, `keep_others=0` — default gives the task one owner, releasing earlier ones |
+| `tasks.unassign_task` | POST | `name`, `user` |
+| `tasks.delete_task` | POST | `name` |
+| `tasks.options` | GET | `statuses`, `priorities`, `types` |
+
+Assignment is the desk's own ToDo, so a task given out in the app shows in the
+assignee's desk ToDo and bell, and the other way round. For assigning *any*
+record (lead, booking, unit …) see `activity.assign`.
+
+---
+
+## 14. Setting up inventory — properties, units, templates, charges
+
+Order JD sets a development up in: project → property → units → templates.
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `inventory.create_property` | POST | `data: {property_name*, property_type*, project, status, company, launch_date, total_area, address, payment_plan_template, latitude, longitude, map_link}` |
+| `inventory.update_property` | POST | `name`, `data` — same fields, plus `amenities: [{amenity_name, amenity_type, description}]` and `property_documents: [{document_name, document_type, document_file, expiry_date, notes}]` (each **replaces** the whole table) |
+| `inventory.create_unit` | POST | `data: {property*, unit_number*, unit_type*, area, facing, floor, base_price, payment_plan_template, maintenance_plan_template, maintenance_start_date, pause_maintenance, latitude, longitude, map_link}` |
+| `inventory.bulk_create_units` | POST | `property*` and either `units: [{unit_number, ...}]` or `prefix` + `start` + `count` (e.g. `A-`, 1, 40 → A-1 … A-40). `defaults: {unit_type, area, base_price, facing, ...}` applies to all. Existing unit numbers are skipped, so re-running is safe. Max 500 per call. Returns `created`, `skipped` |
+| `inventory.update_unit` | POST | `name`, `data` — any unit field except `availability_status` |
+| `inventory.set_unit_status` | POST | `name`, `status` = `Available` / `Reserved` / `Maintenance Blocked`, `reason`. Booked / Allocated / Leased are only ever set by a booking or allocation; a unit with a live one cannot be made Available here |
+| `templates.get_payment_templates` | GET | every Payment Plan Template with `milestones` and `used_by` |
+| `templates.get_payment_template` | GET | `name` |
+| `templates.save_payment_template` | POST | `template_name`, `milestones: [{milestone, percentage, offset_months}]` (percentages must total 100); pass `name` to replace an existing one |
+| `templates.delete_payment_template` | POST | `name` |
+| `templates.preview_payment_plan` | GET | `amount` and `template`, or just `property_unit` (uses its template and base price), `booking_date` → the schedule with dates and amounts — show the customer before booking |
+| `templates.get_maintenance_templates` | GET | recurring-charge templates (`include_disabled=1` for all) |
+| `templates.get_maintenance_template` | GET | `name` |
+| `templates.save_maintenance_template` | POST | `template_name`, `schedule: [{month_no (≥1) or fixed_due_date, description, amount, item_code}]` for one-off charges (corpus, club fee …), `repeat_every_n_months` + `repeat_amount` + `repeat_item_code` for the monthly/quarterly charge, `disabled`; `name` to replace |
+| `templates.apply_templates` | POST | put templates on many units: `units` (JSON list) or `property` (+ `only_available=1`), and any of `payment_plan_template`, `maintenance_plan_template`, `maintenance_start_date`. `""` clears, omitted = untouched |
+
+Template precedence on a booking: booking → unit → property → the built-in
+10/20/20/25/25 plan. Maintenance starts billing on the day the booking is
+confirmed (anything already due is invoiced then), then nightly.
+
+---
+
+## 15. Plot layout and maps
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `layout.get_layout` | GET | `property` → `property` (layout image, world size, annotations), `units` (shape, x, y, w, h, rotation, points, status, price, customer), `status_colors`, `can_write` — everything to draw the site plan |
+| `layout.save_layout` | POST | `property`, `units: [{name, layout_shape: Rect/Polygon/Circle, layout_x, layout_y, layout_w, layout_h, layout_rotation, layout_points}]`, `world: {width, height, layout_image}`, `annotations` (free drawing layer). Needs write on the property |
+| `layout.site_map` | GET | `project` / `property`, `availability` → properties and units with coordinates plus a `color` per unit, for Google Maps / Leaflet pins; `units_without_location` counts the rest |
+| `layout.resolve_location` | GET | `query` = coordinates (`12.97, 77.59`), any Google Maps link (short `maps.app.goo.gl` too) or a place name → `results: [{label, latitude, longitude}]` |
+| `layout.set_location` | POST | `doctype` (Property / Property Unit), `name`, and `latitude` + `longitude` or `query` (first match used) → saved with the map link |
+| `layout.get_layout?property_unit=` | GET | same, for the unit's property, with `focus` = that unit |
+| `layout.project_layouts?project=` | GET | every property of the project with `units`, `placed`, `has_image` — the project's Layout tab |
+| `layout.editor_assets` | GET | `{js, css}` of the site's PlotLayoutEngine (the desk / portal editor) for the app to load; usage in `CRM_APP_GUIDE.md` §5.8 |
+| `layout.set_unit_shape` | POST | one plot: `property_unit, layout_shape, layout_x, layout_y, layout_w, layout_h, layout_rotation, layout_points` |
+| `layout.clear_unit_shape` | POST | `property_unit` — take it off the layout |
+
+To upload a new layout image: `files.attach(doctype="Property", name, fieldname="layout_image", …)`, then `get_layout` again.
+
+`save_layout` writes exactly the units it is sent; send every unit (the
+engine's `getLayoutPayload()` does) so a plot removed in the editor goes out
+as `layout_shape: ""`.
+
+---
+
+### Booking form auto-fill — `bookings.prefill`
+
+`GET bookings.prefill?opportunity=` (or `property_unit=` + `customer=`) before
+the booking form is shown, and again when the agreement value
+(`total_price=`) or plan (`payment_plan_template=`) is changed. Returns
+`unit_base_price`, `total_price` (+ `total_price_source`: `given` /
+`opportunity` / `unit_base_price`, and `discount`), `payment_plan_template`,
+suggested `booking_amount` (first milestone), `booking_date`, the `schedule`,
+unit info and customer. Nothing is saved.
+
+`opportunities.convert_to_booking` now takes the opportunity's
+`opportunity_amount` as the agreement value when none is sent, instead of
+always the unit's list price.
+
+---
+
+## 16. Money — invoices and payments
+
+```
+booking confirmed -> payment plan (one row per milestone)
+milestone         -> billing.generate_invoice     -> Sales Invoice (submitted)
+invoice           -> billing.record_payment       -> Payment Entry (submitted)
+anything extra    -> billing.create_invoice       -> ad-hoc charge
+```
+
+Raising and collecting need create/submit on Sales Invoice / Payment Entry —
+Property Manager and ERPNext's Accounts roles have it, sales staff only read.
+Hide the buttons off `whoami.permissions`.
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `billing.options` | GET | `modes_of_payment [{name, type}]`, `default_items`, `charge_items` (non-stock sales items for ad-hoc charges), `company`, `currency` |
+| `billing.get_invoices` | GET | `customer`, `booking` (every invoice of that deal: milestones, late fees, maintenance and ad-hoc charges on its unit), `property_unit`, `status`, `overdue=1`, `from_date` / `to_date`, `search`, paging |
+| `billing.get_invoice` | GET | invoice + the `milestone` it bills + `payments` against it |
+| `billing.statement` | GET | `booking` → the deal's ledger: `plan`, `plan_totals`, `invoices`, `payments`, `billed`, `outstanding`, `unbilled` |
+| `billing.generate_invoice` | POST | `payment_plan` → invoice for that milestone (idempotent) |
+| `billing.generate_due_invoices` | POST | `booking`, `upto_date` (default today) → invoices every due, un-billed milestone. Returns `raised`, `failed` |
+| `billing.create_invoice` | POST | `booking` (or `customer` + `property_unit`), `items: [{item_code?, rate, qty, description}]` (item defaults to the Default Sale Item), `due_date`, `remarks`, `submit=1` |
+| `billing.submit_invoice` / `cancel_invoice` | POST | `name` (+ `reason`). Cancelling a milestone invoice puts the milestone back to un-billed |
+| `billing.record_payment` | POST | `amount*`, `mode_of_payment*`, and one of: `invoice` (against it) · `booking` (spread over its open invoices, earliest due first; anything left stays as an advance) · `customer` (advance, e.g. token money). `reference_no` + `reference_date` are required for bank / UPI / cheque modes. `posting_date`, `remarks`, `submit=1`. Returns `allocated: [{invoice, amount}]` and `advance` |
+| `billing.get_payments` | GET | `customer`, `booking`, `invoice`, dates, paging |
+| `billing.get_payment` / `cancel_payment` | GET / POST | `name` |
+
+Online payment (Razorpay / Mswipe) is unchanged: the gateway endpoints accept
+a Property Booking id and bill its next unpaid instalment — see
+`PAYMENT_INTEGRATION.md`.
+
+---
+
+## 17. After the sale — agreement and allocation
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `allocations.create_from_booking` | POST | `booking` (confirmed), `allocation_type` (Sale / Lease / Rental / Assignment), `start_date`, `signed_date`, `security_deposit_amount`, `with_agreement=1`, `submit=1` → **agreement + allocation in one step**; unit becomes Allocated (sale) or Leased. Idempotent |
+| `allocations.get_allocations` | GET | `customer`, `property_unit`, `booking`, `status`, `allocation_type`, paging |
+| `allocations.get_allocation` | GET | `name` |
+| `allocations.create_allocation` / `update_allocation` | POST | `data: {customer, property_unit, allocation_type, start_date, end_date, booking, agreement, rent_amount, billing_frequency, billing_day}`; create takes `submit` |
+| `allocations.submit_allocation` | POST | hand over |
+| `allocations.cancel_allocation` | POST | `name`, `reason` → Terminated, unit back to Available |
+| `allocations.renew_lease` | POST | `name`, `new_end_date`, `escalation_percent` |
+| `allocations.get_agreements` | GET | `customer`, `property_unit`, `status`, `agreement_type` |
+| `allocations.get_agreement` / `create_agreement` / `update_agreement` | GET / POST | `data: {agreement_type, customer, property_unit, agreement_status, start_date, end_date, signed_date, security_deposit_amount, document_attachment}` |
+| `allocations.record_security_deposit` / `refund_security_deposit` | POST | `name` → Journal Entry |
+
+---
+
+## 18. Files and Drive
+
+**Attachments** — the paperclip on any record (Lead, Opportunity, Customer,
+Property Booking, Property, Property Unit, Project, Task, Property Allocation,
+Property Agreement, Property Follow Up, Sales Invoice, Payment Entry, Work
+Order, Issue).
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `files.attach` | POST | `doctype`, `name`, and the file as multipart `file` **or** `filename` + `content` (base64, a `data:` URL is fine). `fieldname` also puts it into an Attach field (`layout_image`, `document_attachment` …). `is_private=1` default. Max 25 MB |
+| `files.get_attachments` | GET | `doctype`, `name` → `[{name, file_name, file_url, file_size, is_private}]` |
+| `files.remove_attachment` | POST | `name` (the File id) |
+
+Private `file_url`s (`/private/files/…`) download with the same
+`Authorization: token …` header.
+
+**Drive** — each Property has JD's folder tree (01 - Land & Legal … 09 -
+Handover); each confirmed booking gets `06 - Sales & CRM / Booking Documents /
+<property> - <unit>`. Reach them through the record:
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `files.drive_folder` | GET | `doctype` (Property / Property Booking / Property Unit / Project), `name`, `create=1` → `{folder, title, team, open_url}`; builds the tree if missing |
+| `files.drive_list` | GET | `doctype`, `name`, `folder` (optional, a subfolder) → `folder`, `breadcrumbs`, `items [{name, title, is_group, mime_type, file_size, download_url}]` |
+| `files.drive_create_folder` | POST | `doctype`, `name`, `title`, `parent` (optional) |
+| `files.drive_upload` | POST | `doctype`, `name`, `folder` (optional), file as multipart `file` or `filename` + base64 `content` |
+
+A folder is only reachable through a record the caller can read, and only
+inside that record's own tree — any other folder id is refused. Drive's own
+rules also apply: the login needs a Drive team with access (JD staff already
+use Drive on the desk). `drive: false` means Drive is not installed on the site.
+
+---
+
+## 19. Comments, assignment, timeline — on any record
+
+Same doctypes as attachments.
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `activity.add_comment` | POST | `doctype`, `name`, `text` |
+| `activity.get_comments` | GET | `doctype`, `name` |
+| `activity.timeline` | GET | comments, assignments, attachments, field changes (`changes: [{field, from, to}]`), calls / emails / WhatsApp — newest first |
+| `activity.assign` | POST | `doctype`, `name`, `user`, `note` — one working owner |
+| `activity.unassign` | POST | `doctype`, `name`, `user` |
+| `activity.my_assignments` | GET | everything assigned to me, across records (`status`, `reference_type`, paging) |
+
+---
+
+## 20. Operations — complaints and site work
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `operations.get_issues` / `get_issue` | GET | `customer`, `property_unit`, `status`; one issue comes with its `work_orders` |
+| `operations.create_issue` / `update_issue` | POST | `data: {subject, status, priority, customer, raised_by, description, issue_type, property_unit}` |
+| `operations.get_work_orders` / `get_work_order` | GET | `property_unit`, `status`, `mine=1`, `assigned_to` |
+| `operations.create_work_order` / `update_work_order` | POST | `data: {property_unit, work_type, status, issue, assigned_to, vendor, scheduled_date, completed_date, progress, description, estimated_cost, actual_cost, notes}` |
+| `operations.options` | GET | statuses / types / priorities for both |
+
+---
+
+## 20a. Maintenance visits — `maintenance.*`
+
+A **Property Maintenance Task** opens by itself N days before each
+maintenance date on a unit's Maintenance Plan Template (Property Core
+Settings: `maintenance_task_lead_days` default 3, `maintenance_task_assignee`,
+`maintenance_proof_required` default on). One task per unit per period,
+linked to that period's invoice. It is also opened when a booking is
+confirmed, if a visit falls inside the window. This replaces the Work Order
+the billing run used to open (which never saved on JD).
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `maintenance.summary` | GET | `open, in_progress, overdue, due_this_week, completed_this_month, lead_days, proof_required` (`property`, `project`) |
+| `maintenance.get_tasks` | GET | `property_unit, property, project, customer, status, mine=1, assigned_to, overdue=1, from_date, to_date, search`, paging; rows carry `overdue`, `assigned_to_name` |
+| `maintenance.get_task` | GET | task + `updates[] {update_type, progress, note, posted_on, posted_by_name, proof[] {name, file_name, file_url, kind}}`, `task_files`, `proof_count`, `proof_required` |
+| `maintenance.create_task` | POST | off-schedule visit: `data: {property_unit*, subject, scheduled_date, assigned_to, description, show_to_customer}` |
+| `maintenance.update_task` | POST | `name, data` — same fields |
+| `maintenance.assign` | POST | `name, user` (desk ToDo follows) |
+| `maintenance.post_update` | POST | `name, note, progress, update_type` (Progress / Blocked / Note) + proof: multipart `file` (repeat) or `files: [{filename, content}]` base64. Open → In Progress |
+| `maintenance.complete` | POST | `name, work_done` + optional proof in the same call. Refused without any proof when proof is required |
+| `maintenance.cancel` / `reopen` | POST | `name, reason` |
+| `maintenance.unit_history` | GET | `property_unit` → `schedule` (charges billed / to come) + `tasks` with updates and proof + counts |
+| `maintenance.generate_now` | POST | `property_unit` or `property` — open whatever is due in the window now |
+
+Desk: Property Maintenance Task form has **Post Update** (then attach photos)
+and **Mark Completed**; the unit form lists every visit under the maintenance
+schedule.
+
+---
+
+## 21. The whole flow, end to end
 
 ```
 1.  session.login                          -> token, scope, permissions
@@ -420,8 +712,17 @@ of the payload rather than failing the request.
 8.  opportunities.set_property             -> change of mind, unit swapped
 9.  opportunities.convert_to_booking       -> BKG-0046 draft (customer auto-created)
 10. bookings.submit_booking                -> unit reserved, payment plan raised
-11. projects.overview                      -> the development, updated
+11. billing.generate_invoice               -> first milestone billed
+12. billing.record_payment                 -> money in, spread over open invoices
+13. allocations.create_from_booking        -> agreement + unit handed over
+14. files.drive_upload                     -> signed papers into the booking's folder
+15. dashboard.flow / projects.overview     -> the business, updated
 ```
+
+Before step 3, once per development: `projects.create_project` →
+`inventory.create_property` → `inventory.bulk_create_units` →
+`templates.save_payment_template` / `save_maintenance_template` →
+`templates.apply_templates` → `layout.save_layout`.
 
 Every step above is covered by the automated suites, run against
 `review.site`:
@@ -432,10 +733,12 @@ Every step above is covered by the automated suites, run against
 | `property_core/tests/crm_api_coverage.py` | the remaining endpoints, 60 assertions |
 | `property_core/tests/crm_data_verify.py` | what actually reached the database — address, contact, payment plan, unit status, portal login — 51 assertions |
 | `property_core/tests/crm_masters_check.py` | dropdown masters: new values usable at once, disable, hide-from-sales, refusal of unknown values, inventory create — 60 assertions |
+| `property_core/tests/crm_maintenance_check.py` | maintenance: task opened ahead of the date, proof required, updates, unit history, portal view + proof streaming + portal documents / Drive / handover / extra charges — 41 + 14 assertions |
+| `property_core/tests/crm_backend_check.py` | dashboards, tasks, templates, bulk units, layout/map, invoice → payment → allocation, attachments, Drive, comments, operations, and what an executive is refused — 97 assertions |
 
 ---
 
-## 14. Notes for the app
+## 22. Notes for the app
 
 * **Paging**: `page` starts at 1, `page_size` max 100. Use `has_more`, not row
   counts.

@@ -11,6 +11,7 @@ def get_data():
         "transactions": [
             {"label": _("Sales"), "items": ["Lead", "Opportunity", "Property Booking"]},
             {"label": _("Handover"), "items": ["Property Agreement", "Property Allocation"]},
+            {"label": _("Maintenance"), "items": ["Property Maintenance Task", "Property Maintenance Update"]},
             {"label": _("Operations"), "items": ["Issue", "Work Order"]},
         ],
     }

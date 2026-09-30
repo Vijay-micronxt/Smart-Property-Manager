@@ -4,8 +4,8 @@
 
 | Surface | For | Count | Detail |
 |---|---|---|---|
-| **Staff CRM API** — `property_core.api.crm.*` | the sales app: enquiry → booking | 66 | [CRM_API.md](CRM_API.md) |
-| **Customer portal API** — `property_core.api.portal.*` + `api.auth.*` | buyers and tenants | 36 | [CUSTOMER_PORTAL_API.md](CUSTOMER_PORTAL_API.md) |
+| **Staff CRM API** — `property_core.api.crm.*` | the CRM app: enquiry → booking → money → handover, plus dashboards, tasks, files, layout | 164 | [CRM_API.md](CRM_API.md) |
+| **Customer portal API** — `property_core.api.portal.*` + `api.auth.*` | buyers and tenants | 42 | [CUSTOMER_PORTAL_API.md](CUSTOMER_PORTAL_API.md) |
 | **Feature and integration endpoints** | the desk forms, payment gateways, notifications | 55 | this file, sections 5–8 |
 
 This file is the index: what exists, where it lives, who may call it. The two
@@ -85,9 +85,9 @@ itself.
 
 ---
 
-## 3. Staff CRM API — `property_core.api.crm.*` (66)
+## 3. Staff CRM API — `property_core.api.crm.*` (164)
 
-Full detail, payloads and the end-to-end flow: **[CRM_API.md](CRM_API.md)**.
+Full detail, payloads and the end-to-end flow: **[CRM_API.md](CRM_API.md)**. Screen-by-screen build guide for the app: **[CRM_APP_GUIDE.md](CRM_APP_GUIDE.md)**.
 
 | Module | Endpoints |
 |---|---|
@@ -97,11 +97,20 @@ Full detail, payloads and the end-to-end flow: **[CRM_API.md](CRM_API.md)**.
 | `follow_ups` (8) | `get_follow_ups` · `get_follow_up` · `create_follow_up` · `log_follow_up` · `complete_follow_up` · `reschedule` · `cancel_follow_up` · `my_agenda` |
 | `opportunities` (8) | `get_opportunities` · `get_opportunity` · `create_opportunity` · `update_opportunity` · `set_property` · `set_status` · `convert_to_booking` · `funnel` |
 | `customers` (4) | `get_customers` · `get_customer` · `create_customer` · `create_from_lead` |
-| `inventory` (9) | `get_properties` · `get_property` · `get_units` · `available_units` · `get_unit` · `resolve_unit` · `availability` · `create_property` · `create_unit` |
-| `bookings` (7) | `get_bookings` · `get_booking` · `create_booking` · `update_booking` · `submit_booking` · `cancel_booking` · `payment_plan` |
-| `projects` (8) | `get_projects` · `get_project` · `overview` · `project_inventory` · `project_funnel` · `project_bookings` · `project_operations` · `project_activity` |
+| `inventory` (13) | `get_properties` · `get_property` · `get_units` · `available_units` · `get_unit` · `resolve_unit` · `availability` · `create_property` · `create_unit` · `update_property` · `update_unit` · `set_unit_status` · `bulk_create_units` |
+| `bookings` (8) | `get_bookings` · `get_booking` · `prefill` · `create_booking` · `update_booking` · `submit_booking` · `cancel_booking` · `payment_plan` |
+| `projects` (10) | `get_projects` · `get_project` · `overview` · `project_inventory` · `project_funnel` · `project_bookings` · `project_operations` · `project_activity` · `create_project` · `update_project` |
 | `team` (3) | `my_team` · `assignable_users` · `performance` |
-| `dashboard` (1) | `summary` |
+| `dashboard` (4) | `summary` · `lead_dashboard` · `flow` · `trend` |
+| `tasks` (9) | `get_tasks` · `get_task` · `create_task` · `update_task` · `set_status` · `assign_task` · `unassign_task` · `delete_task` · `options` |
+| `templates` (9) | `get_payment_templates` · `get_payment_template` · `save_payment_template` · `delete_payment_template` · `preview_payment_plan` · `get_maintenance_templates` · `get_maintenance_template` · `save_maintenance_template` · `apply_templates` |
+| `allocations` (14) | `get_allocations` · `get_allocation` · `create_allocation` · `update_allocation` · `submit_allocation` · `cancel_allocation` · `renew_lease` · `create_from_booking` · `get_agreements` · `get_agreement` · `create_agreement` · `update_agreement` · `record_security_deposit` · `refund_security_deposit` |
+| `billing` (13) | `options` · `get_invoices` · `get_invoice` · `get_payments` · `get_payment` · `statement` · `generate_invoice` · `generate_due_invoices` · `create_invoice` · `submit_invoice` · `cancel_invoice` · `record_payment` · `cancel_payment` |
+| `files` (7) | `attach` · `get_attachments` · `remove_attachment` · `drive_folder` · `drive_list` · `drive_create_folder` · `drive_upload` |
+| `layout` (9) | `get_layout` · `save_layout` · `project_layouts` · `editor_assets` · `set_unit_shape` · `clear_unit_shape` · `site_map` · `resolve_location` · `set_location` |
+| `maintenance` (12) | `summary` · `get_tasks` · `get_task` · `create_task` · `update_task` · `assign` · `post_update` · `complete` · `cancel` · `reopen` · `unit_history` · `generate_now` |
+| `operations` (9) | `get_work_orders` · `get_work_order` · `create_work_order` · `update_work_order` · `get_issues` · `get_issue` · `create_issue` · `update_issue` · `options` |
+| `activity` (6) | `add_comment` · `get_comments` · `timeline` · `assign` · `unassign` · `my_assignments` |
 
 Three things worth knowing before writing a client:
 
@@ -118,7 +127,7 @@ Three things worth knowing before writing a client:
 
 ---
 
-## 4. Customer portal API — `property_core.api.portal.*` (29) and `api.auth.*` (7)
+## 4. Customer portal API — `property_core.api.portal.*` (35) and `api.auth.*` (7)
 
 Full detail: **[CUSTOMER_PORTAL_API.md](CUSTOMER_PORTAL_API.md)**.
 
@@ -130,10 +139,10 @@ Full detail: **[CUSTOMER_PORTAL_API.md](CUSTOMER_PORTAL_API.md)**.
 | `portal.dashboard` | `summary` |
 | `portal.properties` | `my_units` · `unit` · `projects` · `site_map` · `available_units` |
 | `portal.bookings` | `list_bookings` · `booking_details` · `book_unit` |
-| `portal.billing` | `charges` · `maintenance_charges` · `utility_bills` · `rent_history` · `outstanding_dues` · `payments` · `invoice` · `payment_schedule` |
-| `portal.maintenance` | `work_history` · `schedule` · `inspections` · `work_updates` |
+| `portal.billing` | `charges` · `maintenance_charges` · `utility_bills` · `rent_history` · `outstanding_dues` · `payments` · `invoice` · `invoice_pdf` · `payment_schedule` |
+| `portal.maintenance` | `tasks` · `task` · `proof` · `schedule` · `inspections` · `work_history` · `work_updates` |
 | `portal.support` | `issues` · `issue` · `raise_issue` · `add_comment` |
-| `portal.documents` | `list_documents` |
+| `portal.documents` | `list_documents` · `download` · `drive_download` |
 
 `property_core.property_core.api.customer_portal.*` (11 endpoints) is the
 older surface the bundled `/customer-portal` page still calls. It stays for
@@ -263,11 +272,14 @@ bench --site <site> execute property_core.property_core.setup.roles.assign_role 
 | `property_core/tests/crm_data_verify.py` | 51 | what actually reached the database |
 | `property_core/tests/geo_resolve_check.py` | 7 | every kind of map input, and the internal-URL refusal |
 | `property_core/tests/crm_masters_check.py` | 60 | dropdown masters and the inventory create calls |
+| `property_core/tests/crm_maintenance_check.py` | 41 + 14 | maintenance tasks, proof, portal view |
+| `property_core/tests/crm_backend_check.py` | 97 | dashboards, tasks, templates, bulk units, layout/map, invoice → payment → allocation, attachments, Drive, activity, operations, admin vs executive |
 
 ```bash
 SITE=http://127.0.0.1:8003 python property_core/tests/crm_api_smoke.py
 SITE=http://127.0.0.1:8003 python property_core/tests/crm_api_coverage.py
 SITE=http://127.0.0.1:8003 python property_core/tests/crm_masters_check.py
+SITE=http://127.0.0.1:8003 HOST=<site> python property_core/tests/crm_backend_check.py
 bench --site <site> execute property_core.tests.crm_data_verify.run
 bench --site <site> execute property_core.tests.geo_resolve_check.run
 ```

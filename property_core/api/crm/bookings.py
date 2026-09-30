@@ -31,6 +31,7 @@ LIST_FIELDS = [
     "sales_person",
     "opportunity",
     "lead",
+    "unit_base_price",
     "docstatus",
     "owner",
     "creation",
@@ -132,6 +133,87 @@ def get_booking(name):
         )
     )
     return ok(data=payload)
+
+
+@frappe.whitelist()
+def prefill(opportunity=None, property_unit=None, customer=None, lead=None, total_price=None, payment_plan_template=None):
+    """Everything a new-booking form should show filled in, before anything is
+    saved: unit details and base price, the agreement value (negotiated
+    opportunity amount, else base price), the payment plan that will apply
+    (unit's, else property's), a suggested booking amount (the plan's first
+    milestone) and the schedule the customer would sign up for.
+
+    Call it when the form opens and again whenever the unit or the agreement
+    value changes."""
+    base.require_user()
+    from property_core.property_core.crm.opportunity_events import resolve_unit
+    from property_core.property_core.utils.allocation_engine import DEFAULT_MILESTONES
+
+    opp = None
+    if opportunity:
+        opp = base.read_doc("Opportunity", opportunity)
+        property_unit = property_unit or opp.get("custom_property_unit")
+        if opp.opportunity_from == "Customer":
+            customer = customer or opp.party_name
+        elif opp.opportunity_from == "Lead":
+            lead = lead or opp.party_name
+    if lead and not customer:
+        customer = frappe.db.get_value("Customer", {"lead_name": lead}, "name")
+
+    unit = resolve_unit(property_unit) if property_unit else {}
+    base_price = flt(unit.get("base_price"))
+    if flt(total_price):
+        value, source = flt(total_price), "given"
+    elif opp and flt(opp.get("opportunity_amount")):
+        value, source = flt(opp.opportunity_amount), "opportunity"
+    else:
+        value, source = base_price, "unit_base_price"
+
+    template = payment_plan_template or unit.get("payment_plan_template") or (
+        frappe.db.get_value("Property", unit.get("property"), "payment_plan_template") if unit.get("property") else None
+    )
+    milestones = (
+        [r.as_dict() for r in frappe.get_doc("Payment Plan Template", template).milestones]
+        if template else DEFAULT_MILESTONES
+    )
+    booking_date = today()
+    schedule = [
+        {
+            "milestone": m["milestone"],
+            "percentage": flt(m["percentage"]),
+            "due_date": str(frappe.utils.add_months(booking_date, int(m["offset_months"] or 0))),
+            "amount": flt(value * flt(m["percentage"]) / 100, 2),
+        }
+        for m in milestones
+    ]
+
+    return ok(
+        data={
+            "property_unit": unit.get("name"),
+            "unit_number": unit.get("unit_number"),
+            "unit_property": unit.get("property"),
+            "property_name": unit.get("property_name"),
+            "project": unit.get("project"),
+            "unit_type": unit.get("unit_type"),
+            "unit_area": unit.get("area"),
+            "facing": unit.get("facing"),
+            "availability_status": unit.get("availability_status"),
+            "bookable": unit.get("availability_status") in ("Available", "Reserved") if unit else None,
+            "unit_base_price": base_price,
+            "total_price": value,
+            "total_price_source": source,
+            "discount": flt(base_price - value, 2) if base_price and value < base_price else 0,
+            "payment_plan_template": template,
+            "booking_amount": schedule[0]["amount"] if schedule else 0,
+            "booking_date": booking_date,
+            "schedule": schedule,
+            "customer": customer,
+            "customer_name": frappe.db.get_value("Customer", customer, "customer_name") if customer else None,
+            "lead": lead,
+            "opportunity": opportunity,
+            "customer_will_be_created": bool(lead and not customer),
+        }
+    )
 
 
 @frappe.whitelist()

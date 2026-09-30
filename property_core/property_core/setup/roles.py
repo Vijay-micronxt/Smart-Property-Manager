@@ -58,6 +58,14 @@ PERMISSIONS = {
     "Property Unit Type": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
     "Property Facing": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
     "Property Type": {ADMIN: {**WRITE, "delete": 1}, MANAGER: READ, EXECUTIVE: READ},
+    # --- project work ---------------------------------------------------- #
+    "Task": {ADMIN: FULL, MANAGER: {**WRITE, "delete": 1}, EXECUTIVE: WRITE},
+    "Maintenance Plan Template": {MANAGER: READ, EXECUTIVE: READ},
+    "Property Maintenance Task": {MANAGER: READ, EXECUTIVE: READ},
+    "Property Maintenance Update": {MANAGER: READ, EXECUTIVE: READ},
+    "Property Allocation": {MANAGER: READ, EXECUTIVE: READ},
+    "Property Agreement": {MANAGER: READ, EXECUTIVE: READ},
+    "Mode of Payment": {ADMIN: READ, MANAGER: READ, EXECUTIVE: READ},
     # --- money, read-only for sales --------------------------------------- #
     "Payment Plan": {MANAGER: READ, EXECUTIVE: READ},
     "Sales Invoice": {MANAGER: READ, EXECUTIVE: READ},
@@ -71,8 +79,13 @@ ADMIN_EXTRA = {
     "Contact": FULL,
     "Address": FULL,
     "Project": WRITE,
-    "Sales Invoice": READ,
-    "Payment Entry": READ,
+    # the CRM app raises milestone invoices and records collections
+    "Sales Invoice": WRITE_SUBMIT,
+    "Payment Entry": WRITE_SUBMIT,
+    "Issue": WRITE,
+    # a Payment Entry reads the bank/cash and receivable accounts it posts to
+    "Account": READ,
+    "Cost Center": READ,
 }
 
 

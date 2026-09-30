@@ -37,6 +37,46 @@ PROJECT_FIELDS = [
 ]
 
 
+PROJECT_WRITABLE = {
+    "project_name",
+    "status",
+    "project_type",
+    "customer",
+    "company",
+    "department",
+    "expected_start_date",
+    "expected_end_date",
+    "estimated_costing",
+    "priority",
+    "notes",
+    "percent_complete_method",
+    "is_active",
+}
+
+
+@frappe.whitelist()
+def create_project(data=None, **kwargs):
+    """A new development. Everything else -- properties, units, leads -- hangs
+    off it, so it is the first thing set up."""
+    payload = base.parse(data, default={}) or {}
+    payload.update({k: v for k, v in kwargs.items() if k in PROJECT_WRITABLE})
+    if not payload.get("project_name"):
+        frappe.throw(_("A project needs a name"), frappe.MandatoryError)
+    payload.setdefault(
+        "company", frappe.defaults.get_user_default("company") or frappe.db.get_default("company")
+    )
+    doc = base.create_doc("Project", payload, PROJECT_WRITABLE, defaults={"status": "Open"})
+    return ok(data=base.doc_payload(doc), message=_("Project {0} created").format(doc.name))
+
+
+@frappe.whitelist()
+def update_project(name, data=None, **kwargs):
+    payload = base.parse(data, default={}) or {}
+    payload.update({k: v for k, v in kwargs.items() if k in PROJECT_WRITABLE})
+    doc, changed = base.write_doc("Project", name, payload, PROJECT_WRITABLE)
+    return ok(data=base.doc_payload(doc), message=_("Updated {0}").format(", ".join(changed) or "nothing"))
+
+
 @frappe.whitelist()
 def get_projects(search=None, status=None, page=1, page_size=20, order_by=None, with_stats=1):
     base.require_user()

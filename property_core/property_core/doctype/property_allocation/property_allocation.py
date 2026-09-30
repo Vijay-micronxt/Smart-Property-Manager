@@ -38,7 +38,9 @@ class PropertyAllocation(Document):
         self.activate_agreement()
 
     def on_cancel(self):
-        self.status = "Terminated"
+        # db_set: the document is already written when on_cancel runs, so a
+        # plain assignment left cancelled allocations reading "Active".
+        self.db_set("status", "Terminated")
         self.release_allocation()
 
     def activate_agreement(self):

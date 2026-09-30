@@ -292,8 +292,12 @@ def convert_to_booking(
     booking.customer = customer
     booking.booking_date = booking_date or today()
     booking.booking_amount = flt(booking_amount)
+    # agreed value: what was sent, else what was negotiated on the
+    # opportunity, else the unit's list price (validate falls back to that)
     if total_price:
         booking.total_price = flt(total_price)
+    elif flt(doc.get("opportunity_amount")):
+        booking.total_price = flt(doc.opportunity_amount)
     if payment_plan_template:
         booking.payment_plan_template = payment_plan_template
     if sales_person:

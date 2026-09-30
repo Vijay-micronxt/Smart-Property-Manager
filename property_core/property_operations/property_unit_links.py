@@ -56,6 +56,30 @@ SETTINGS_FIELDS = [
         "reqd": 1,
         "description": "ERPNext Item used when auto-generating recurring maintenance Sales Invoices (e.g. 'Maintenance Charge'). Mandatory -- acts as the default whenever a Maintenance Plan Template row/repeat cycle doesn't specify its own Item.",
     },
+    {
+        "fieldname": "maintenance_task_lead_days",
+        "fieldtype": "Int",
+        "label": "Open Maintenance Task Days Before",
+        "insert_after": "maintenance_item_code",
+        "default": "3",
+        "description": "A Property Maintenance Task is opened this many days before each maintenance date on a unit's plan.",
+    },
+    {
+        "fieldname": "maintenance_task_assignee",
+        "fieldtype": "Link",
+        "label": "Assign Maintenance Tasks To",
+        "options": "User",
+        "insert_after": "maintenance_task_lead_days",
+        "description": "Optional. New maintenance tasks are assigned to this person (their desk ToDo).",
+    },
+    {
+        "fieldname": "maintenance_proof_required",
+        "fieldtype": "Check",
+        "label": "Require Proof to Complete Maintenance",
+        "insert_after": "maintenance_task_assignee",
+        "default": "1",
+        "description": "A maintenance task cannot be marked Completed until at least one photo or file is attached.",
+    },
 ]
 
 
@@ -88,7 +112,25 @@ def sync_property_unit_link_fields():
 
     create_custom_fields({"Property Unit": PROPERTY_UNIT_FIELDS}, ignore_validate=True, update=True)
     create_custom_fields({"Property Core Settings": SETTINGS_FIELDS}, ignore_validate=True, update=True)
+    _seed_settings_defaults()
     create_custom_fields({"Sales Invoice": SALES_INVOICE_FIELDS}, ignore_validate=True, update=True)
+
+
+def _seed_settings_defaults():
+    """A Single never stores a new field's default -- reading it gives 0 --
+    so a freshly added setting would silently start switched off. Write the
+    default once, only where the site has no value at all."""
+    import frappe
+
+    for field in SETTINGS_FIELDS:
+        if field.get("default") in (None, ""):
+            continue
+        stored = frappe.db.sql(
+            "select 1 from `tabSingles` where doctype=%s and field=%s",
+            ("Property Core Settings", field["fieldname"]),
+        )
+        if not stored:
+            frappe.db.set_single_value("Property Core Settings", field["fieldname"], field["default"])
 
 
 def delete_property_unit_link_fields():
