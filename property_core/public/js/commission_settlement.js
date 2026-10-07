@@ -3,7 +3,7 @@ frappe.ui.form.on("Commission Settlement", {
         if (frm.doc.docstatus === 0 && frm.doc.sales_person) {
             frm.add_custom_button(__("Load Pending Entries"), function () {
                 frappe.call({
-                    method: "property_commissions.property_commissions.property_commissions.doctype.commission_settlement.commission_settlement.get_pending_entries",
+                    method: "property_core.property_commissions.doctype.commission_settlement.commission_settlement.get_pending_entries",
                     args: { sales_person: frm.doc.sales_person },
                     callback(r) {
                         if (!r.message || !r.message.length) {
