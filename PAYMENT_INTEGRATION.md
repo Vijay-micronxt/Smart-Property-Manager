@@ -1,6 +1,144 @@
 # Payment Integration Guide
 
-Pay-by-Link for Razorpay, mSwipe, and Paytm — endpoint reference, curl examples, and integration notes.
+How money comes in for a property sale, and how a frontend (customer portal or
+CRM app) collects it. **Start with section 0** — it is the one API to use.
+Sections 1–4 are the gateway-specific endpoints underneath it, kept for
+existing integrations.
+
+---
+
+## 0. Collecting a payment — `property_core.api.payments`
+
+One API for the portal and the CRM, whatever gateway the client uses — or none.
+
+| Endpoint | Method | Does |
+|---|---|---|
+| `payments.options?target=` | GET | enabled `gateways [{name, modes}]`, `online` (false = no gateway), `instructions` (bank / UPI text from Property Core Settings), and with `target` the `due {invoice, description, amount}` |
+| `payments.start` | POST | `target*`, `mode` = `checkout` \| `link`, `amount` (₹, default = all that is due on that instalment; never more), `gateway` (default = first enabled for that mode) |
+| `payments.confirm` | POST | `gateway*`, `payload*` — the checkout widget's response, as-is |
+| `payments.status?target=` | GET | `due`, `paid` — poll after sending a link |
+
+`target` is a **Property Booking** (pays its next unpaid instalment), a
+**Payment Plan** row (that instalment) or a **Sales Invoice**. A portal
+customer may only pay their own; staff need read access to the record.
+
+Base URL: `https://<site>/api/method/property_core.api.payments.<function>`;
+the payload is `response.message.data`.
+
+### 0.1 Checkout — pay inside the page (portal, or customer at the counter)
+
+There is no URL: the gateway's script opens a popup in the browser.
+
+```js
+// 1. ask the server for the order
+const r = await frappe.call({
+  method: "property_core.api.payments.start",
+  args: { target: "BKG-0018", mode: "checkout" },   // amount optional
+});
+const { gateway, checkout } = r.message.data;
+
+// 2. load checkout.script once (Razorpay: https://checkout.razorpay.com/v1/checkout.js)
+//    and open it with checkout.options
+new Razorpay({
+  ...checkout.options,
+  handler: async (resp) => {
+    // 3. hand the widget's response back, untouched
+    const v = await frappe.call({
+      method: "property_core.api.payments.confirm",
+      args: { gateway, payload: resp },
+    });
+    // v.message.data = { paid, reconciled, payment_entry, sales_invoice }
+  },
+}).open();
+```
+
+If the customer closes the browser between 2 and 3, the gateway's webhook
+records the payment anyway (one Payment Entry, never two).
+
+### 0.2 Link — send it (CRM), or open it
+
+```js
+const r = await frappe.call({
+  method: "property_core.api.payments.start",
+  args: { target: "PP-0054", mode: "link", amount: 200000 },
+});
+// r.message.data.link = { url: "https://rzp.io/...", id: "plink_..." }
+// r.message.data.share_text = "Dear ..., please pay ₹ 2,00,000.00 for ...: https://rzp.io/..."
+window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(r.message.data.share_text)}`);
+```
+
+The customer pays on the gateway's page; the webhook (`payment_link.paid` for
+Razorpay) settles the invoice. Poll `payments.status` to show it as paid.
+In the Razorpay dashboard, the webhook (section 2.4) must have the
+`payment_link.paid` event ticked as well as `payment.captured`.
+
+### 0.3 No gateway
+
+`options` returns `online: false` and `instructions`. Show the instructions;
+staff record what arrives with `crm.billing.record_payment` (cash, cheque,
+NEFT, UPI, bank loan disbursement).
+
+### 0.4 Adding a gateway
+
+A class in any app, registered in that app's `hooks.py`:
+
+```python
+property_payment_gateways = ["my_app.payments.PhonePeGateway"]
+```
+
+subclassing `property_core.property_core.payments.PaymentGateway`: `name`,
+`modes`, `is_enabled()`, and `start_checkout(ctx)` / `confirm_checkout(payload)`
+and/or `create_link(ctx)`. `ctx` carries `target, invoice, amount, customer,
+customer_name, email, phone, description`. Record the money as a Payment Entry
+against `ctx.invoice`; everything downstream follows from that.
+
+---
+
+## 0.5 How sale money flows — every way it can arrive
+
+Every rupee ends up as a **Payment Entry against the instalment's Sales
+Invoice**. The instalment's status (`Pending → Invoiced → Partly Paid → Paid`,
+or `Overdue`, `Cancelled`) and its `paid_amount` / `outstanding_amount` are
+read off that invoice after every payment, credit note or cancellation —
+whichever way the money came.
+
+| Situation | What happens |
+|---|---|
+| Token **before** the booking | `record_payment(customer=…)` — stays an advance. When the booking is submitted, the first instalment's invoice takes it automatically. |
+| Booking amount **on** the booking | Booking Amount is the first instalment, due on the booking date, invoiced on submit. The rest of the agreement value follows the template, earliest milestones reduced. |
+| **No** booking amount | The plan is the template as it is. |
+| Part payment | Instalment shows Partly Paid with paid / outstanding. |
+| More than is due | The excess stays as an advance and is taken by the next instalment invoice. |
+| Bank loan disbursement | `record_payment` with the bank's UTR; same as any receipt. |
+| Buyer deducts **TDS** (194-IA) | `billing.tds_suggestion` gives the split; `record_payment(tds_amount=…)` closes the invoice in full, TDS to the Buyer TDS Receivable Account. |
+| Late | Late fee (if enabled) on the unpaid part of an instalment past due + grace. |
+| **Cancellation** | Unbilled instalments cancelled, unpaid invoices cancelled, part-paid ones closed by credit note, unpaid unit charges withdrawn. Booking shows collected / forfeited / refund due. `bookings.refund` (desk: **Make Refund**) pays it back with a credit note + Payment Entry. |
+
+Commission follows the same collections: a percentage applies to the agreement
+value, is released in stages as the customer pays (Commission Rule → Release
+Stages), and a settlement books a Journal Entry (employee) or a draft Purchase
+Invoice (channel partner). Cancelled bookings claw paid commission back
+through the next settlement.
+
+### Settings (Property Core Settings)
+
+| Section | Field | Default |
+|---|---|---|
+| Sale Payments | Bill Booking Amount as First Instalment | on |
+| | Adjust Advances Against New Instalment Invoices | on |
+| | Buyer TDS Receivable Account / Rate / Threshold | — / 1% / ₹50,00,000 |
+| Booking Cancellation | Forfeit on Cancellation | Booking Amount |
+| | Forfeit Percentage / Amount | — |
+| Sales Commission | Commission Calculated On | Agreement Value |
+| | Commission Expense Account | — (blank = settlements are status-only) |
+| | Commission Payable Account (Employees) | — |
+| | Brokerage Item (Channel Partners) | — |
+| Online Payments | Payment Instructions | — |
+
+Sales Person: **Commission Paid To** (Employee / Channel Partner) and
+**Channel Partner (Supplier)**.
+
+---
 
 Replace `https://your-site.example.com` with your ERPNext site URL throughout.
 

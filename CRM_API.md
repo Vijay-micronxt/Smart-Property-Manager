@@ -371,12 +371,14 @@ where something is.
 | `bookings.create_booking` | POST | walk-in path, straight off a unit |
 | `bookings.update_booking` | POST | drafts only |
 | `bookings.submit_booking` | POST | **confirms the deal** |
-| `bookings.cancel_booking` | POST | puts the unit back on the market |
+| `bookings.cancel_booking` | POST | puts the unit back on the market, stops its billing (unbilled instalments cancelled, unpaid invoices withdrawn) and returns `collected`, `forfeit`, `refund`, `refund_status` |
+| `bookings.refund` | POST | `name*`, `mode_of_payment*`, `amount` (default the refund worked out on cancel), `posting_date`, `reference_no`, `reference_date` → credit note + Payment Entry paying the customer back |
 | `bookings.payment_plan?booking=` | GET | milestones + what is billed/collected |
 
 Submitting is the real step: the unit is reserved, the payment plan is
-generated, the customer's portal login is provisioned and maintenance billing
-starts. A `Property Sales Executive` may raise a booking but **not** confirm
+generated (the **booking amount is its first instalment**, invoiced at once;
+any advance already received is set off against it), the customer's portal
+login is provisioned and maintenance billing starts. A `Property Sales Executive` may raise a booking but **not** confirm
 it; `Property Sales Manager` and `Property Manager` may.
 
 ---
@@ -546,11 +548,13 @@ as `layout_shape: ""`.
 
 `GET bookings.prefill?opportunity=` (or `property_unit=` + `customer=`) before
 the booking form is shown, and again when the agreement value
-(`total_price=`) or plan (`payment_plan_template=`) is changed. Returns
-`unit_base_price`, `total_price` (+ `total_price_source`: `given` /
-`opportunity` / `unit_base_price`, and `discount`), `payment_plan_template`,
-suggested `booking_amount` (first milestone), `booking_date`, the `schedule`,
-unit info and customer. Nothing is saved.
+(`total_price=`), plan (`payment_plan_template=`) or booking amount
+(`booking_amount=`) is changed. Returns `unit_base_price`, `total_price` (+
+`total_price_source`: `given` / `opportunity` / `unit_base_price`, and
+`discount`), `payment_plan_template`, `booking_amount` (what was sent, else
+`suggested_booking_amount` = the first milestone), `booking_date`, the
+`schedule` exactly as submit will create it, unit info and customer. Nothing
+is saved.
 
 `opportunities.convert_to_booking` now takes the opportunity's
 `opportunity_amount` as the agreement value when none is sent, instead of
@@ -581,13 +585,22 @@ Hide the buttons off `whoami.permissions`.
 | `billing.generate_due_invoices` | POST | `booking`, `upto_date` (default today) → invoices every due, un-billed milestone. Returns `raised`, `failed` |
 | `billing.create_invoice` | POST | `booking` (or `customer` + `property_unit`), `items: [{item_code?, rate, qty, description}]` (item defaults to the Default Sale Item), `due_date`, `remarks`, `submit=1` |
 | `billing.submit_invoice` / `cancel_invoice` | POST | `name` (+ `reason`). Cancelling a milestone invoice puts the milestone back to un-billed |
-| `billing.record_payment` | POST | `amount*`, `mode_of_payment*`, and one of: `invoice` (against it) · `booking` (spread over its open invoices, earliest due first; anything left stays as an advance) · `customer` (advance, e.g. token money). `reference_no` + `reference_date` are required for bank / UPI / cheque modes. `posting_date`, `remarks`, `submit=1`. Returns `allocated: [{invoice, amount}]` and `advance` |
+| `billing.record_payment` | POST | `amount*`, `mode_of_payment*`, and one of: `invoice` (against it) · `booking` (spread over its open invoices, earliest due first; anything left stays as an advance) · `customer` (advance, e.g. token money). `reference_no` + `reference_date` are required for bank / UPI / cheque modes. `posting_date`, `remarks`, `submit=1`. `tds_amount` = TDS the buyer deducted (194-IA): `amount` is what reached the bank, the invoice is settled for amount + TDS. Returns `allocated: [{invoice, amount}]` and `advance` |
+| `billing.tds_suggestion` | GET | `invoice` or `booking` → `applies`, `rate`, `tds_amount`, `amount` (to bank) for what is outstanding |
 | `billing.get_payments` | GET | `customer`, `booking`, `invoice`, dates, paging |
 | `billing.get_payment` / `cancel_payment` | GET / POST | `name` |
 
-Online payment (Razorpay / Mswipe) is unchanged: the gateway endpoints accept
-a Property Booking id and bill its next unpaid instalment — see
-`PAYMENT_INTEGRATION.md`.
+Money handed over in person (cash, cheque, NEFT, UPI, loan disbursement) is
+`record_payment`. To have the customer pay online — a link to send on
+WhatsApp, or the gateway's checkout at the counter — use
+`property_core.api.payments` (`options`, `start`, `confirm`, `status`); it works
+with whichever gateway is enabled, or tells you none is. See
+`PAYMENT_INTEGRATION.md` section 0.
+
+Each instalment row (`bookings.payment_plan`) carries `payment_status`
+(Pending / Invoiced / Partly Paid / Paid / Overdue / Cancelled), `paid_amount`
+and `outstanding_amount`, kept in step with its invoice whichever way it was
+paid.
 
 ---
 
