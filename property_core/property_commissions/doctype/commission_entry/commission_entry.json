@@ -13,10 +13,17 @@
     "column_break_1",
     "commission_date",
     "booking_amount",
+    "base_amount",
     "commission_type",
     "commission_rate",
     "commission_amount",
     "status",
+    "section_release",
+    "customer_paid_percent",
+    "released_amount",
+    "column_break_release",
+    "settled_amount",
+    "payable_amount",
     "section_settlement",
     "commission_rule",
     "settlement"
@@ -79,6 +86,13 @@
       "read_only": 1
     },
     {
+      "fieldname": "base_amount",
+      "fieldtype": "Currency",
+      "label": "Calculated On",
+      "read_only": 1,
+      "description": "Agreement value or booking amount, per Property Core Settings."
+    },
+    {
       "fieldname": "commission_type",
       "fieldtype": "Select",
       "label": "Commission Type",
@@ -102,11 +116,46 @@
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "Status",
-      "options": "Pending\nSettled\nCancelled",
+      "options": "Pending\nPartly Settled\nSettled\nClawback\nCancelled",
       "default": "Pending",
       "read_only": 1,
       "in_list_view": 1,
       "in_standard_filter": 1
+    },
+    {
+      "fieldname": "section_release",
+      "fieldtype": "Section Break",
+      "label": "Release"
+    },
+    {
+      "fieldname": "customer_paid_percent",
+      "fieldtype": "Percent",
+      "label": "Customer Paid (%)",
+      "read_only": 1
+    },
+    {
+      "fieldname": "released_amount",
+      "fieldtype": "Currency",
+      "label": "Released (Payable So Far)",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_release",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "settled_amount",
+      "fieldtype": "Currency",
+      "label": "Settled",
+      "read_only": 1
+    },
+    {
+      "fieldname": "payable_amount",
+      "fieldtype": "Currency",
+      "label": "Payable Now",
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Released less settled. Negative on a cancelled booking: commission already paid, to be recovered."
     },
     {
       "fieldname": "section_settlement",
@@ -129,7 +178,7 @@
     }
   ],
   "links": [],
-  "modified": "2024-01-01 00:00:00.000000",
+  "modified": "2026-10-08 12:00:00.000000",
   "modified_by": "Administrator",
   "module": "Property Commissions",
   "name": "Commission Entry",

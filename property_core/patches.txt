@@ -10,3 +10,4 @@ property_core.property_core.patches.settings_doctypes_are_singles
 
 [post_model_sync]
 property_core.property_core.patches.sync_payment_plan_amounts
+property_core.property_core.patches.commission_entry_release_amounts

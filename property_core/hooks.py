@@ -78,6 +78,7 @@ scheduler_events = {
         "property_core.property_core.utils.payment_plan_billing.run_daily_payment_plan_billing",
         "property_core.property_operations.utils.maintenance_billing.run_daily_maintenance_billing",
         "property_core.property_core.utils.plan_status.run_daily_sync",
+        "property_core.property_commissions.payout.run_daily_sync",
         "property_core.property_core.notifications.payment_reminders.run_daily_payment_reminders",
         "property_core.property_core.notifications.lead_followup.run_daily_lead_follow_ups",
         "property_core.property_core.notifications.dispatcher.retry_failed",
@@ -115,8 +116,12 @@ doc_events = {
         "on_submit": [
             "property_core.property_core.notifications.receipts.on_submit",
             "property_core.property_core.utils.plan_status.on_payment_entry",
+            "property_core.property_commissions.payout.on_payment_entry",
         ],
-        "on_cancel": "property_core.property_core.utils.plan_status.on_payment_entry",
+        "on_cancel": [
+            "property_core.property_core.utils.plan_status.on_payment_entry",
+            "property_core.property_commissions.payout.on_payment_entry",
+        ],
         "on_update_after_submit": "property_core.property_core.utils.plan_status.on_payment_entry",
     },
     "Journal Entry": {
@@ -193,9 +198,17 @@ after_migrate = [
     "property_core.property_core.crm.telephony.sync_telephony_fields",
     "property_core.property_core.crm.customer_from_lead.sync_address_fields",
     "property_core.property_core.doctype.property_notification_settings.property_notification_settings.seed_default_reminder_rules",
+    "property_core.property_commissions.payout.sync_sales_person_fields",
+]
+
+# Called with the booking name whenever what a booking has collected changes
+# (a payment, a credit note, an invoice withdrawn). Other apps may add to it.
+property_booking_collection_changed = [
+    "property_core.property_commissions.doctype.commission_entry.commission_entry.refresh_for_booking",
 ]
 
 before_uninstall = [
+    "property_core.property_commissions.payout.delete_sales_person_fields",
     "property_core.property_core.customer_kyc.delete_customer_kyc_fields",
     "property_core.property_core.crm_links.delete_crm_link_fields",
     "property_core.property_operations.issue_links.delete_issue_link_fields",

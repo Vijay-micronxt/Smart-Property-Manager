@@ -50,6 +50,9 @@ class PropertyBooking(Document):
         self.start_maintenance()
 
     def on_cancel(self):
+        # A settled commission must not pin the booking: cancelling is what
+        # turns that commission into a clawback.
+        self.ignore_linked_doctypes = ("Commission Settlement",)
         # db_set, not a plain assignment: the document is already written by the
         # time on_cancel runs, so a cancelled booking kept showing "Confirmed"
         # in every list and on the portal.

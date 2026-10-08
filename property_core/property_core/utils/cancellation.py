@@ -9,6 +9,8 @@ On cancel
   * invoices with nothing received against them are cancelled (drafts deleted);
   * invoices part paid are closed for their unpaid part with a credit note, so
     the reminders stop;
+  * unpaid maintenance and other charges raised on the unit since the booking
+    are withdrawn the same way;
   * what was collected, what the business keeps (Property Core Settings ->
     Forfeit on Cancellation) and what is owed back are written on the booking.
 
@@ -45,6 +47,11 @@ def close_out(booking):
         # a late fee already paid is kept; an unpaid one is withdrawn
         _close_invoice(plan)
 
+    for invoice in _unit_charges(booking):
+        # maintenance and other charges raised on the unit since the booking:
+        # unpaid ones are withdrawn, paid ones stand (and are not refunded here)
+        _close_invoice(invoice)
+
     forfeit = min(_forfeit_for(booking, collected), collected)
     refund = flt(collected - forfeit, 2)
 
@@ -54,6 +61,32 @@ def close_out(booking):
         "cancellation_refund": refund,
         "refund_status": "Refund Due" if refund > 0 else "No Refund",
     })
+
+
+def _unit_charges(booking):
+    meta = frappe.get_meta("Sales Invoice")
+    if not meta.has_field("property_unit"):
+        return []
+    plan_invoices = set(
+        frappe.get_all("Payment Plan", filters={"booking": booking.name}, pluck="invoice")
+        + frappe.get_all("Payment Plan", filters={"booking": booking.name}, pluck="late_fee_invoice")
+    )
+    return [
+        name
+        for name in frappe.get_all(
+            "Sales Invoice",
+            filters={
+                "customer": booking.customer,
+                "property_unit": booking.property_unit,
+                "posting_date": [">=", booking.booking_date],
+                "docstatus": ["<", 2],
+                "is_return": 0,
+                "outstanding_amount": [">", 0],
+            },
+            pluck="name",
+        )
+        if name not in plan_invoices
+    ]
 
 
 def _close_plan(plan):
