@@ -340,6 +340,8 @@ def payment_plan_rows(booking):
             "amount",
             "invoice",
             "payment_status",
+            "paid_amount",
+            "outstanding_amount",
             "late_fee_applied",
             "late_fee_amount",
         ],
@@ -356,11 +358,11 @@ def payment_plan_rows(booking):
         ):
             outstanding[invoice.name] = invoice
 
+    # paid / outstanding are kept on the instalment itself (plan_status), which
+    # stays right after the invoice is withdrawn on a cancelled booking
     for row in rows:
         invoice = outstanding.get(row.invoice) or {}
         row["invoice_status"] = invoice.get("status")
-        row["outstanding_amount"] = flt(invoice.get("outstanding_amount"), 2)
-        row["paid_amount"] = flt(flt(invoice.get("grand_total")) - flt(invoice.get("outstanding_amount")), 2)
 
     return base.serialize(rows)
 
