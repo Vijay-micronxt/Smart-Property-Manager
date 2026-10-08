@@ -235,7 +235,12 @@ def generate_invoice(payment_plan):
     _require("Sales Invoice", "create")
     plan = base.read_doc("Payment Plan", payment_plan)
     if plan.invoice:
-        return ok(data={"payment_plan": plan.name, "invoice": plan.invoice}, message=_("Already invoiced"))
+        # same shape as a fresh invoice: what is due today is billed on booking
+        # submit, so "already invoiced" is the common answer for the first row
+        return ok(
+            data={"payment_plan": plan.name, "invoice": plan.invoice, **_invoice_brief(plan.invoice)},
+            message=_("Already invoiced"),
+        )
     invoice = plan.generate_invoice()
     return ok(
         data={"payment_plan": plan.name, "invoice": invoice, **_invoice_brief(invoice)},

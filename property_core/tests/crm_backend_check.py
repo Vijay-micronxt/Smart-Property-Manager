@@ -125,7 +125,11 @@ cust = ok(admin, "customers.create_customer", data={"customer_name": f"API Buyer
 bk = ok(admin, "bookings.create_booking", data={"customer": cust["name"], "property_unit": unit, "booking_amount": 100000}, submit=1)
 bname = bk and bk["name"]
 plan = ok(admin, "bookings.payment_plan", method="GET", booking=bname)
-check("plan from unit template (2 rows)", plan and len(plan["rows"]) == 2, plan)
+# booking amount first, then the template's milestones reduced by it, adding up to the agreement value
+total_price = bk and bk.get("total_price")
+check("plan starts with the booking amount", plan and plan["rows"][0]["amount"] == 100000, plan)
+check("plan adds up to the agreement value",
+      plan and abs(sum(r["amount"] for r in plan["rows"]) - (total_price or 0)) < 0.01, plan and total_price)
 inv = ok(admin, "billing.generate_invoice", payment_plan=plan["rows"][0]["name"])
 check("invoice submitted", inv and inv["docstatus"] == 1, inv)
 due = ok(admin, "billing.generate_due_invoices", booking=bname, upto_date="2027-12-31")
