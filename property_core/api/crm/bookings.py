@@ -291,10 +291,33 @@ def cancel_booking(name, reason=None):
     doc.cancel()
     if reason:
         doc.add_comment("Comment", text=reason)
+    doc.reload()
     return ok(
-        data={"name": name, "docstatus": doc.docstatus, "booking_status": doc.booking_status},
+        data={
+            "name": name,
+            "docstatus": doc.docstatus,
+            "booking_status": doc.booking_status,
+            "collected": doc.cancellation_collected,
+            "forfeit": doc.cancellation_forfeit,
+            "refund": doc.cancellation_refund,
+            "refund_status": doc.refund_status,
+        },
         message=_("Booking cancelled"),
     )
+
+
+@frappe.whitelist()
+def refund(name, mode_of_payment, amount=None, posting_date=None, reference_no=None, reference_date=None):
+    """Pay back a cancelled booking: credit note + Payment Entry (type Pay).
+    ``amount`` defaults to the refund worked out on cancel."""
+    from property_core.property_core.utils.cancellation import make_refund
+
+    base.read_doc("Property Booking", name)
+    result = make_refund(
+        name, mode_of_payment, posting_date=posting_date, reference_no=reference_no,
+        reference_date=reference_date, amount=amount,
+    )
+    return ok(data=result, message=_("Refund {0} recorded").format(result["payment_entry"]))
 
 
 @frappe.whitelist()

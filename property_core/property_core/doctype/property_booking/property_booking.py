@@ -56,6 +56,10 @@ class PropertyBooking(Document):
         self.db_set("booking_status", "Cancelled")
         release_unit(self.property_unit)
 
+        from property_core.property_core.utils.cancellation import close_out
+
+        close_out(self)
+
     # ------------------------------------------------------------------ #
 
     def set_agreement_value(self):
