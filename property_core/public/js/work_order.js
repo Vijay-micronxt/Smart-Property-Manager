@@ -3,7 +3,7 @@
 // automatically, so there is always a record to post against -- and the button
 // sits on the form so nobody has to be told which doctype to use.
 
-frappe.ui.form.on("Work Order", {
+frappe.ui.form.on("Property Work Order", {
     refresh(frm) {
         if (frm.doc.issue) {
             frm.add_custom_button(__("Issue"), function () {

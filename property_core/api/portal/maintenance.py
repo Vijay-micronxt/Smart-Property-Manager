@@ -42,7 +42,7 @@ def work_history(property_unit=None, status=None, limit=100):
         filters["status"] = status
 
     rows = get_list(
-        "Work Order", filters,
+        "Property Work Order", filters,
         order_by="coalesce(completed_date, scheduled_date, creation) desc",
         limit_page_length=as_int(limit, 100),
     )
@@ -166,7 +166,7 @@ def work_updates(work_order=None, property_unit=None, limit=100):
         return ok(data={"updates": [], "total": 0})
 
     if work_order:
-        owned = frappe.db.get_value("Work Order", work_order, "property_unit")
+        owned = frappe.db.get_value("Property Work Order", work_order, "property_unit")
         if not owned or owned not in customer_units(customer):
             frappe.throw(frappe._("This work order is not on one of your units."))
         filters = {"work_order": work_order}

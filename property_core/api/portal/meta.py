@@ -41,7 +41,7 @@ def settings():
             "issues": True,
             "maintenance": bool(
                 frappe.db.exists("DocType", "Property Maintenance Task")
-                or frappe.db.exists("DocType", "Work Order")
+                or frappe.db.exists("DocType", "Property Work Order")
             ),
             "utilities": frappe.db.exists("DocType", "Utility Bill") and True or False,
             "inspections": frappe.db.exists("DocType", "Inspection Checklist") and True or False,

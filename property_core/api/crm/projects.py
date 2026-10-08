@@ -245,9 +245,9 @@ def project_activity(name, limit=30):
             }
         )
 
-    if units and _readable("Work Order", "property_unit"):
+    if units and _readable("Property Work Order", "property_unit"):
         for row in frappe.get_list(
-            "Work Order",
+            "Property Work Order",
             filters={"property_unit": ["in", units]},
             fields=["name", "work_type", "status", "modified", "property_unit"],
             order_by="modified desc",
@@ -396,9 +396,9 @@ def _operations(properties):
     if not units:
         return out
 
-    if _readable("Work Order", "property_unit"):
+    if _readable("Property Work Order", "property_unit"):
         rows = frappe.get_list(
-            "Work Order",
+            "Property Work Order",
             filters={"property_unit": ["in", units]},
             fields=["status", "count(name) as total"],
             group_by="status",

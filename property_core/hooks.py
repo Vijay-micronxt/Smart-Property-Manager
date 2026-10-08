@@ -39,7 +39,7 @@ doctype_js = {
     "Paytm Settings": "public/js/paytm_settings.js",
     # property_operations module
     "Issue": "public/js/issue_work_order.js",
-    "Work Order": "public/js/work_order.js",
+    "Property Work Order": "public/js/work_order.js",
     "Inspection Checklist": "public/js/inspection_checklist.js",
     "Utility Meter": "public/js/utility_meter.js",
     "Utility Bill": "public/js/utility_bill.js",
@@ -101,8 +101,8 @@ doc_events = {
         "on_submit": "property_core.property_core.doctype.property_allocation.property_allocation.on_submit",
         "on_cancel": "property_core.property_core.doctype.property_allocation.property_allocation.on_cancel",
     },
-    "Work Order": {
-        "on_update": "property_core.property_operations.doctype.work_order.work_order.on_update",
+    "Property Work Order": {
+        "on_update": "property_core.property_operations.doctype.property_work_order.property_work_order.on_update",
     },
     "Sales Invoice": {
         "on_submit": [

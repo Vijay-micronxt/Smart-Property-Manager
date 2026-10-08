@@ -39,7 +39,7 @@ ATTACHABLE = {
     "Property Follow Up",
     "Sales Invoice",
     "Payment Entry",
-    "Work Order",
+    "Property Work Order",
     "Issue",
     "Property Maintenance Task",
 }
@@ -53,6 +53,7 @@ MAX_BYTES = 25 * 1024 * 1024
 
 @frappe.whitelist()
 def attach(doctype, name, filename=None, content=None, fieldname=None, is_private=1):
+    doctype = base.real_doctype(doctype)
     doc = _record(doctype, name, "write")
     filename, data = _incoming(filename, content)
 
@@ -81,6 +82,7 @@ def attach(doctype, name, filename=None, content=None, fieldname=None, is_privat
 
 @frappe.whitelist()
 def get_attachments(doctype, name):
+    doctype = base.real_doctype(doctype)
     _record(doctype, name, "read")
     rows = frappe.get_all(
         "File",
@@ -113,6 +115,7 @@ def drive_folder(doctype, name, create=1):
     """The Drive folder of a Property, Property Booking, Property Unit (its
     booking's) or Project (its first property's tree). ``create=1`` builds it
     when missing -- the same tree the desk builds."""
+    doctype = base.real_doctype(doctype)
     _record(doctype, name, "read")
     if not _drive_installed():
         return ok(data={"drive": False, "folder": None}, message=_("Frappe Drive is not installed on this site"))
@@ -123,6 +126,7 @@ def drive_folder(doctype, name, create=1):
 @frappe.whitelist()
 def drive_list(doctype, name, folder=None):
     """Contents of the record's folder, or of ``folder`` inside it."""
+    doctype = base.real_doctype(doctype)
     root = _root_or_throw(doctype, name)
     folder = folder or root
     _inside(folder, root)
@@ -146,6 +150,7 @@ def drive_list(doctype, name, folder=None):
 
 @frappe.whitelist()
 def drive_create_folder(doctype, name, title, parent=None):
+    doctype = base.real_doctype(doctype)
     from property_core.property_core.utils.drive_folders import get_or_create_folder
 
     _record(doctype, name, "write")
@@ -165,6 +170,7 @@ def drive_upload(doctype, name, folder=None, filename=None, content=None):
     The file is written by Drive's own uploader, so Drive's rules apply: the
     caller needs upload access to that team's folder (JD staff already do,
     they use Drive on the desk)."""
+    doctype = base.real_doctype(doctype)
     _record(doctype, name, "write")
     root = _root_or_throw(doctype, name)
     folder = folder or root
@@ -196,6 +202,7 @@ def drive_upload(doctype, name, folder=None, filename=None, content=None):
 # --------------------------------------------------------------------------- #
 
 def _record(doctype, name, ptype):
+    doctype = base.real_doctype(doctype)
     if doctype not in ATTACHABLE:
         frappe.throw(_("Files cannot be managed on {0} through this API").format(doctype), frappe.PermissionError)
     doc = base.read_doc(doctype, name)
@@ -242,6 +249,7 @@ def _drive_installed():
 
 
 def _folder_of(doctype, name, create):
+    doctype = base.real_doctype(doctype)
     from property_core.property_core.utils import drive_folders as df
 
     active = lambda f: f and frappe.db.exists("Drive File", {"name": f, "is_active": 1})
@@ -276,6 +284,7 @@ def _folder_of(doctype, name, create):
 
 
 def _root_or_throw(doctype, name):
+    doctype = base.real_doctype(doctype)
     _record(doctype, name, "read")
     if not _drive_installed():
         frappe.throw(_("Frappe Drive is not installed on this site"))

@@ -51,7 +51,7 @@ def summary(recent_limit=5):
     recent_work = []
     if units:
         recent_work = get_list(
-            "Work Order",
+            "Property Work Order",
             {"property_unit": ["in", units]},
             order_by="coalesce(completed_date, scheduled_date, creation) desc",
             limit_page_length=recent_limit,
@@ -72,7 +72,7 @@ def summary(recent_limit=5):
                 "Issue", {"customer": customer, "status": ["not in", ["Closed", "Resolved"]]}
             ),
             "open_work_orders": frappe.db.count(
-                "Work Order", {"property_unit": ["in", units], "status": ["!=", "Completed"]}
+                "Property Work Order", {"property_unit": ["in", units], "status": ["!=", "Completed"]}
             ) if units else 0,
         },
         "by_charge_type": charge_data["by_type"],

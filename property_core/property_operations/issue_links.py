@@ -10,7 +10,7 @@ ISSUE_FIELDS = [
         "fieldname": "work_order",
         "fieldtype": "Link",
         "label": "Work Order",
-        "options": "Work Order",
+        "options": "Property Work Order",
         "insert_after": "property_unit",
         "read_only": 1,
         "description": "Set automatically once a Work Order is created to resolve this Issue",

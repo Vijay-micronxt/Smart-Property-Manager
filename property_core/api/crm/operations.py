@@ -58,7 +58,7 @@ def get_work_orders(property_unit=None, status=None, assigned_to=None, mine=None
         conditions.append(["assigned_to", "=", who])
     return ok(
         data=base.listing(
-            "Work Order",
+            "Property Work Order",
             WORK_ORDER_FIELDS,
             extra_filters=conditions,
             search=search,
@@ -72,14 +72,14 @@ def get_work_orders(property_unit=None, status=None, assigned_to=None, mine=None
 
 @frappe.whitelist()
 def get_work_order(name):
-    return ok(data=base.doc_payload(base.read_doc("Work Order", name)))
+    return ok(data=base.doc_payload(base.read_doc("Property Work Order", name)))
 
 
 @frappe.whitelist()
 def create_work_order(data=None, **kwargs):
     payload = base.parse(data, default={}) or {}
     payload.update({k: v for k, v in kwargs.items() if k in WORK_ORDER_WRITABLE})
-    doc = base.create_doc("Work Order", payload, WORK_ORDER_WRITABLE)
+    doc = base.create_doc("Property Work Order", payload, WORK_ORDER_WRITABLE)
     return ok(data=base.doc_payload(doc), message=_("Work order {0} created").format(doc.name))
 
 
@@ -87,7 +87,7 @@ def create_work_order(data=None, **kwargs):
 def update_work_order(name, data=None, **kwargs):
     payload = base.parse(data, default={}) or {}
     payload.update({k: v for k, v in kwargs.items() if k in WORK_ORDER_WRITABLE})
-    doc, changed = base.write_doc("Work Order", name, payload, WORK_ORDER_WRITABLE)
+    doc, changed = base.write_doc("Property Work Order", name, payload, WORK_ORDER_WRITABLE)
     return ok(data=base.doc_payload(doc), message=_("Updated {0}").format(", ".join(changed) or "nothing"))
 
 
@@ -121,8 +121,8 @@ def get_issue(name):
     doc = base.read_doc("Issue", name)
     payload = base.doc_payload(doc)
     payload["work_orders"] = base.serialize(
-        frappe.get_list("Work Order", filters={"issue": name}, fields=WORK_ORDER_FIELDS)
-        if base.can_read("Work Order")
+        frappe.get_list("Property Work Order", filters={"issue": name}, fields=WORK_ORDER_FIELDS)
+        if base.can_read("Property Work Order")
         else []
     )
     return ok(data=payload)
@@ -147,7 +147,7 @@ def update_issue(name, data=None, **kwargs):
 @frappe.whitelist()
 def options():
     base.require_user()
-    wo = frappe.get_meta("Work Order") if frappe.db.exists("DocType", "Work Order") else None
+    wo = frappe.get_meta("Property Work Order") if frappe.db.exists("DocType", "Property Work Order") else None
     issue = frappe.get_meta("Issue")
     split = lambda meta, f: [o for o in ((meta.get_field(f).options if meta and meta.get_field(f) else "") or "").split("\n") if o]
     return ok(

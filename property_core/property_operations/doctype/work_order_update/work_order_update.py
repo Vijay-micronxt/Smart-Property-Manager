@@ -50,7 +50,7 @@ class WorkOrderUpdate(frappe.model.document.Document):
         )
         if not latest:
             frappe.db.set_value(
-                "Work Order", self.work_order,
+                "Property Work Order", self.work_order,
                 {"progress": 0, "last_update_on": None}, update_modified=False,
             )
             return
@@ -58,7 +58,7 @@ class WorkOrderUpdate(frappe.model.document.Document):
         row = latest[0]
         values = {"progress": flt(row.progress), "last_update_on": row.posted_on}
 
-        status = frappe.db.get_value("Work Order", self.work_order, "status")
+        status = frappe.db.get_value("Property Work Order", self.work_order, "status")
         if status not in ("Completed", "Cancelled"):
             if flt(row.progress) >= 100 or row.update_type == "Completed":
                 values["status"] = "Completed"
@@ -66,7 +66,7 @@ class WorkOrderUpdate(frappe.model.document.Document):
             elif status in ("Draft", "Assigned"):
                 values["status"] = "In Progress"
 
-        frappe.db.set_value("Work Order", self.work_order, values, update_modified=False)
+        frappe.db.set_value("Property Work Order", self.work_order, values, update_modified=False)
 
 
 def proof_files(update_name):
@@ -98,7 +98,7 @@ def post_update(work_order, progress=None, note=None, update_type="Progress"):
     ``/api/method/upload_file`` with ``doctype=Work Order Update`` and
     ``docname=`` the name returned here.
     """
-    frappe.has_permission("Work Order", "write", doc=work_order, throw=True)
+    frappe.has_permission("Property Work Order", "write", doc=work_order, throw=True)
 
     doc = frappe.get_doc(
         {
@@ -115,7 +115,7 @@ def post_update(work_order, progress=None, note=None, update_type="Progress"):
         "name": doc.name,
         "work_order": doc.work_order,
         "progress": doc.progress,
-        "work_order_status": frappe.db.get_value("Work Order", work_order, "status"),
+        "work_order_status": frappe.db.get_value("Property Work Order", work_order, "status"),
         "upload_to": "/api/method/upload_file",
         "upload_args": {
             "doctype": "Work Order Update",
@@ -128,7 +128,7 @@ def post_update(work_order, progress=None, note=None, update_type="Progress"):
 @frappe.whitelist()
 def updates(work_order):
     """Every update on a work order, newest first, with its proof."""
-    frappe.has_permission("Work Order", "read", doc=work_order, throw=True)
+    frappe.has_permission("Property Work Order", "read", doc=work_order, throw=True)
 
     rows = frappe.get_all(
         "Work Order Update",

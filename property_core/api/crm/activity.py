@@ -14,6 +14,7 @@ from property_core.api.utils import ok
 
 
 def _doc(doctype, name, ptype="read"):
+    doctype = base.real_doctype(doctype)
     if doctype not in ATTACHABLE:
         frappe.throw(_("{0} is not available through this API").format(doctype), frappe.PermissionError)
     doc = base.read_doc(doctype, name)
@@ -24,6 +25,7 @@ def _doc(doctype, name, ptype="read"):
 
 @frappe.whitelist()
 def add_comment(doctype, name, text):
+    doctype = base.real_doctype(doctype)
     doc = _doc(doctype, name)
     if not (text or "").strip():
         frappe.throw(_("Write something"))
@@ -33,6 +35,7 @@ def add_comment(doctype, name, text):
 
 @frappe.whitelist()
 def get_comments(doctype, name, limit=50):
+    doctype = base.real_doctype(doctype)
     _doc(doctype, name)
     rows = frappe.get_all(
         "Comment",
@@ -51,6 +54,7 @@ def get_comments(doctype, name, limit=50):
 def timeline(doctype, name, limit=50):
     """Comments, assignments, attachments, field changes and communications
     on the record, newest first."""
+    doctype = base.real_doctype(doctype)
     _doc(doctype, name)
     limit = int(limit or 50)
     events = []
@@ -105,6 +109,7 @@ def timeline(doctype, name, limit=50):
 @frappe.whitelist()
 def assign(doctype, name, user, note=None):
     """One working owner: earlier open assignments are released."""
+    doctype = base.real_doctype(doctype)
     _doc(doctype, name, "write")
     base.assign_to(doctype, name, user, note)
     return ok(data={"assigned_to": base.assignments(doctype, [name]).get(name, [])}, message=_("Assigned"))
@@ -112,6 +117,7 @@ def assign(doctype, name, user, note=None):
 
 @frappe.whitelist()
 def unassign(doctype, name, user):
+    doctype = base.real_doctype(doctype)
     from frappe.desk.form.assign_to import remove
 
     _doc(doctype, name, "write")
