@@ -201,6 +201,13 @@ after_migrate = [
     "property_core.property_commissions.payout.sync_sales_person_fields",
 ]
 
+# Online payment gateways (see property_core.property_core.payments). Another
+# app adds its own by appending a PaymentGateway subclass path here.
+property_payment_gateways = [
+    "property_core.property_core.payments.razorpay.RazorpayAdapter",
+    "property_core.property_core.payments.mswipe.MswipeAdapter",
+]
+
 # Called with the booking name whenever what a booking has collected changes
 # (a payment, a credit note, an invoice withdrawn). Other apps may add to it.
 property_booking_collection_changed = [

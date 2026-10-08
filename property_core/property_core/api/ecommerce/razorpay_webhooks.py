@@ -43,6 +43,10 @@ def handle_razorpay_webhook():
             _handle_payment_authorized(payload)
         elif event_type == "payment.captured":
             _handle_payment_captured(payload)
+        elif event_type == "payment_link.paid":
+            from property_core.property_core.payments.razorpay import handle_payment_link_paid
+
+            handle_payment_link_paid(payload)
         elif event_type == "payment.failed":
             _handle_payment_failed(payload)
         elif event_type in ("refund.created", "refund.processed"):

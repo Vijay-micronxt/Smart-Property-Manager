@@ -49,23 +49,27 @@ class RazorpayGateway:
         return response
 
     def create_payment_link(self, amount, currency, customer_email, customer_phone,
-                             description, order_id, callback_url=None, expires_by=None):
+                             description, order_id, callback_url=None, expires_by=None,
+                             accept_partial=True, notes=None, customer_name=None):
         amount_paise = int(float(amount))  # caller passes paise already
         payload = {
             "amount": amount_paise,
             "currency": currency or "INR",
-            "accept_partial": True,
-            "first_min_partial_amount": 100,
+            "accept_partial": bool(accept_partial),
             "description": description,
             "reference_id": order_id,
             "customer": {
-                "name": order_id,
+                "name": customer_name or order_id,
                 "email": customer_email or "",
                 "contact": customer_phone or "",
             },
+            "notify": {"sms": bool(customer_phone), "email": bool(customer_email)},
         }
+        if accept_partial:
+            payload["first_min_partial_amount"] = 100
+        if notes:
+            payload["notes"] = {k: str(v) for k, v in notes.items() if v}
         if callback_url:
-            payload["notify"] = {"sms": True, "email": True}
             payload["callback_url"] = callback_url
             payload["callback_method"] = "get"
         if expires_by:
@@ -459,14 +463,19 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None,
         or razorpay_payment_entry.razorpay_order_id
     )
     pe.reference_date = frappe.utils.today()
-    pe.append(
-        "references",
-        {
-            "reference_doctype": "Sales Invoice",
-            "reference_name": si_name,
-            "allocated_amount": razorpay_payment_entry.amount,
-        },
-    )
+    # The money is real whatever the invoice says now. If part of the invoice
+    # was settled some other way meanwhile, the excess stays on the customer as
+    # an advance instead of the receipt failing to post at all.
+    allocate = min(float(razorpay_payment_entry.amount), max(float(si.outstanding_amount), 0))
+    if allocate > 0:
+        pe.append(
+            "references",
+            {
+                "reference_doctype": "Sales Invoice",
+                "reference_name": si_name,
+                "allocated_amount": allocate,
+            },
+        )
     if frappe.db.has_column("Payment Entry", "custom_razorpay_payment_id"):
         pe.custom_razorpay_payment_id = razorpay_payment_entry.razorpay_payment_id
     if frappe.db.has_column("Payment Entry", "custom_razorpay_order_id"):
