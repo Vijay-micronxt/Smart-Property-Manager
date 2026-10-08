@@ -35,6 +35,13 @@ class PaymentPlan(Document):
         # instalment invoice without this gets silently skipped by the chaser.
         if invoice.meta.has_field("property_unit"):
             invoice.property_unit = unit.name
+        # A token or advance taken before this instalment was billed is set off
+        # against it on submit, instead of sitting unallocated on the customer
+        # while the same amount shows as due.
+        from property_core.property_core.utils import settings
+
+        if settings.get("auto_allocate_advances") and invoice.meta.has_field("allocate_advances_automatically"):
+            invoice.allocate_advances_automatically = 1
         invoice.append("items", {
             "item_code": item_code,
             "description": "{} — {} ({})".format(

@@ -136,18 +136,23 @@ def get_booking(name):
 
 
 @frappe.whitelist()
-def prefill(opportunity=None, property_unit=None, customer=None, lead=None, total_price=None, payment_plan_template=None):
+def prefill(opportunity=None, property_unit=None, customer=None, lead=None, total_price=None, payment_plan_template=None, booking_amount=None):
     """Everything a new-booking form should show filled in, before anything is
     saved: unit details and base price, the agreement value (negotiated
     opportunity amount, else base price), the payment plan that will apply
     (unit's, else property's), a suggested booking amount (the plan's first
     milestone) and the schedule the customer would sign up for.
 
-    Call it when the form opens and again whenever the unit or the agreement
-    value changes."""
+    Pass ``booking_amount`` once the user has typed one: the schedule then shows
+    it as the first instalment, with the earliest milestones reduced, exactly
+    as booking submit will create it.
+
+    Call it when the form opens and again whenever the unit, the agreement
+    value or the booking amount changes."""
     base.require_user()
     from property_core.property_core.crm.opportunity_events import resolve_unit
-    from property_core.property_core.utils.allocation_engine import DEFAULT_MILESTONES
+    from property_core.property_core.utils import settings
+    from property_core.property_core.utils.allocation_engine import DEFAULT_MILESTONES, build_schedule
 
     opp = None
     if opportunity:
@@ -177,14 +182,16 @@ def prefill(opportunity=None, property_unit=None, customer=None, lead=None, tota
         if template else DEFAULT_MILESTONES
     )
     booking_date = today()
+    # the suggestion is the first milestone; whatever the user enters wins
+    suggested = flt(value * flt(milestones[0]["percentage"]) / 100, 2) if milestones else 0
+    booking_amount = suggested if booking_amount in (None, "") else flt(booking_amount)
     schedule = [
-        {
-            "milestone": m["milestone"],
-            "percentage": flt(m["percentage"]),
-            "due_date": str(frappe.utils.add_months(booking_date, int(m["offset_months"] or 0))),
-            "amount": flt(value * flt(m["percentage"]) / 100, 2),
-        }
-        for m in milestones
+        dict(row, due_date=str(row["due_date"]))
+        for row in build_schedule(
+            value, milestones, booking_date,
+            booking_amount=booking_amount,
+            advance_first=settings.get("booking_amount_first_instalment"),
+        )
     ]
 
     return ok(
@@ -204,7 +211,8 @@ def prefill(opportunity=None, property_unit=None, customer=None, lead=None, tota
             "total_price_source": source,
             "discount": flt(base_price - value, 2) if base_price and value < base_price else 0,
             "payment_plan_template": template,
-            "booking_amount": schedule[0]["amount"] if schedule else 0,
+            "booking_amount": booking_amount,
+            "suggested_booking_amount": suggested,
             "booking_date": booking_date,
             "schedule": schedule,
             "customer": customer,

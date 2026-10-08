@@ -14,6 +14,24 @@
   "late_fee_grace_days",
   "late_fee_percentage",
   "late_fee_item_code",
+  "section_sale_payments",
+  "booking_amount_first_instalment",
+  "auto_allocate_advances",
+  "column_break_sale_payments",
+  "buyer_tds_account",
+  "buyer_tds_rate",
+  "buyer_tds_threshold",
+  "section_cancellation",
+  "cancellation_forfeit_basis",
+  "cancellation_forfeit_value",
+  "section_commission",
+  "commission_base",
+  "commission_expense_account",
+  "column_break_commission",
+  "commission_payable_account",
+  "commission_item",
+  "section_online_payments",
+  "payment_instructions",
   "section_notifications",
   "whatsapp_enabled"
  ],
@@ -84,6 +102,116 @@
    "description": "ERPNext Item used when generating late fee Sales Invoices"
   },
   {
+   "fieldname": "section_sale_payments",
+   "fieldtype": "Section Break",
+   "label": "Sale Payments"
+  },
+  {
+   "fieldname": "booking_amount_first_instalment",
+   "fieldtype": "Check",
+   "label": "Bill Booking Amount as First Instalment",
+   "default": "1",
+   "description": "The booking's Booking Amount becomes the first instalment, due on the booking date; the rest of the agreement value follows the payment plan template, earliest milestones reduced first. Off: the plan is the template alone and Booking Amount is informational."
+  },
+  {
+   "fieldname": "auto_allocate_advances",
+   "fieldtype": "Check",
+   "label": "Adjust Advances Against New Instalment Invoices",
+   "default": "1",
+   "description": "A token or advance already received from the customer (a Payment Entry not yet against any invoice) is set off against each instalment invoice as it is raised."
+  },
+  {
+   "fieldname": "column_break_sale_payments",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "buyer_tds_account",
+   "fieldtype": "Link",
+   "label": "Buyer TDS Receivable Account",
+   "options": "Account",
+   "description": "TDS the buyer deducts on property purchases (India: section 194-IA). A receipt recorded with a TDS amount closes the invoice in full and books the deducted part here, to be claimed against Form 16B."
+  },
+  {
+   "fieldname": "buyer_tds_rate",
+   "fieldtype": "Float",
+   "label": "Buyer TDS Rate (%)",
+   "default": "1"
+  },
+  {
+   "fieldname": "buyer_tds_threshold",
+   "fieldtype": "Currency",
+   "label": "Buyer TDS Threshold (Agreement Value)",
+   "default": "5000000",
+   "description": "TDS is suggested only for bookings whose agreement value is at least this much. 0 = every booking."
+  },
+  {
+   "fieldname": "section_cancellation",
+   "fieldtype": "Section Break",
+   "label": "Booking Cancellation"
+  },
+  {
+   "fieldname": "cancellation_forfeit_basis",
+   "fieldtype": "Select",
+   "label": "Forfeit on Cancellation",
+   "options": "None\nBooking Amount\nPercentage of Agreement Value\nPercentage of Amount Paid\nFixed Amount",
+   "default": "Booking Amount",
+   "description": "How much of what the customer paid is kept when a booking is cancelled. Never more than they actually paid."
+  },
+  {
+   "fieldname": "cancellation_forfeit_value",
+   "fieldtype": "Float",
+   "label": "Forfeit Percentage / Amount",
+   "depends_on": "eval:['Percentage of Agreement Value','Percentage of Amount Paid','Fixed Amount'].includes(doc.cancellation_forfeit_basis)"
+  },
+  {
+   "fieldname": "section_commission",
+   "fieldtype": "Section Break",
+   "label": "Sales Commission"
+  },
+  {
+   "fieldname": "commission_base",
+   "fieldtype": "Select",
+   "label": "Commission Calculated On",
+   "options": "Agreement Value\nBooking Amount",
+   "default": "Agreement Value",
+   "description": "The amount a percentage Commission Rule applies to."
+  },
+  {
+   "fieldname": "commission_expense_account",
+   "fieldtype": "Link",
+   "label": "Commission Expense Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "column_break_commission",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "commission_payable_account",
+   "fieldtype": "Link",
+   "label": "Commission Payable Account (Employees)",
+   "options": "Account",
+   "description": "Settlements for employees are booked by Journal Entry: expense debited, this account credited against the Employee."
+  },
+  {
+   "fieldname": "commission_item",
+   "fieldtype": "Link",
+   "label": "Brokerage Item (Channel Partners)",
+   "options": "Item",
+   "description": "Settlements for channel partners raise a draft Purchase Invoice with this item; TDS (194H) and GST come from the Supplier and the bill."
+  },
+  {
+   "fieldname": "section_online_payments",
+   "fieldtype": "Section Break",
+   "label": "Online Payments"
+  },
+  {
+   "fieldname": "payment_instructions",
+   "fieldtype": "Small Text",
+   "label": "Payment Instructions",
+   "description": "Shown to customers and staff when no payment gateway is enabled -- bank account, UPI ID, cheque in favour of."
+  },
+  {
    "fieldname": "section_notifications",
    "fieldtype": "Section Break",
    "label": "Notifications"
@@ -98,7 +226,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-10-08 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Property Core Settings",

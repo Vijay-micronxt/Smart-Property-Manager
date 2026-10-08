@@ -355,6 +355,7 @@ def record_payment(
     reference_date=None,
     remarks=None,
     submit=1,
+    tds_amount=None,
 ):
     """Money received. Three ways to aim it:
 
@@ -365,11 +366,24 @@ def record_payment(
 
     Bank / UPI / cheque modes need ``reference_no`` and ``reference_date``
     (ERPNext refuses a bank receipt without them).
+
+    ``tds_amount`` -- TDS the buyer deducted (India 194-IA). ``amount`` is what
+    actually reached the bank; the invoice is settled for amount + TDS and the
+    TDS goes to the Buyer TDS Receivable Account in Property Core Settings.
+    ``tds_suggestion`` works out the split.
     """
     _require("Payment Entry", "create")
     amount = flt(amount)
+    tds_amount = flt(tds_amount)
     if amount <= 0:
         frappe.throw(_("Amount must be more than zero"))
+    tds_account = None
+    if tds_amount:
+        from property_core.property_core.utils import settings
+
+        tds_account = settings.get("buyer_tds_account")
+        if not tds_account:
+            frappe.throw(_("Set Buyer TDS Receivable Account in Property Core Settings to record TDS"))
 
     targets = []  # [(invoice, outstanding)]
     if invoice:
@@ -413,7 +427,15 @@ def record_payment(
     if remarks:
         pe.remarks = remarks
 
-    left = amount
+    if tds_amount:
+        pe.append("deductions", {
+            "account": tds_account,
+            "cost_center": frappe.get_cached_value("Company", company, "cost_center"),
+            "amount": tds_amount,
+            "description": _("TDS deducted by buyer"),
+        })
+
+    left = amount + tds_amount
     for name, outstanding in targets:
         if left <= 0:
             break
@@ -423,6 +445,13 @@ def record_payment(
             {"reference_doctype": "Sales Invoice", "reference_name": name, "allocated_amount": allocate},
         )
         left -= allocate
+
+    if not targets and pe.meta.has_field("custom_skip_auto_reconcile"):
+        # an advance on purpose (a token before the booking exists) must stay an
+        # advance -- auto-reconciliation would spend it on whatever invoice of
+        # the customer happens to be open, and the booking amount it was meant
+        # for would then show unpaid
+        pe.custom_skip_auto_reconcile = 1
 
     pe.setup_party_account_field()
     pe.set_missing_values()
@@ -443,6 +472,52 @@ def record_payment(
         },
         message=_("Payment {0} recorded").format(pe.name),
     )
+
+
+@frappe.whitelist()
+def tds_suggestion(invoice=None, booking=None):
+    """How a receipt splits when the buyer deducts TDS: on an outstanding of X,
+    the bank gets X less rate%, and the rest is TDS. Applies only when the
+    booking's agreement value reaches the threshold in settings."""
+    from property_core.property_core.utils import settings
+
+    rate = settings.get("buyer_tds_rate")
+    threshold = settings.get("buyer_tds_threshold")
+    if invoice:
+        inv = base.read_doc("Sales Invoice", invoice)
+        outstanding = flt(inv.outstanding_amount)
+        booking = booking or frappe.db.get_value("Payment Plan", {"invoice": invoice}, "booking")
+    elif booking:
+        base.read_doc("Property Booking", booking)
+        # instalments only -- 194-IA is on the property price, not maintenance
+        plan_invoices = [
+            i for i in frappe.get_all("Payment Plan", filters={"booking": booking}, pluck="invoice") if i
+        ]
+        outstanding = sum(
+            flt(r.outstanding_amount)
+            for r in frappe.get_all(
+                "Sales Invoice",
+                filters={"name": ["in", plan_invoices or [""]], "docstatus": 1},
+                fields=["outstanding_amount"],
+            )
+        )
+    else:
+        frappe.throw(_("Give an invoice or a booking"), frappe.MandatoryError)
+
+    agreement_value = flt(frappe.db.get_value("Property Booking", booking, "total_price")) if booking else 0
+    applies = bool(settings.get("buyer_tds_account")) and rate > 0 and (
+        not threshold or agreement_value >= threshold
+    )
+    tds = flt(outstanding * rate / 100, 2) if applies else 0
+    return ok(data={
+        "applies": applies,
+        "rate": rate,
+        "threshold": threshold,
+        "agreement_value": agreement_value,
+        "outstanding": flt(outstanding, 2),
+        "tds_amount": tds,
+        "amount": flt(outstanding - tds, 2),
+    })
 
 
 @frappe.whitelist()
