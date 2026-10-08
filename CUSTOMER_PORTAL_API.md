@@ -20,7 +20,7 @@ Server Scripts, so the whole surface is versioned with the code.
 | **Guest access** | None. Unauthenticated calls get HTTP 403 |
 
 ```
-Authorization: token d97e0c3b2804bc0:3371737aaf766b0
+Authorization: token <api_key>:<api_secret>
 Content-Type: application/x-www-form-urlencoded
 ```
 
@@ -34,7 +34,7 @@ curl -X POST "$BASE/api/method/property_core.api.auth.login" \
 ```json
 {"message": {"status": "ok", "message": null,
  "data": {"user": "portal.test@example.com", "full_name": "Portal Test Customer",
-          "api_key": "d97e0c3b2804bc0", "api_secret": "3371737aaf766b0"}}}
+          "api_key": "<api_key>", "api_secret": "<api_secret>"}}}
 ```
 
 Auth endpoints (`property_core.api.auth.*`): `login`, `get_token`, `logout`,
