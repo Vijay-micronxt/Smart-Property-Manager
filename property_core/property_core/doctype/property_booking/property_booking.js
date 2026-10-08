@@ -32,6 +32,10 @@ frappe.ui.form.on("Property Booking", {
 				);
 			}
 		}
+
+		if (frm.doc.docstatus === 2 && frm.doc.refund_status === "Refund Due") {
+			frm.add_custom_button(__("Make Refund"), () => make_refund(frm));
+		}
 	},
 
 	property_unit(frm) {
@@ -46,4 +50,41 @@ frappe.ui.form.on("Property Booking", {
 
 function create_customer(frm) {
 	property_core.follow_up.create_customer(frm.doc.lead);
+}
+
+function make_refund(frm) {
+	const d = new frappe.ui.Dialog({
+		title: __("Refund on Cancellation"),
+		fields: [
+			{
+				fieldname: "amount",
+				fieldtype: "Currency",
+				label: __("Refund Amount"),
+				default: frm.doc.cancellation_refund,
+				reqd: 1,
+				description: __("Collected {0}, forfeited {1}", [
+					format_currency(frm.doc.cancellation_collected),
+					format_currency(frm.doc.cancellation_forfeit),
+				]),
+			},
+			{ fieldname: "mode_of_payment", fieldtype: "Link", options: "Mode of Payment", label: __("Mode of Payment"), reqd: 1 },
+			{ fieldname: "posting_date", fieldtype: "Date", label: __("Date"), default: frappe.datetime.get_today() },
+			{ fieldname: "reference_no", fieldtype: "Data", label: __("Cheque / UTR No") },
+			{ fieldname: "reference_date", fieldtype: "Date", label: __("Cheque / UTR Date") },
+		],
+		primary_action_label: __("Refund"),
+		primary_action(values) {
+			frappe.call({
+				method: "property_core.property_core.utils.cancellation.make_refund",
+				args: { booking: frm.doc.name, ...values },
+				freeze: true,
+				callback(r) {
+					d.hide();
+					frappe.show_alert({ message: __("Refunded by {0}", [r.message.payment_entry]), indicator: "green" });
+					frm.reload_doc();
+				},
+			});
+		},
+	});
+	d.show();
 }

@@ -5,6 +5,7 @@ from frappe.model.mapper import get_mapped_doc
 
 from property_core.property_core.utils.allocation_engine import (
     generate_payment_plan,
+    invoice_due_instalments,
     resolve_total_price,
 )
 from property_core.property_core.utils.availability_engine import (
@@ -39,6 +40,7 @@ class PropertyBooking(Document):
     def on_submit(self):
         reserve_unit(self.property_unit, self.customer)
         generate_payment_plan(self)
+        invoice_due_instalments(self.name)
         ensure_booking_folder(self)
         self.close_opportunity()
         # Again on submit, not just after_insert: when the customer was created
@@ -48,11 +50,18 @@ class PropertyBooking(Document):
         self.start_maintenance()
 
     def on_cancel(self):
+        # A settled commission must not pin the booking: cancelling is what
+        # turns that commission into a clawback.
+        self.ignore_linked_doctypes = ("Commission Settlement",)
         # db_set, not a plain assignment: the document is already written by the
         # time on_cancel runs, so a cancelled booking kept showing "Confirmed"
         # in every list and on the portal.
         self.db_set("booking_status", "Cancelled")
         release_unit(self.property_unit)
+
+        from property_core.property_core.utils.cancellation import close_out
+
+        close_out(self)
 
     # ------------------------------------------------------------------ #
 

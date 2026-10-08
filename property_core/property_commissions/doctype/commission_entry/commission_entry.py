@@ -1,6 +1,6 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import getdate
+from frappe.utils import flt, getdate
 
 
 class CommissionEntry(Document):
@@ -8,7 +8,12 @@ class CommissionEntry(Document):
 
 
 def create_commission_entry(doc, method=None):
-    """Hook: auto-create Commission Entry when a Property Booking is submitted."""
+    """Hook: auto-create Commission Entry when a Property Booking is submitted.
+
+    A percentage rule applies to the agreement value by default (Property Core
+    Settings -> Commission Calculated On): a broker's 2% is 2% of the deal, not
+    of the token the customer put down.
+    """
     if not doc.sales_person:
         return
 
@@ -16,10 +21,17 @@ def create_commission_entry(doc, method=None):
     if not rule:
         return
 
-    if rule.commission_type == "Percentage":
-        amount = (doc.booking_amount or 0) * rule.commission_rate / 100
+    from property_core.property_core.utils import settings
+
+    if settings.get("commission_base") == "Booking Amount":
+        base_amount = flt(doc.booking_amount)
     else:
-        amount = rule.commission_rate
+        base_amount = flt(doc.total_price)
+
+    if rule.commission_type == "Percentage":
+        amount = base_amount * flt(rule.commission_rate) / 100
+    else:
+        amount = flt(rule.commission_rate)
 
     entry = frappe.new_doc("Commission Entry")
     entry.booking = doc.name
@@ -28,23 +40,87 @@ def create_commission_entry(doc, method=None):
     entry.customer = doc.customer
     entry.commission_date = doc.booking_date
     entry.booking_amount = doc.booking_amount
+    entry.base_amount = base_amount
     entry.commission_type = rule.commission_type
     entry.commission_rate = rule.commission_rate
-    entry.commission_amount = amount
+    entry.commission_amount = flt(amount, 2)
     entry.commission_rule = rule.name
     entry.status = "Pending"
     entry.insert(ignore_permissions=True)
 
+    refresh_for_booking(doc.name)
+
 
 def cancel_commission_entry(doc, method=None):
-    """Hook: cancel Commission Entry when a Property Booking is cancelled."""
+    """Hook: a cancelled booking earns nothing more; commission already paid on
+    it is to be recovered (status Clawback, negative Payable Now) through the
+    sales person's next settlement."""
+    refresh_for_booking(doc.name)
+
+
+def refresh_for_booking(booking):
+    """Recompute how much of each entry on the booking is payable.
+
+    Called on booking submit / cancel and whenever the booking's collections
+    change (property_booking_collection_changed hook)."""
     entries = frappe.get_all(
         "Commission Entry",
-        filters={"booking": doc.name, "status": "Pending"},
-        fields=["name"],
+        filters={"booking": booking, "status": ["!=", "Cancelled"]},
+        fields=["name", "commission_amount", "commission_rule", "settled_amount"],
     )
+    if not entries:
+        return
+
+    docstatus, total_price = frappe.db.get_value("Property Booking", booking, ["docstatus", "total_price"])
+    paid = sum(
+        flt(r) for r in frappe.get_all("Payment Plan", filters={"booking": booking}, pluck="paid_amount")
+    )
+    paid_percent = flt(paid * 100 / flt(total_price), 4) if flt(total_price) else 0
+
     for e in entries:
-        frappe.db.set_value("Commission Entry", e.name, "status", "Cancelled", update_modified=False)
+        amount = flt(e.commission_amount)
+        settled = flt(e.settled_amount)
+        if docstatus == 2:
+            released = 0
+        else:
+            released = flt(amount * _release_percent(e.commission_rule, paid_percent) / 100, 2)
+        payable = flt(released - settled, 2)
+
+        if docstatus == 2:
+            status = "Clawback" if settled > 0.005 else "Cancelled"
+        elif settled >= amount - 0.005 and amount > 0:
+            status = "Settled"
+        elif settled > 0.005:
+            status = "Partly Settled"
+        else:
+            status = "Pending"
+
+        frappe.db.set_value(
+            "Commission Entry", e.name,
+            {
+                "customer_paid_percent": min(paid_percent, 100),
+                "released_amount": released,
+                "payable_amount": payable,
+                "status": status,
+            },
+            update_modified=False,
+        )
+
+
+def _release_percent(rule, paid_percent):
+    stages = frappe.get_all(
+        "Commission Release Stage",
+        filters={"parent": rule, "parenttype": "Commission Rule"},
+        fields=["customer_paid_percent", "release_percent"],
+        order_by="customer_paid_percent asc",
+    ) if rule else []
+    if not stages:
+        return 100
+    released = 0
+    for stage in stages:
+        if paid_percent + 0.0001 >= flt(stage.customer_paid_percent):
+            released = flt(stage.release_percent)
+    return released
 
 
 def _find_commission_rule(booking):

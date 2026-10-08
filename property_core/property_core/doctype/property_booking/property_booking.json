@@ -24,6 +24,14 @@
   "opportunity",
   "lead",
   "booking_amount",
+  "section_cancellation",
+  "cancellation_collected",
+  "cancellation_forfeit",
+  "cancellation_refund",
+  "column_break_cancellation",
+  "refund_status",
+  "refund_credit_note",
+  "refund_payment_entry",
   "section_notes",
   "notes",
   "drive_folder_id",
@@ -157,6 +165,68 @@
    "reqd": 1
   },
   {
+   "fieldname": "section_cancellation",
+   "fieldtype": "Section Break",
+   "label": "Cancellation & Refund",
+   "collapsible": 1,
+   "depends_on": "eval:doc.docstatus==2"
+  },
+  {
+   "fieldname": "cancellation_collected",
+   "fieldtype": "Currency",
+   "label": "Collected on Instalments",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "cancellation_forfeit",
+   "fieldtype": "Currency",
+   "label": "Forfeited",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "cancellation_refund",
+   "fieldtype": "Currency",
+   "label": "Refund Due",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "column_break_cancellation",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "refund_status",
+   "fieldtype": "Select",
+   "label": "Refund Status",
+   "options": "\nNo Refund\nRefund Due\nRefunded",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "refund_credit_note",
+   "fieldtype": "Link",
+   "label": "Refund Credit Note",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "refund_payment_entry",
+   "fieldtype": "Link",
+   "label": "Refund Payment",
+   "options": "Payment Entry",
+   "read_only": 1,
+   "no_copy": 1,
+   "allow_on_submit": 1
+  },
+  {
    "fieldname": "section_notes",
    "fieldtype": "Section Break",
    "label": "Notes"
@@ -186,7 +256,7 @@
   }
  ],
  "links": [],
- "modified": "2024-01-01 00:00:00.000000",
+ "modified": "2026-10-08 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Property Booking",

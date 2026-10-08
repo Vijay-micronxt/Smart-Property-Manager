@@ -291,9 +291,16 @@ Sales Invoices the daily job stamps with `maintenance_period`.
 - `billing.utility_bills` — bills with the `meter` they were read from.
 - `billing.rent_history` — Rent Invoice Log rows with `invoice_details`.
 
-**No payment gateway endpoint is exposed here.** Razorpay/Mswipe/Paytm methods
-exist in the app for desk and webhook flows; a portal "pay now" call is
-deliberately not part of this API yet.
+**Pay now** is `property_core.api.payments` (outside `api.portal`, shared with
+the CRM): `options?target=<booking or instalment>` says whether online payment
+is on, what is due and the bank / UPI instructions to show if it is not;
+`start` (mode `checkout`) returns the gateway widget options; `confirm` records
+the result. A customer can only pay their own bookings. See
+`PAYMENT_INTEGRATION.md` section 0.
+
+Instalments carry `paid_amount` and `outstanding_amount` (part payments
+included); a booking's `paid_amount` / `outstanding` are their totals, across
+the whole agreement value.
 
 ---
 

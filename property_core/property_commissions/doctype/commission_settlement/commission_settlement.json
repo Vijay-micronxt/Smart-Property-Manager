@@ -12,6 +12,13 @@
     "column_break_1",
     "total_amount",
     "payment_entry",
+    "section_accounting",
+    "payee_type",
+    "employee",
+    "supplier",
+    "column_break_accounting",
+    "journal_entry",
+    "purchase_invoice",
     "section_entries",
     "commission_entries",
     "section_notes",
@@ -45,7 +52,7 @@
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "Status",
-      "options": "Draft\nSubmitted\nPaid",
+      "options": "Draft\nSubmitted\nPaid\nCancelled",
       "default": "Draft",
       "read_only": 1,
       "in_list_view": 1,
@@ -68,6 +75,53 @@
       "label": "Payment Entry",
       "options": "Payment Entry",
       "read_only": 1
+    },
+    {
+      "fieldname": "section_accounting",
+      "fieldtype": "Section Break",
+      "label": "Accounting",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "payee_type",
+      "fieldtype": "Select",
+      "label": "Payee Type",
+      "options": "\nEmployee\nChannel Partner",
+      "read_only": 1
+    },
+    {
+      "fieldname": "employee",
+      "fieldtype": "Link",
+      "label": "Employee",
+      "options": "Employee",
+      "read_only": 1
+    },
+    {
+      "fieldname": "supplier",
+      "fieldtype": "Link",
+      "label": "Supplier",
+      "options": "Supplier",
+      "read_only": 1
+    },
+    {
+      "fieldname": "column_break_accounting",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "journal_entry",
+      "fieldtype": "Link",
+      "label": "Journal Entry",
+      "options": "Journal Entry",
+      "read_only": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "purchase_invoice",
+      "fieldtype": "Link",
+      "label": "Purchase Invoice",
+      "options": "Purchase Invoice",
+      "read_only": 1,
+      "no_copy": 1
     },
     {
       "fieldname": "section_entries",
@@ -93,7 +147,7 @@
   ],
   "is_submittable": 1,
   "links": [],
-  "modified": "2024-01-01 00:00:00.000000",
+  "modified": "2026-10-08 12:00:00.000000",
   "modified_by": "Administrator",
   "module": "Property Commissions",
   "name": "Commission Settlement",

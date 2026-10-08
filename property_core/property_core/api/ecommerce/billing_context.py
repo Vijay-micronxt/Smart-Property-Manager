@@ -28,7 +28,7 @@ PAYABLE_DOCTYPES = (
 
 PROPERTY_DOCTYPES = ("Property Booking", "Payment Plan")
 
-UNPAID_STATUSES = ("Pending", "Invoiced", "Overdue")
+UNPAID_STATUSES = ("Pending", "Invoiced", "Partly Paid", "Overdue")
 
 
 def get_doctype(doc_name):

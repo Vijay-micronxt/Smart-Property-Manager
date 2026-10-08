@@ -50,7 +50,8 @@ REGISTRY = {
     ],
     "Payment Plan": [
         "name", "booking", "milestone", "due_date", "amount", "invoice",
-        "payment_status", "late_fee_applied", "late_fee_amount",
+        "payment_status", "paid_amount", "outstanding_amount",
+        "late_fee_applied", "late_fee_amount",
     ],
     "Property Allocation": [
         "name", "property_unit", "project", "allocation_type", "status",

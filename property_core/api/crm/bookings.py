@@ -136,18 +136,23 @@ def get_booking(name):
 
 
 @frappe.whitelist()
-def prefill(opportunity=None, property_unit=None, customer=None, lead=None, total_price=None, payment_plan_template=None):
+def prefill(opportunity=None, property_unit=None, customer=None, lead=None, total_price=None, payment_plan_template=None, booking_amount=None):
     """Everything a new-booking form should show filled in, before anything is
     saved: unit details and base price, the agreement value (negotiated
     opportunity amount, else base price), the payment plan that will apply
     (unit's, else property's), a suggested booking amount (the plan's first
     milestone) and the schedule the customer would sign up for.
 
-    Call it when the form opens and again whenever the unit or the agreement
-    value changes."""
+    Pass ``booking_amount`` once the user has typed one: the schedule then shows
+    it as the first instalment, with the earliest milestones reduced, exactly
+    as booking submit will create it.
+
+    Call it when the form opens and again whenever the unit, the agreement
+    value or the booking amount changes."""
     base.require_user()
     from property_core.property_core.crm.opportunity_events import resolve_unit
-    from property_core.property_core.utils.allocation_engine import DEFAULT_MILESTONES
+    from property_core.property_core.utils import settings
+    from property_core.property_core.utils.allocation_engine import DEFAULT_MILESTONES, build_schedule
 
     opp = None
     if opportunity:
@@ -177,14 +182,16 @@ def prefill(opportunity=None, property_unit=None, customer=None, lead=None, tota
         if template else DEFAULT_MILESTONES
     )
     booking_date = today()
+    # the suggestion is the first milestone; whatever the user enters wins
+    suggested = flt(value * flt(milestones[0]["percentage"]) / 100, 2) if milestones else 0
+    booking_amount = suggested if booking_amount in (None, "") else flt(booking_amount)
     schedule = [
-        {
-            "milestone": m["milestone"],
-            "percentage": flt(m["percentage"]),
-            "due_date": str(frappe.utils.add_months(booking_date, int(m["offset_months"] or 0))),
-            "amount": flt(value * flt(m["percentage"]) / 100, 2),
-        }
-        for m in milestones
+        dict(row, due_date=str(row["due_date"]))
+        for row in build_schedule(
+            value, milestones, booking_date,
+            booking_amount=booking_amount,
+            advance_first=settings.get("booking_amount_first_instalment"),
+        )
     ]
 
     return ok(
@@ -204,7 +211,8 @@ def prefill(opportunity=None, property_unit=None, customer=None, lead=None, tota
             "total_price_source": source,
             "discount": flt(base_price - value, 2) if base_price and value < base_price else 0,
             "payment_plan_template": template,
-            "booking_amount": schedule[0]["amount"] if schedule else 0,
+            "booking_amount": booking_amount,
+            "suggested_booking_amount": suggested,
             "booking_date": booking_date,
             "schedule": schedule,
             "customer": customer,
@@ -283,10 +291,33 @@ def cancel_booking(name, reason=None):
     doc.cancel()
     if reason:
         doc.add_comment("Comment", text=reason)
+    doc.reload()
     return ok(
-        data={"name": name, "docstatus": doc.docstatus, "booking_status": doc.booking_status},
+        data={
+            "name": name,
+            "docstatus": doc.docstatus,
+            "booking_status": doc.booking_status,
+            "collected": doc.cancellation_collected,
+            "forfeit": doc.cancellation_forfeit,
+            "refund": doc.cancellation_refund,
+            "refund_status": doc.refund_status,
+        },
         message=_("Booking cancelled"),
     )
+
+
+@frappe.whitelist()
+def refund(name, mode_of_payment, amount=None, posting_date=None, reference_no=None, reference_date=None):
+    """Pay back a cancelled booking: credit note + Payment Entry (type Pay).
+    ``amount`` defaults to the refund worked out on cancel."""
+    from property_core.property_core.utils.cancellation import make_refund
+
+    base.read_doc("Property Booking", name)
+    result = make_refund(
+        name, mode_of_payment, posting_date=posting_date, reference_no=reference_no,
+        reference_date=reference_date, amount=amount,
+    )
+    return ok(data=result, message=_("Refund {0} recorded").format(result["payment_entry"]))
 
 
 @frappe.whitelist()
@@ -309,6 +340,8 @@ def payment_plan_rows(booking):
             "amount",
             "invoice",
             "payment_status",
+            "paid_amount",
+            "outstanding_amount",
             "late_fee_applied",
             "late_fee_amount",
         ],
@@ -325,11 +358,11 @@ def payment_plan_rows(booking):
         ):
             outstanding[invoice.name] = invoice
 
+    # paid / outstanding are kept on the instalment itself (plan_status), which
+    # stays right after the invoice is withdrawn on a cancelled booking
     for row in rows:
         invoice = outstanding.get(row.invoice) or {}
         row["invoice_status"] = invoice.get("status")
-        row["outstanding_amount"] = flt(invoice.get("outstanding_amount"), 2)
-        row["paid_amount"] = flt(flt(invoice.get("grand_total")) - flt(invoice.get("outstanding_amount")), 2)
 
     return base.serialize(rows)
 

@@ -88,13 +88,13 @@ def _milestone_charges(customer, property_unit=None):
     unit_by_booking = {b.name: b.property_unit for b in bookings}
     rows = get_list(
         "Payment Plan",
-        {"booking": ["in", list(unit_by_booking)]},
+        {"booking": ["in", list(unit_by_booking)], "payment_status": ["!=", "Cancelled"]},
         order_by="due_date asc",
     )
 
     out = []
     for row in rows:
-        outstanding = 0 if row.get("payment_status") == "Paid" else flt(row.get("amount"))
+        outstanding = 0 if row.get("payment_status") == "Paid" else flt(row.get("outstanding_amount"))
         out.append({
             "charge_type": "Booking Milestone",
             "reference_doctype": "Payment Plan",
@@ -374,16 +374,21 @@ def payment_schedule(booking=None):
     if not bookings:
         return ok(data={"schedule": [], "total": 0})
 
-    rows = get_list("Payment Plan", {"booking": ["in", bookings]}, order_by="due_date asc")
+    rows = get_list(
+        "Payment Plan",
+        {"booking": ["in", bookings], "payment_status": ["!=", "Cancelled"]},
+        order_by="due_date asc",
+    )
     for row in rows:
         paid = row.get("payment_status") == "Paid"
-        row["status"] = "Paid" if paid else due_status(row.get("due_date"), flt(row.get("amount")))
+        row["status"] = "Paid" if paid else due_status(row.get("due_date"), flt(row.get("outstanding_amount")))
 
     return ok(data={
         "schedule": rows,
         "total": len(rows),
         "total_amount": sum(flt(r.get("amount")) for r in rows),
-        "total_unpaid": sum(flt(r.get("amount")) for r in rows if r["status"] != "Paid"),
+        "total_paid": sum(flt(r.get("paid_amount")) for r in rows),
+        "total_unpaid": sum(flt(r.get("outstanding_amount")) for r in rows if r["status"] != "Paid"),
     })
 
 
