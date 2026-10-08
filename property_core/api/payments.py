@@ -39,6 +39,8 @@ from property_core.property_core.utils import settings
 
 @frappe.whitelist()
 def options(target=None):
+    """Which gateways are enabled (and their modes), the payment instructions
+    to show when none is, and -- with ``target`` -- what is due on it now."""
     enabled = gateways.enabled_gateways()
     data = {
         "gateways": [{"name": g.name, "modes": list(g.modes)} for g in enabled],
@@ -58,6 +60,10 @@ def options(target=None):
 
 @frappe.whitelist(methods=["POST"])
 def start(target, amount=None, mode="checkout", gateway=None):
+    """Start an online payment on a booking (its next unpaid instalment), an
+    instalment or an invoice. ``mode=link`` returns a hosted URL and share text;
+    ``mode=checkout`` returns the options for the gateway's in-page widget.
+    ``amount`` defaults to, and may not exceed, what is due."""
     if mode not in ("checkout", "link"):
         frappe.throw(_("mode must be checkout or link"))
     ctx = _context(target)
@@ -91,6 +97,8 @@ def start(target, amount=None, mode="checkout", gateway=None):
 
 @frappe.whitelist(methods=["POST"])
 def confirm(gateway, payload):
+    """Hand back the checkout widget's response, as-is. Verifies it with the
+    gateway and records the Payment Entry."""
     if isinstance(payload, str):
         payload = json.loads(payload)
     gw = gateways.get_gateway(gateway, "checkout")
@@ -99,6 +107,7 @@ def confirm(gateway, payload):
 
 @frappe.whitelist()
 def status(target):
+    """What is still due on ``target`` -- poll this after sending a link."""
     ctx = _context(target, raise_invoice=False)
     return ok(data={"target": ctx.target, "invoice": ctx.invoice, "description": ctx.description,
                     "due": ctx.due, "paid": ctx.due <= 0.005})
