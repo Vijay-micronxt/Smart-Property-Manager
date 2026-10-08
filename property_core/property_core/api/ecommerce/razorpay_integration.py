@@ -487,18 +487,10 @@ def create_payment_entry_from_razorpay(razorpay_payment_entry, system_user=None,
 # ─── Internal utilities ───────────────────────────────────────────────────────
 
 def mark_payment_plan_paid(si_name):
-    """Mark any Payment Plan linked to this SI as Paid once the SI is fully settled."""
-    if not si_name:
-        return
-    outstanding = frappe.db.get_value("Sales Invoice", si_name, "outstanding_amount")
-    if outstanding is not None and float(outstanding) <= 0:
-        plans = frappe.get_all(
-            "Payment Plan",
-            filters={"invoice": si_name, "payment_status": ["!=", "Paid"]},
-            pluck="name",
-        )
-        for plan_name in plans:
-            frappe.db.set_value("Payment Plan", plan_name, "payment_status", "Paid")
+    """Kept for callers outside this app; the Payment Entry hook already does this."""
+    from property_core.property_core.utils.plan_status import sync_invoice
+
+    sync_invoice(si_name)
 
 
 def _get_doctype(doc_name):

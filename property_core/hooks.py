@@ -77,6 +77,7 @@ scheduler_events = {
         "property_core.property_core.utils.billing_engine.run_daily_billing",
         "property_core.property_core.utils.payment_plan_billing.run_daily_payment_plan_billing",
         "property_core.property_operations.utils.maintenance_billing.run_daily_maintenance_billing",
+        "property_core.property_core.utils.plan_status.run_daily_sync",
         "property_core.property_core.notifications.payment_reminders.run_daily_payment_reminders",
         "property_core.property_core.notifications.lead_followup.run_daily_lead_follow_ups",
         "property_core.property_core.notifications.dispatcher.retry_failed",
@@ -103,11 +104,24 @@ doc_events = {
         "on_update": "property_core.property_operations.doctype.work_order.work_order.on_update",
     },
     "Sales Invoice": {
-        "on_submit": "property_core.property_core.notifications.invoice.on_submit",
+        "on_submit": [
+            "property_core.property_core.notifications.invoice.on_submit",
+            "property_core.property_core.utils.plan_status.on_sales_invoice",
+        ],
+        "on_cancel": "property_core.property_core.utils.plan_status.on_sales_invoice",
     },
     "Payment Entry": {
         "validate": "property_core.property_core.notifications.receipts.validate",
-        "on_submit": "property_core.property_core.notifications.receipts.on_submit",
+        "on_submit": [
+            "property_core.property_core.notifications.receipts.on_submit",
+            "property_core.property_core.utils.plan_status.on_payment_entry",
+        ],
+        "on_cancel": "property_core.property_core.utils.plan_status.on_payment_entry",
+        "on_update_after_submit": "property_core.property_core.utils.plan_status.on_payment_entry",
+    },
+    "Journal Entry": {
+        "on_submit": "property_core.property_core.utils.plan_status.on_journal_entry",
+        "on_cancel": "property_core.property_core.utils.plan_status.on_journal_entry",
     },
     "Lead": {
         "validate": "property_core.property_core.crm.lead_events.validate",

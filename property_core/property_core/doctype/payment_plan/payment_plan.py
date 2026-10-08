@@ -59,6 +59,11 @@ class PaymentPlan(Document):
         self.db_set("invoice", invoice.name)
         self.db_set("payment_status", "Invoiced")
 
+        # advances already on the customer may have settled it on submit
+        from property_core.property_core.utils.plan_status import sync_invoice
+
+        sync_invoice(invoice.name)
+
         return invoice.name
 
 

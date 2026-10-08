@@ -76,4 +76,5 @@ def generate_payment_plan(booking_doc):
         pp.due_date = add_months(base_date, item["offset_months"])
         pp.amount = round(total_price * item["percentage"] / 100, 2)
         pp.payment_status = "Pending"
+        pp.outstanding_amount = pp.amount
         pp.insert(ignore_permissions=True)

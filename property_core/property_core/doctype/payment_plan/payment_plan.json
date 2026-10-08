@@ -13,6 +13,8 @@
     "column_break_1",
     "invoice",
     "payment_status",
+    "paid_amount",
+    "outstanding_amount",
     "section_late_fee",
     "late_fee_applied",
     "late_fee_amount",
@@ -70,10 +72,26 @@
       "fieldname": "payment_status",
       "fieldtype": "Select",
       "label": "Payment Status",
-      "options": "Pending\nInvoiced\nPaid\nOverdue",
+      "options": "Pending\nInvoiced\nPartly Paid\nPaid\nOverdue\nCancelled",
       "default": "Pending",
       "in_list_view": 1,
-      "in_standard_filter": 1
+      "in_standard_filter": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "paid_amount",
+      "fieldtype": "Currency",
+      "label": "Paid Amount",
+      "read_only": 1,
+      "no_copy": 1
+    },
+    {
+      "fieldname": "outstanding_amount",
+      "fieldtype": "Currency",
+      "label": "Outstanding Amount",
+      "read_only": 1,
+      "no_copy": 1,
+      "in_list_view": 1
     },
     {
       "fieldname": "section_late_fee",
@@ -103,7 +121,7 @@
     }
   ],
   "links": [],
-  "modified": "2024-01-01 00:00:00.000000",
+  "modified": "2026-10-08 12:00:00.000000",
   "modified_by": "Administrator",
   "module": "Property Core",
   "name": "Payment Plan",

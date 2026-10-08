@@ -117,20 +117,27 @@ def apply_late_fees(today_date=None):
 
     cutoff = add_days(today_date or getdate(today()), -grace_days)
 
+    # An instalment is billed on its due date, so by the time it is late it is
+    # "Invoiced" (or part paid), never "Pending" -- filtering on Pending alone
+    # meant a late fee was never raised at all.
     overdue_plans = frappe.get_all(
         "Payment Plan",
         filters={
-            "payment_status": "Pending",
+            "payment_status": ["in", ["Pending", "Invoiced", "Partly Paid", "Overdue"]],
             "due_date": ["<", cutoff],
             "late_fee_applied": 0,
         },
-        fields=["name", "booking", "amount", "milestone"],
+        fields=["name", "booking", "amount", "outstanding_amount", "invoice", "milestone"],
     )
 
     for plan in overdue_plans:
         try:
+            # the fee is on what is still unpaid, not on the whole instalment
+            unpaid = plan.outstanding_amount if plan.invoice else plan.amount
+            if not unpaid or unpaid <= 0:
+                continue
             booking = frappe.get_doc("Property Booking", plan.booking)
-            late_fee_amount = plan.amount * late_fee_pct / 100
+            late_fee_amount = unpaid * late_fee_pct / 100
 
             if not frappe.db.exists("Item", late_fee_item):
                 frappe.throw(
@@ -147,7 +154,14 @@ def apply_late_fees(today_date=None):
                 "qty": 1,
                 "rate": late_fee_amount,
             })
+            if invoice.meta.has_field("property_unit"):
+                invoice.property_unit = booking.property_unit
             invoice.insert(ignore_permissions=True)
+            # a draft has no outstanding, so it was never chased and never paid
+            try:
+                invoice.submit()
+            except Exception:
+                frappe.log_error(frappe.get_traceback(), f"Late fee invoice left as draft: {plan.name}")
 
             frappe.db.set_value(
                 "Payment Plan",
@@ -156,7 +170,6 @@ def apply_late_fees(today_date=None):
                     "late_fee_applied": 1,
                     "late_fee_amount": late_fee_amount,
                     "late_fee_invoice": invoice.name,
-                    "payment_status": "Overdue",
                 },
                 update_modified=False,
             )

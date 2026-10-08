@@ -15,7 +15,11 @@ from property_core.api.utils import ok
 
 def _schedule_for(booking_name):
     """Payment Plan milestones with a computed due status."""
-    rows = get_list("Payment Plan", {"booking": booking_name}, order_by="due_date asc")
+    rows = get_list(
+        "Payment Plan",
+        {"booking": booking_name, "payment_status": ["!=", "Cancelled"]},
+        order_by="due_date asc",
+    )
     for row in rows:
         paid = row.get("payment_status") == "Paid"
         row["status"] = "Paid" if paid else due_status(row.get("due_date"), 1)
@@ -30,10 +34,10 @@ def _schedule_for(booking_name):
 
 def _decorate(booking):
     booking["payment_plan"] = _schedule_for(booking["name"])
-    booking["paid_amount"] = sum(
-        float(p.get("amount") or 0) for p in booking["payment_plan"] if p.get("status") == "Paid"
-    )
-    booking["outstanding"] = float(booking.get("booking_amount") or 0) - booking["paid_amount"]
+    # What has actually been received against the instalments, part payments
+    # included -- not the booking amount, which is only the advance asked for.
+    booking["paid_amount"] = sum(float(p.get("paid_amount") or 0) for p in booking["payment_plan"])
+    booking["outstanding"] = sum(float(p.get("outstanding_amount") or 0) for p in booking["payment_plan"])
     booking["confirmed"] = 1 if booking.get("docstatus") == 1 else 0
     if booking.get("property_unit"):
         unit = frappe.db.get_value(
