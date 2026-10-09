@@ -14,9 +14,10 @@ One API for the portal and the CRM, whatever gateway the client uses — or none
 | Endpoint | Method | Does |
 |---|---|---|
 | `payments.options?target=` | GET | enabled `gateways [{name, modes}]`, `online` (false = no gateway), `instructions` (bank / UPI text from Property Core Settings), and with `target` the `due {invoice, description, amount}` |
-| `payments.start` | POST | `target*`, `mode` = `checkout` \| `link`, `amount` (₹, default = all that is due on that instalment; never more), `gateway` (default = first enabled for that mode) |
+| `payments.start` | POST | `target*`, `mode` = `checkout` \| `link`, `amount` (₹, default = all that is due on that instalment; never more), `gateway` (default = first enabled for that mode), `return_url` (link: the frontend page the customer lands on after paying) |
 | `payments.confirm` | POST | `gateway*`, `payload*` — the checkout widget's response, as-is |
 | `payments.status?target=` | GET | `due`, `paid` — poll after sending a link |
+| `payments.link_return` | GET | called by the gateway, not by you: records a link payment and redirects to `return_url` |
 
 `target` is a **Property Booking** (pays its next unpaid instalment), a
 **Payment Plan** row (that instalment) or a **Sales Invoice**. A portal
@@ -60,17 +61,46 @@ records the payment anyway (one Payment Entry, never two).
 ```js
 const r = await frappe.call({
   method: "property_core.api.payments.start",
-  args: { target: "PP-0054", mode: "link", amount: 200000 },
+  args: {
+    target: "PP-0054", mode: "link", amount: 200000,
+    return_url: "https://app.example.com/payment-result",   // optional
+  },
 });
 // r.message.data.link = { url: "https://rzp.io/...", id: "plink_..." }
 // r.message.data.share_text = "Dear ..., please pay ₹ 2,00,000.00 for ...: https://rzp.io/..."
 window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(r.message.data.share_text)}`);
 ```
 
-The customer pays on the gateway's page; the webhook (`payment_link.paid` for
-Razorpay) settles the invoice. Poll `payments.status` to show it as paid.
-In the Razorpay dashboard, the webhook (section 2.4) must have the
-`payment_link.paid` event ticked as well as `payment.captured`.
+What happens after the customer pays on the gateway's page:
+
+1. The gateway sends the customer's browser to
+   `/api/method/property_core.api.payments.link_return` (set on the link
+   automatically). It checks the gateway's signature, records the Payment
+   Entry against the instalment's invoice and marks the instalment paid.
+2. It then redirects to your `return_url`:
+
+   ```
+   https://app.example.com/payment-result?payment=success&target=PP-0054
+       &invoice=ACC-SINV-2026-00254&payment_entry=ACC-PAY-2026-00030&amount=200000.0
+   ```
+
+   `payment` is `success`, `pending` (the bank has not captured it yet; the
+   webhook records it once it does) or `failed`. Show the result from these
+   parameters, and call `payments.status` to refresh what is due — the query
+   string alone proves nothing.
+3. No `return_url`: the customer sees a plain "Payment received" page on
+   the site instead. Use that for links staff send by WhatsApp.
+
+`return_url` may be a path on this site (`/customer-portal`) or a URL on a
+host listed under **Allowed Return Hosts** in Property Core Settings (one per
+line, e.g. `app.example.com`); anything else is refused, so the links cannot
+redirect to an arbitrary site.
+
+If the customer closes the tab before step 1, the webhook (`payment_link.paid`
+for Razorpay) settles the invoice instead — one Payment Entry, never two. In
+the Razorpay dashboard, the webhook (section 2.4) must have the
+`payment_link.paid` event ticked as well as `payment.captured`. Staff screens
+that sent a link can poll `payments.status` to show it as paid.
 
 ### 0.3 No gateway
 
