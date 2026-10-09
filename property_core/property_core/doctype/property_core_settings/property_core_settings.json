@@ -32,6 +32,7 @@
   "commission_item",
   "section_online_payments",
   "payment_instructions",
+  "payment_return_hosts",
   "section_notifications",
   "whatsapp_enabled"
  ],
@@ -212,6 +213,12 @@
    "description": "Shown to customers and staff when no payment gateway is enabled -- bank account, UPI ID, cheque in favour of."
   },
   {
+   "fieldname": "payment_return_hosts",
+   "fieldtype": "Small Text",
+   "label": "Allowed Return Hosts",
+   "description": "Where a payment link may send the customer after paying (the return_url your frontend passes). One host per line, e.g. app.example.com or https://app.example.com. This site is always allowed."
+  },
+  {
    "fieldname": "section_notifications",
    "fieldtype": "Section Break",
    "label": "Notifications"
@@ -226,7 +233,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-08 12:00:00.000000",
+ "modified": "2026-10-09 17:47:31.480873",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Property Core Settings",

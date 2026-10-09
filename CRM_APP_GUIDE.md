@@ -713,3 +713,13 @@ Full detail per endpoint is in `CRM_API.md`.
 | `operations.create_issue(data?)` | New issue from a form; returns the created record. |
 | `operations.update_issue(name, data?)` | Save edits to a issue — send only changed fields in `data`. |
 | `operations.options()` | Issue / work-order dropdowns (load once). |
+
+#### `payments` (5) — `property_core.api.payments.*`, shared with the customer portal
+
+| Endpoint | What it is for |
+|---|---|
+| `payments.options(target?)` | Gateways enabled and their modes, what is due on `target`, payment instructions when no gateway is on. |
+| `payments.start(target, amount?, mode?, gateway?, return_url?)` | `mode=link`: a hosted payment URL + share text; after paying, the customer is redirected to `return_url?payment=success\|pending\|failed&target=&invoice=&payment_entry=&amount=` (host must be in Allowed Return Hosts). `mode=checkout`: options for the gateway widget. Amount defaults to, and may not exceed, what is due. |
+| `payments.confirm(gateway, payload)` | Hand back the checkout widget's response; records the payment. |
+| `payments.status(target)` | What is still due — poll after sending a link. |
+| `payments.link_return` | Called by the gateway after a link payment (guest, signature-checked): records it, redirects to `return_url`. |
