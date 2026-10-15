@@ -33,7 +33,7 @@ def issues(property_unit=None, status=None, limit=50):
         "Issue", filters, order_by="creation desc", limit_page_length=as_int(limit, 50)
     )
     for row in rows:
-        row["work_orders"] = get_list("Work Order", {"issue": row["name"]}, order_by="creation desc")
+        row["work_orders"] = get_list("Property Work Order", {"issue": row["name"]}, order_by="creation desc")
         if row.get("property_unit"):
             row["unit_number"] = frappe.db.get_value(
                 "Property Unit", row["property_unit"], "unit_number"
@@ -54,7 +54,7 @@ def issue(issue):
 
     rows = get_list("Issue", {"name": issue})
     row = rows[0]
-    row["work_orders"] = get_list("Work Order", {"issue": issue}, order_by="creation desc")
+    row["work_orders"] = get_list("Property Work Order", {"issue": issue}, order_by="creation desc")
     row["comments"] = serialize(frappe.get_all(
         "Comment",
         filters={

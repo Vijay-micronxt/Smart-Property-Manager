@@ -331,8 +331,10 @@ returns the trail from site:
 `kind` is `image` / `video` / `file`. Open the `download_url` with the token
 header (it is private).
 
-> `work_history` and `work_updates` below read the Work Order doctype, which is
-> now the complaint path only. Maintenance is in `tasks` / `task`.
+> `work_history` and `work_updates` below read work orders (doctype **Property
+> Work Order** since 2026-10-08 -- renamed off ERPNext Manufacturing's "Work
+> Order"; responses unchanged), which is the complaint path only. Maintenance
+> is in `tasks` / `task`.
 
 ### 6.1 `maintenance.work_history`
 

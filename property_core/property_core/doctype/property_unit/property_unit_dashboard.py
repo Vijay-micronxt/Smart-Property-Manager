@@ -12,6 +12,6 @@ def get_data():
             {"label": _("Sales"), "items": ["Lead", "Opportunity", "Property Booking"]},
             {"label": _("Handover"), "items": ["Property Agreement", "Property Allocation"]},
             {"label": _("Maintenance"), "items": ["Property Maintenance Task", "Property Maintenance Update"]},
-            {"label": _("Operations"), "items": ["Issue", "Work Order"]},
+            {"label": _("Operations"), "items": ["Issue", "Property Work Order"]},
         ],
     }

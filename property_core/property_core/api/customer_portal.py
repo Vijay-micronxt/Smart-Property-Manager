@@ -170,7 +170,7 @@ def get_maintenance_requests(property_unit=None, status=None, limit=50):
         issue["resolution_date"] = str(issue["resolution_date"]) if issue["resolution_date"] else None
 
         work_orders = frappe.get_all(
-            "Work Order",
+            "Property Work Order",
             filters={"issue": issue["name"]},
             fields=["name", "status", "description", "assigned_to",
                     "scheduled_date", "completed_date", "estimated_cost", "actual_cost"],

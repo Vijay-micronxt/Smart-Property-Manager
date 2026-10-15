@@ -255,8 +255,8 @@ Form fields and where they come from:
 | **Unit base price** | `bookings.prefill.unit_base_price` | no |
 | **Agreement value** | `bookings.prefill.total_price` | yes — re-call prefill with `total_price` |
 | Payment plan | `bookings.prefill.payment_plan_template` (options: `meta.options.booking.payment_plan_templates`) | yes — re-call prefill |
-| Booking amount | `bookings.prefill.booking_amount` (first milestone) | yes |
-| Schedule preview | `bookings.prefill.schedule` | no |
+| Booking amount | `bookings.prefill.booking_amount` (suggested = first milestone, also in `suggested_booking_amount`) | yes — re-call prefill with `booking_amount` |
+| Schedule preview | `bookings.prefill.schedule` — exactly what confirm will create: booking amount first, then the template's milestones reduced by it | no |
 | Customer | from opportunity / lead; walk-in: pick with `customers.get_customers` | walk-in only |
 
 Save: `POST bookings.create_booking {"data": {customer, property_unit, total_price, booking_amount, booking_date, payment_plan_template, sales_person?, notes?}, "submit": 0}`.
@@ -264,8 +264,10 @@ From an opportunity, use `opportunities.convert_to_booking` instead; it
 creates the customer from the lead if needed.
 
 **Confirm** (`POST bookings.submit_booking {name}`) reserves the unit, raises
-the payment plan, creates the customer's portal login, opens the Drive folder
-and starts maintenance billing.
+the payment plan (the **booking amount is the first instalment and is invoiced
+at once**; a token already received as an advance is set off against it),
+creates the customer's portal login, opens the Drive folder and starts
+maintenance billing.
 
 ### 5.6 Booking — detail (the deal's workspace)
 
@@ -276,12 +278,19 @@ and starts maintenance billing.
 | "Invoice" on a plan row | `POST billing.generate_invoice {payment_plan}` |
 | "Invoice all due" | `POST billing.generate_due_invoices {booking}` |
 | "+ Extra charge" | `POST billing.create_invoice {booking, items:[{item_code?, rate, description}], due_date?, submit:1}` |
-| "Record payment" | `POST billing.record_payment {booking, amount, mode_of_payment, reference_no?, reference_date?, posting_date?}` → `allocated[]` + `advance` |
+| "Record payment" (cash / cheque / NEFT / UPI / loan) | `POST billing.record_payment {booking, amount, mode_of_payment, reference_no?, reference_date?, posting_date?, tds_amount?}` → `allocated[]` + `advance`. Prefill amount + TDS from `GET billing.tds_suggestion?booking=` |
+| "Collect online" (link to send, or checkout at the counter) | `GET payments.options?target=<booking>` then `POST payments.start {target, mode: link\|checkout, amount?}` — see `PAYMENT_INTEGRATION.md` §0 |
+| "Pay link" on a plan row | same, with `target` = the Payment Plan row name |
 | "Allocate unit" (handover) | `POST allocations.create_from_booking {booking, allocation_type:"Sale", start_date, signed_date?, security_deposit_amount?}` |
 | Files tab | `GET files.get_attachments?doctype=Property Booking&name=` / `POST files.attach` / `POST files.remove_attachment {name}` |
 | Drive tab | `GET files.drive_list?doctype=Property Booking&name=&folder=` / `POST files.drive_upload` / `POST files.drive_create_folder` |
 | Timeline + comments | `GET activity.timeline?doctype=Property Booking&name=` / `POST activity.add_comment` |
-| Cancel | `POST bookings.cancel_booking {name, reason}` → unit back to Available |
+| Cancel | `POST bookings.cancel_booking {name, reason}` → unit back to Available, billing stopped; returns `collected`, `forfeit`, `refund`, `refund_status` |
+| "Make refund" (cancelled booking, `refund_status` = Refund Due) | `POST bookings.refund {name, mode_of_payment, amount?, reference_no?, reference_date?}` → `credit_note`, `payment_entry` |
+
+Each plan row from `get_booking` / `payment_plan` carries `payment_status`
+(Pending · Invoiced · Partly Paid · Paid · Overdue · Cancelled), `paid_amount`
+and `outstanding_amount`. Show those; do not work them out from invoices.
 
 `record_payment` examples:
 
@@ -388,6 +397,7 @@ Proof images are private files: load them with the token header
 ### 5.10 Invoices & payments (finance screen)
 
 `billing.get_invoices` (filters: `customer, booking, property_unit, status, overdue=1, from_date, to_date`),
+"Collect online" on an unpaid invoice → `payments.start {target: <invoice>, mode: link}`,
 `billing.get_invoice`, `billing.submit_invoice`, `billing.cancel_invoice {name, reason}`
 (a milestone invoice goes back to "to bill"), `billing.get_payments`,
 `billing.get_payment`, `billing.cancel_payment`.
@@ -410,16 +420,35 @@ upload the signed copy with `files.attach {doctype:"Property Agreement", name, f
 ### 5.13 Complaints and site work
 
 `operations.get_issues`, `get_issue`, `create_issue {"data":{subject, customer, property_unit, description}}`,
-`update_issue`; `operations.get_work_orders`, `create_work_order`, `update_work_order`.
-**On JD the Work Order endpoints fail today**, because "Work Order" is also
-ERPNext Manufacturing's doctype. Use maintenance tasks for maintenance until
-that is renamed.
+`update_issue`; `operations.get_work_orders`, `create_work_order`, `update_work_order`
+(`work_type`: one of `operations.options().work_order.types`).
+
+The doctype behind these is **Property Work Order** (renamed 2026-10-08:
+"Work Order" is ERPNext Manufacturing's, and on JD that clash made every
+create fail). The endpoints, fields and responses did not change; `files.*`
+and `activity.*` still accept `doctype: "Work Order"`. Routine maintenance
+uses maintenance tasks (§5.9), complaints use issues + work orders.
+
+### 5.13a Commission
+
+| Screen / button | Call (Frappe REST, `/api/resource/...`) |
+|---|---|
+| Summary per sales person | `GET /api/resource/Commission Entry?fields=["sales_person","status","commission_amount","released_amount","settled_amount","payable_amount"]&limit_page_length=0` |
+| Entry list / detail | same doctype; `customer_paid_percent`, `released_amount`, `settled_amount`, `payable_amount` (negative = clawback to recover) |
+| Rules | `Commission Rule` with child `release_stages: [{customer_paid_percent, release_percent}]` (cumulative; last = 100; empty = all payable on booking). Create `POST`, edit `PUT /api/resource/Commission Rule/<name>` |
+| Settle | `GET …commission_settlement.get_pending_entries?sales_person=` → rows with `commission_amount` = payable now; `POST /api/resource/Commission Settlement {sales_person, settlement_date, commission_entries:[{commission_entry, commission_amount}]}` then `frappe.client.submit`. Submitted settlement carries `journal_entry` (employee) or `purchase_invoice` (channel partner) and turns `Paid` when that is paid |
+| Payees | `Sales Person` fields `custom_commission_payee_type` (Employee / Channel Partner), `employee`, `custom_commission_supplier` |
+
+Commission is earned on the agreement value and **released as the customer
+pays**; nothing is payable on a booking whose customer has not paid the first
+stage yet. Cancelling a booking turns settled commission into a clawback.
 
 ### 5.14 Any record — files, comments, assignment
 
 Works on Lead, Opportunity, Customer, Property Booking, Property, Property
 Unit, Project, Task, Property Allocation, Property Agreement, Property Follow
-Up, Sales Invoice, Payment Entry, Issue, Property Maintenance Task:
+Up, Sales Invoice, Payment Entry, Issue, Property Work Order (or "Work Order"),
+Property Maintenance Task:
 
 `files.attach` / `get_attachments` / `remove_attachment`,
 `activity.add_comment` / `get_comments` / `timeline` / `assign` / `unassign`,
@@ -535,17 +564,18 @@ Full detail per endpoint is in `CRM_API.md`.
 | `customers.create_customer(data?)` | "New customer" form; `data` = customer_name, mobile_no, email_id, customer_type, pan/gst. |
 | `customers.create_from_lead(lead)` | Lead → Customer, address and contact carried over. Idempotent: calling it twice returns the customer that already exists. |
 
-#### `bookings` (8)
+#### `bookings` (9)
 
 | Endpoint | What it is for |
 |---|---|
 | `bookings.get_bookings(search?, customer?, property?, project?, property_unit?, status?, docstatus?, mine?, from_date?, to_date?, filters?, order_by?, page?, page_size?)` | booking list screen: paged, searchable, filter by the params shown. |
 | `bookings.get_booking(name)` | The booking with its money attached — plan, invoices, what is paid. |
-| `bookings.prefill(opportunity?, property_unit?, customer?, lead?, total_price?, payment_plan_template?)` | Everything a new-booking form should show filled in, before anything is saved: unit details and base price, the agreement value (negotiated |
+| `bookings.prefill(opportunity?, property_unit?, customer?, lead?, total_price?, payment_plan_template?, booking_amount?)` | Everything a new-booking form should show filled in, before anything is saved: unit details and base price, the agreement value (negotiated |
 | `bookings.create_booking(data?, submit?)` | A booking raised straight off a unit — the walk-in path, where nobody ever logged a lead. |
 | `bookings.update_booking(name, data?)` | Save edits to a booking — send only changed fields in `data`. |
 | `bookings.submit_booking(name)` | Confirm the deal: the unit is reserved, the payment plan is raised, the customer gets a portal login and maintenance starts. |
-| `bookings.cancel_booking(name, reason?)` | Cancelling puts the unit back on the market. |
+| `bookings.cancel_booking(name, reason?)` | Cancelling puts the unit back on the market, stops billing, works out forfeit and refund. |
+| `bookings.refund(name, mode_of_payment, amount?, posting_date?, reference_no?, reference_date?)` | Pay back a cancelled booking: credit note + Payment Entry. |
 | `bookings.payment_plan(booking)` | Booking "Payment plan" tab: milestone rows with invoice + paid status, and totals. |
 
 #### `inventory` (13)
@@ -623,7 +653,7 @@ Full detail per endpoint is in `CRM_API.md`.
 | `tasks.delete_task(name)` | Delete a task. |
 | `tasks.options()` | Task dropdowns: statuses, priorities, types (load once). |
 
-#### `billing` (13)
+#### `billing` (14)
 
 | Endpoint | What it is for |
 |---|---|
@@ -640,6 +670,7 @@ Full detail per endpoint is in `CRM_API.md`.
 | `billing.cancel_invoice(name, reason?)` | Cancel a invoice; `reason` is kept as a comment. |
 | `billing.record_payment(amount, mode_of_payment, invoice?, booking?, customer?, posting_date?, reference_no?, reference_date?, remarks?, submit?)` | Money received. Three ways to aim it: |
 | `billing.cancel_payment(name, reason?)` | Cancel a payment; `reason` is kept as a comment. |
+| `billing.tds_suggestion(invoice?, booking?)` | Bank / TDS split of what is outstanding when the buyer deducts TDS (194-IA): `applies`, `rate`, `tds_amount`, `amount`. |
 
 #### `allocations` (14)
 

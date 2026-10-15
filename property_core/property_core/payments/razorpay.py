@@ -148,8 +148,17 @@ class RazorpayAdapter(PaymentGateway):
             result["status"] = "pending"  # the webhook settles it once captured
             return result
 
-        result["payment_entry"] = settle_link(link_id, payment)
         result["amount"] = flt(payment.get("amount")) / 100 or result["amount"]
+        try:
+            result["payment_entry"] = settle_link(link_id, payment)
+        except Exception:
+            # the money is taken; only our booking of it failed. Keep the
+            # customer on the frontend (not a failure page on this site) and
+            # let the webhook / reconciliation post it.
+            frappe.db.rollback()
+            frappe.log_error(title="Payment link settle failed", message=frappe.get_traceback())
+            result["status"] = "pending"
+            return result
         result["status"] = "success"
         return result
 
@@ -179,12 +188,21 @@ def settle_link(link_id, payment):
     # both callers arrive as Guest, who may not post a Payment Entry
     # (erpnext checks permission inside its validate, past ignore_permissions)
     user = frappe.session.user
-    frappe.set_user(frappe.db.get_single_value("Razorpay Settings", "system_user") or "Administrator")
+    frappe.set_user(_system_user())
     try:
         _record(rpe, payment)
     finally:
         frappe.set_user(user)
     return rpe.payment_entry
+
+
+def _system_user():
+    """Razorpay Settings' system user, if it is a real enabled user; a
+    missing one has no roles and fails the Payment Entry permission check."""
+    user = frappe.db.get_single_value("Razorpay Settings", "system_user")
+    if user and frappe.db.get_value("User", user, "enabled"):
+        return user
+    return "Administrator"
 
 
 def _record(rpe, payment):

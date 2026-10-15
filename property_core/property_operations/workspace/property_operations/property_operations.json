@@ -42,7 +42,7 @@
    "is_query_report": 0,
    "label": "Work Order",
    "link_count": 0,
-   "link_to": "Work Order",
+   "link_to": "Property Work Order",
    "link_type": "DocType",
    "name": "po-link-work-order",
    "onboard": 1,
@@ -135,7 +135,7 @@
    "color": "Blue",
    "format": "{} Work Orders",
    "label": "Work Order",
-   "link_to": "Work Order",
+   "link_to": "Property Work Order",
    "name": "po-sc-work-order",
    "stats_filter": "{}",
    "type": "DocType"

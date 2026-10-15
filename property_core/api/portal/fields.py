@@ -88,7 +88,7 @@ REGISTRY = {
         "name", "subject", "description", "status", "priority",
         "opening_date", "resolution_date", "property_unit",
     ],
-    "Work Order": [
+    "Property Work Order": [
         "name", "issue", "property_unit", "status", "description",
         "scheduled_date", "completed_date", "actual_cost", "notes",
         "progress", "last_update_on", "work_type", "sales_invoice", "maintenance_period",
@@ -117,7 +117,7 @@ AUTO_CUSTOM = {
     "Property Allocation",
     "Property Agreement",
     "Issue",
-    "Work Order",
+    "Property Work Order",
 }
 
 # Never exposed to a portal client, whatever the registry or a custom field says.

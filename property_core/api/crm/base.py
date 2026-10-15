@@ -155,9 +155,19 @@ def date_range(filters, field, from_date=None, to_date=None):
 # documents
 # --------------------------------------------------------------------------- #
 
+# Doctype names a client may still send after a rename. "Work Order" became
+# "Property Work Order" (ERPNext Manufacturing owns "Work Order").
+DOCTYPE_ALIASES = {"Work Order": "Property Work Order"}
+
+
+def real_doctype(doctype):
+    return DOCTYPE_ALIASES.get(doctype, doctype)
+
+
 def read_doc(doctype, name):
     """Load a document the user is actually allowed to read."""
     require_user()
+    doctype = real_doctype(doctype)
     if not name or not frappe.db.exists(doctype, name):
         frappe.throw(_("{0} {1} not found").format(_(doctype), name or ""), frappe.DoesNotExistError)
 

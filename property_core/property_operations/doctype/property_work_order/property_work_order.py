@@ -3,7 +3,12 @@ from frappe.model.document import Document
 from frappe.utils import today
 
 
-class WorkOrder(Document):
+class PropertyWorkOrder(Document):
+    """Site work on a unit -- a complaint fix, a repair. Named "Property Work
+    Order": "Work Order" is ERPNext Manufacturing's doctype, and on sites
+    that customise that one (JD) every insert of ours ran its controller and
+    failed."""
+
     def on_update(self):
         if self.issue:
             _sync_issue_status(self)

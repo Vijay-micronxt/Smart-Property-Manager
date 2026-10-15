@@ -132,7 +132,7 @@ def _permissions():
         "Property Agreement",
         "Sales Invoice",
         "Payment Entry",
-        "Work Order",
+        "Property Work Order",
         "Issue",
         "Property Maintenance Task",
         "Property Maintenance Update",
@@ -143,4 +143,7 @@ def _permissions():
             action: bool(frappe.has_permission(doctype, action))
             for action in ("read", "write", "create", "delete", "submit", "cancel")
         }
+    # older apps check permissions["Work Order"]
+    if "Property Work Order" in out:
+        out["Work Order"] = out["Property Work Order"]
     return out

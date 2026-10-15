@@ -680,6 +680,16 @@ Same doctypes as attachments.
 | `operations.create_work_order` / `update_work_order` | POST | `data: {property_unit, work_type, status, issue, assigned_to, vendor, scheduled_date, completed_date, progress, description, estimated_cost, actual_cost, notes}` |
 | `operations.options` | GET | statuses / types / priorities for both |
 
+`work_type` must be one of `operations.options` → `work_order.types`
+(Complaint / Maintenance / Other on a default install); anything else is
+refused with a `ValidationError` naming the allowed values.
+
+The records live in the doctype **Property Work Order** (renamed 2026-10-08).
+"Work Order" is ERPNext Manufacturing's doctype; on JD the clash made every
+`create_work_order` fail. Endpoint names, fields and responses are unchanged,
+the numbering (`WO-####`) continues, and `files.*` / `activity.*` accept
+either `doctype: "Property Work Order"` or `"Work Order"`.
+
 ---
 
 ## 20a. Maintenance visits — `maintenance.*`
