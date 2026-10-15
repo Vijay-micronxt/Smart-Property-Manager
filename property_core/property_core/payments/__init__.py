@@ -15,8 +15,11 @@ It offers one or both modes:
 
   checkout -- the frontend opens the gateway's own widget in the page and
               hands the result back to ``confirm``;
-  link     -- a hosted payment URL to open, or to send by WhatsApp / SMS;
-              the gateway's webhook settles it.
+  link     -- a hosted payment URL to open, or to send by WhatsApp / SMS.
+              After paying, the gateway sends the customer's browser to
+              ``api.payments.link_return``, which records the payment and
+              redirects to the frontend's ``return_url``; the gateway's
+              webhook settles it too, for a customer who closes the tab.
 
 Whatever the gateway, the money lands as a Payment Entry against the
 instalment's Sales Invoice, and plan_status takes it from there.
@@ -45,7 +48,20 @@ class PaymentGateway:
         raise NotImplementedError
 
     def create_link(self, ctx):
-        """Return ``{"url": ..., "id": ...}`` for a hosted payment page."""
+        """Return ``{"url": ..., "id": ...}`` for a hosted payment page.
+        Send the customer back to ``ctx.callback_url`` after paying, and keep
+        ``ctx.return_url`` for ``handle_link_return``."""
+        raise NotImplementedError
+
+    def owns_link_return(self, params):
+        """True when ``params`` (the query string the gateway appended to
+        the callback URL) came from this gateway."""
+        return False
+
+    def handle_link_return(self, params):
+        """Verify the return and record the payment. Return
+        ``{"status": "success" | "pending" | "failed", "target", "invoice",
+        "payment_entry", "amount", "return_url"}``."""
         raise NotImplementedError
 
 
