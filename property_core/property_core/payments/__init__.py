@@ -34,6 +34,8 @@ class PaymentGateway:
     name = ""
     #: "checkout", "link"
     modes = ()
+    #: the gateway cannot start without the customer's mobile number
+    needs_phone = False
 
     def is_enabled(self):
         raise NotImplementedError
@@ -84,6 +86,19 @@ def enabled_gateways():
         except Exception:
             frappe.log_error(frappe.get_traceback(), f"Payment gateway check failed: {gateway.name}")
     return out
+
+
+def selected_gateway():
+    """The gateway customers pay through: the one picked under Online Payment
+    Gateway in Property Core Settings, else the first enabled one. None when
+    that gateway is not set up (its Settings are empty)."""
+    from property_core.property_core.utils import settings
+
+    choice = settings.get("payment_gateway")
+    enabled = enabled_gateways()
+    if choice:
+        return next((g for g in enabled if g.name.lower() == choice.lower()), None)
+    return enabled[0] if enabled else None
 
 
 def get_gateway(name=None, mode=None):

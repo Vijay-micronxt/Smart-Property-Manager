@@ -1,8 +1,16 @@
 # Payments API — for the frontend
 
 Collect an instalment online from the customer app or the CRM. The frontend uses
-**four endpoints**. The same calls work whichever gateway the site has enabled
-(Razorpay today); none of them is Razorpay-specific.
+**four endpoints**, the same whichever gateway the site uses.
+
+**The frontend does not choose the gateway.** The backend sets it in Property
+Core Settings → **Online Payment Gateway** (Razorpay or mSwipe; blank = the
+first one set up). Never send `gateway`; if you do, it is ignored.
+
+| Gateway | Modes | Note |
+|---|---|---|
+| Razorpay | `checkout`, `link` | |
+| mSwipe | `link` only | needs the customer's mobile number on the booking / invoice |
 
 | # | Endpoint | Method | Use it to |
 |---|---|---|---|
@@ -39,14 +47,14 @@ Every endpoint takes a `target`:
 
 ## The two ways to pay
 
-**Link** — a hosted Razorpay page. Open it, or send it on WhatsApp/SMS.
+**Link** (default) — a hosted page of the site's gateway. Open it, or send it on WhatsApp/SMS.
 
 ```
-options  →  start(mode=link, return_url)  →  customer pays on Razorpay
+options  →  start(return_url)  →  customer pays on the gateway's page
          →  browser comes back to return_url?payment=success…  →  status
 ```
 
-**Checkout** — Razorpay's popup inside your page. No redirect.
+**Checkout** — Razorpay's popup inside your page, only when Razorpay is the gateway. Ask with `mode=checkout`; with mSwipe you get a link instead.
 
 ```
 options  →  start(mode=checkout)  →  open popup  →  confirm(popup result)  →  status
@@ -60,6 +68,13 @@ the frontend never creates payments itself.
 - **Property Core Settings → Allowed Return Hosts:** add the frontend's domain
   (e.g. `app.example.com`), one per line. `start` refuses a `return_url` on any
   other domain.
+- Property Core Settings → **Online Payment Gateway**: Razorpay or mSwipe.
 - Razorpay keys in **Razorpay Settings**; Razorpay webhook with `payment.captured`
   and `payment_link.paid` ticked (records the payment if the customer closes the
   tab before coming back).
+- mSwipe credentials in **Mswipe Settings** (base URL, customer code, user ID,
+  client ID, password), and a **Mode of Payment** (default `Mswipe`) with a
+  default account for the company. mSwipe has no webhook: a payment whose
+  customer closes the tab is picked up by a job every 10 minutes.
+- Staff can also send a link from the desk: Sales Invoice → **Notify → Collect
+  Online** → Pay by.
