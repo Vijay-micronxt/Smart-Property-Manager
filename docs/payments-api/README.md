@@ -2,7 +2,16 @@
 
 Collect an instalment online from the customer app or the CRM. The frontend uses
 **four endpoints**. The same calls work whichever gateway the site has enabled
-(Razorpay today); none of them is Razorpay-specific.
+(Razorpay, mSwipe, or both); none of them is gateway-specific.
+
+**Pay by — let the customer choose.** When more than one gateway is on,
+`options` lists each one. Show them as choices ("Pay by Razorpay" / "Pay by
+mSwipe") and send the chosen `name` as `gateway` to `start`.
+
+| Gateway | Modes | Note |
+|---|---|---|
+| Razorpay | `checkout`, `link` | |
+| mSwipe | `link` only | needs the customer's mobile number on the booking / invoice |
 
 | # | Endpoint | Method | Use it to |
 |---|---|---|---|
@@ -39,10 +48,10 @@ Every endpoint takes a `target`:
 
 ## The two ways to pay
 
-**Link** — a hosted Razorpay page. Open it, or send it on WhatsApp/SMS.
+**Link** — a hosted page of the chosen gateway. Open it, or send it on WhatsApp/SMS.
 
 ```
-options  →  start(mode=link, return_url)  →  customer pays on Razorpay
+options  →  start(mode=link, return_url)  →  customer pays on the gateway's page
          →  browser comes back to return_url?payment=success…  →  status
 ```
 
@@ -63,3 +72,9 @@ the frontend never creates payments itself.
 - Razorpay keys in **Razorpay Settings**; Razorpay webhook with `payment.captured`
   and `payment_link.paid` ticked (records the payment if the customer closes the
   tab before coming back).
+- mSwipe credentials in **Mswipe Settings** (base URL, customer code, user ID,
+  client ID, password), and a **Mode of Payment** (default `Mswipe`) with a
+  default account for the company. mSwipe has no webhook: a payment whose
+  customer closes the tab is picked up by a job every 10 minutes.
+- Staff can also send a link from the desk: Sales Invoice → **Notify → Collect
+  Online** → Pay by.

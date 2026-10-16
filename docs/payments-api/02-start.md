@@ -11,7 +11,7 @@ POST /api/method/property_core.api.payments.start
 | `target` | yes | Booking / Payment Plan / Sales Invoice |
 | `mode` | no | `link` or `checkout` (default `checkout`) |
 | `amount` | no | ₹. Default = everything due on the instalment; more than that is refused |
-| `gateway` | no | e.g. `Razorpay`. Default = first enabled gateway for that mode |
+| `gateway` | no | `Razorpay` or `mSwipe` (a `name` from `options`). Default = first enabled gateway for that mode. mSwipe supports `mode=link` only |
 | `return_url` | no, `link` only | Your page the customer lands on after paying. See [05-return-page.md](05-return-page.md) |
 
 `return_url` must be a path on the site (`/customer-portal`) or a URL whose

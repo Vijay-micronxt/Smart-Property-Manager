@@ -48,7 +48,10 @@ doctype_js = {
     "Commission Entry": "public/js/commission_entry.js",
     "Commission Settlement": "public/js/commission_settlement.js",
     # notifications
-    "Sales Invoice": "public/js/sales_invoice_notifications.js",
+    "Sales Invoice": [
+        "public/js/sales_invoice_notifications.js",
+        "public/js/sales_invoice_online_payment.js",
+    ],
     "Payment Entry": "public/js/payment_entry_notifications.js",
     "Property Notification Log": "public/js/property_notification_log.js",
     # crm -- the funnel that used to run on Frappe CRM's CRM Lead
@@ -83,7 +86,11 @@ scheduler_events = {
         "property_core.property_core.notifications.lead_followup.run_daily_lead_follow_ups",
         "property_core.property_core.notifications.dispatcher.retry_failed",
         "property_core.property_core.notifications.dispatcher.purge_old_logs",
-    ]
+    ],
+    "cron": {
+        # mSwipe has no webhook: settle paid links whose customer never came back
+        "*/10 * * * *": ["property_core.property_core.payments.mswipe.reconcile_pending"],
+    },
 }
 
 doc_events = {
