@@ -1,6 +1,6 @@
-// Collect an outstanding invoice online: staff pick the gateway (Pay by
-// Razorpay / mSwipe / any added by hook), get a payment link and send it.
-// Same API as the customer portal and the CRM app: api.payments.options/start.
+// Collect an outstanding invoice online: get a payment link and send it.
+// The gateway (Razorpay / mSwipe) is the one set under Online Payment Gateway
+// in Property Core Settings. Same API as the customer portal and the CRM app.
 frappe.ui.form.on("Sales Invoice", {
 	refresh(frm) {
 		if (frm.doc.docstatus !== 1 || flt(frm.doc.outstanding_amount) <= 0) return;
@@ -15,13 +15,12 @@ function collect_online(frm) {
 		freeze: true,
 		callback: (r) => {
 			const o = (r.message && r.message.data) || {};
-			const gateways = (o.gateways || []).filter((g) => g.modes.includes("link"));
-			if (!gateways.length) {
+			if (!o.gateway) {
 				frappe.msgprint({
-					title: __("No online payment gateway"),
+					title: __("Online payment is not set up"),
 					indicator: "orange",
 					message: __(
-						"Enable Razorpay or mSwipe (fill in its Settings) to send payment links."
+						"Pick the gateway under Online Payment Gateway in Property Core Settings and fill in its Settings."
 					),
 				});
 				return;
@@ -32,11 +31,11 @@ function collect_online(frm) {
 				fields: [
 					{
 						fieldname: "gateway",
-						fieldtype: "Select",
+						fieldtype: "Data",
 						label: __("Pay by"),
-						options: gateways.map((g) => g.name),
-						default: gateways[0].name,
-						reqd: 1,
+						default: o.gateway.name,
+						read_only: 1,
+						description: __("Set in Property Core Settings"),
 					},
 					{
 						fieldname: "amount",
@@ -55,7 +54,6 @@ function collect_online(frm) {
 							target: frm.doc.name,
 							amount: values.amount,
 							mode: "link",
-							gateway: values.gateway,
 						},
 						freeze: true,
 						freeze_message: __("Creating link…"),

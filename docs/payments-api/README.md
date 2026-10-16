@@ -1,12 +1,11 @@
 # Payments API — for the frontend
 
 Collect an instalment online from the customer app or the CRM. The frontend uses
-**four endpoints**. The same calls work whichever gateway the site has enabled
-(Razorpay, mSwipe, or both); none of them is gateway-specific.
+**four endpoints**, the same whichever gateway the site uses.
 
-**Pay by — let the customer choose.** When more than one gateway is on,
-`options` lists each one. Show them as choices ("Pay by Razorpay" / "Pay by
-mSwipe") and send the chosen `name` as `gateway` to `start`.
+**The frontend does not choose the gateway.** The backend sets it in Property
+Core Settings → **Online Payment Gateway** (Razorpay or mSwipe; blank = the
+first one set up). Never send `gateway`; if you do, it is ignored.
 
 | Gateway | Modes | Note |
 |---|---|---|
@@ -48,14 +47,14 @@ Every endpoint takes a `target`:
 
 ## The two ways to pay
 
-**Link** — a hosted page of the chosen gateway. Open it, or send it on WhatsApp/SMS.
+**Link** (default) — a hosted page of the site's gateway. Open it, or send it on WhatsApp/SMS.
 
 ```
-options  →  start(mode=link, return_url)  →  customer pays on the gateway's page
+options  →  start(return_url)  →  customer pays on the gateway's page
          →  browser comes back to return_url?payment=success…  →  status
 ```
 
-**Checkout** — Razorpay's popup inside your page. No redirect.
+**Checkout** — Razorpay's popup inside your page, only when Razorpay is the gateway. Ask with `mode=checkout`; with mSwipe you get a link instead.
 
 ```
 options  →  start(mode=checkout)  →  open popup  →  confirm(popup result)  →  status
@@ -69,6 +68,7 @@ the frontend never creates payments itself.
 - **Property Core Settings → Allowed Return Hosts:** add the frontend's domain
   (e.g. `app.example.com`), one per line. `start` refuses a `return_url` on any
   other domain.
+- Property Core Settings → **Online Payment Gateway**: Razorpay or mSwipe.
 - Razorpay keys in **Razorpay Settings**; Razorpay webhook with `payment.captured`
   and `payment_link.paid` ticked (records the payment if the customer closes the
   tab before coming back).

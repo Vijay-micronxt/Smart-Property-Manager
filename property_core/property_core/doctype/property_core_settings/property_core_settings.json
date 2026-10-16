@@ -31,6 +31,7 @@
   "commission_payable_account",
   "commission_item",
   "section_online_payments",
+  "payment_gateway",
   "payment_instructions",
   "payment_return_hosts",
   "section_notifications",
@@ -205,6 +206,13 @@
    "fieldname": "section_online_payments",
    "fieldtype": "Section Break",
    "label": "Online Payments"
+  },
+  {
+   "fieldname": "payment_gateway",
+   "fieldtype": "Select",
+   "label": "Online Payment Gateway",
+   "options": "\nRazorpay\nmSwipe",
+   "description": "Customers pay online through this gateway, from the portal, the CRM app and the desk. Blank = the first gateway whose Settings are filled in (Razorpay, then mSwipe). Fill in Razorpay Settings or Mswipe Settings for the one you pick."
   },
   {
    "fieldname": "payment_instructions",

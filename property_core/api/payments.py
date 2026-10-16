@@ -1,14 +1,18 @@
 """Collect a payment online -- one API for the customer portal and the CRM.
 
+    The gateway is the site's choice, not the frontend's: Online Payment
+    Gateway in Property Core Settings (Razorpay or mSwipe; blank = the first
+    one set up). The frontend calls the same endpoints whichever it is.
+
     GET  property_core.api.payments.options?target=BKG-0018
-         -> enabled gateways and their modes, what is due now, and the payment
-            instructions to show when no gateway is enabled
+         -> the gateway in use and its modes, what is due now, and the payment
+            instructions to show when no gateway is set up
 
     POST property_core.api.payments.start
          target=BKG-0018 | PP-0054 | ACC-SINV-...   (booking = its next unpaid instalment)
          amount=<rupees, optional: defaults to the full amount due on that instalment>
-         mode=checkout | link
-         gateway=<optional: first enabled one that supports the mode>
+         mode=<optional: link (default) | checkout; a gateway without checkout
+               (mSwipe) answers with a link>
          return_url=<link mode, optional: where the customer's browser lands
                      after paying -- the frontend page; see link_return>
          phone=<optional: the customer's mobile, when none is on file or
@@ -18,7 +22,7 @@
             link:     {"link": {"url", "id"}, "share_text"}
 
     POST property_core.api.payments.confirm
-         gateway=Razorpay  payload={...the checkout widget's response...}
+         payload={...the checkout widget's response...}
          -> {"paid", "payment_entry", ...}
 
     GET  property_core.api.payments.status?target=...
@@ -55,13 +59,16 @@ from property_core.property_core.utils import settings
 
 @frappe.whitelist()
 def options(target=None):
-    """Which gateways are enabled (and their modes), the payment instructions
-    to show when none is, and -- with ``target`` -- what is due on it now."""
-    enabled = gateways.enabled_gateways()
+    """The gateway customers pay through (set in Property Core Settings),
+    the payment instructions to show when there is none, and -- with
+    ``target`` -- what is due on it now."""
+    gw = gateways.selected_gateway()
+    info = gw and {"name": gw.name, "modes": list(gw.modes), "needs_phone": gw.needs_phone}
     data = {
-        "gateways": [{"name": g.name, "modes": list(g.modes), "needs_phone": g.needs_phone} for g in enabled],
+        "online": bool(gw),
+        "gateway": info,
+        "gateways": [info] if info else [],  # older frontends read this list
         "instructions": settings.get("payment_instructions"),
-        "online": bool(enabled),
     }
     if target:
         ctx = _context(target)
@@ -77,15 +84,23 @@ def options(target=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def start(target, amount=None, mode="checkout", gateway=None, return_url=None, phone=None):
+def start(target, amount=None, mode=None, gateway=None, return_url=None, phone=None):
     """Start an online payment on a booking (its next unpaid instalment), an
-    instalment or an invoice. ``mode=link`` returns a hosted URL and share text;
-    ``mode=checkout`` returns the options for the gateway's in-page widget.
+    instalment or an invoice, through the gateway set in Property Core
+    Settings. ``mode=link`` (default) returns a hosted URL and share text;
+    ``mode=checkout`` returns the options for the gateway's in-page widget, or
+    a link when the gateway has no widget -- read ``mode`` in the response.
+    ``gateway`` is ignored (kept so older frontends that send it still work).
     ``amount`` defaults to, and may not exceed, what is due. ``return_url``:
     where a link sends the customer after paying (see ``link_return``).
     ``phone``: the customer's mobile, overriding the one on file."""
-    if mode not in ("checkout", "link"):
+    if mode not in (None, "", "checkout", "link"):
         frappe.throw(_("mode must be checkout or link"))
+    gw = gateways.selected_gateway()
+    if not gw:
+        frappe.throw(_("Online payment is not set up. Pick the gateway under Online Payment Gateway "
+                       "in Property Core Settings and fill in its Settings."))
+    mode = mode if mode in gw.modes else "link"
     ctx = _context(target)
     ctx.return_url = _check_return_url(return_url)
     ctx.callback_url = get_url("/api/method/property_core.api.payments.link_return")
@@ -105,7 +120,6 @@ def start(target, amount=None, mode="checkout", gateway=None, return_url=None, p
         )
     ctx.amount = flt(amount, 2)
 
-    gw = gateways.get_gateway(gateway, mode)
     if mode == "checkout":
         return ok(data={"gateway": gw.name, "mode": mode, "amount": ctx.amount, "invoice": ctx.invoice,
                         "checkout": gw.start_checkout(ctx)})
@@ -122,12 +136,14 @@ def start(target, amount=None, mode="checkout", gateway=None, return_url=None, p
 
 
 @frappe.whitelist(methods=["POST"])
-def confirm(gateway, payload):
+def confirm(payload, gateway=None):
     """Hand back the checkout widget's response, as-is. Verifies it with the
     gateway and records the Payment Entry."""
     if isinstance(payload, str):
         payload = json.loads(payload)
-    gw = gateways.get_gateway(gateway, "checkout")
+    gw = gateways.selected_gateway()
+    if not gw or "checkout" not in gw.modes:
+        gw = gateways.get_gateway(gateway, "checkout")
     return ok(data=gw.confirm_checkout(frappe._dict(payload)))
 
 

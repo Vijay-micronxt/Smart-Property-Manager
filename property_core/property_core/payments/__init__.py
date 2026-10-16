@@ -88,6 +88,19 @@ def enabled_gateways():
     return out
 
 
+def selected_gateway():
+    """The gateway customers pay through: the one picked under Online Payment
+    Gateway in Property Core Settings, else the first enabled one. None when
+    that gateway is not set up (its Settings are empty)."""
+    from property_core.property_core.utils import settings
+
+    choice = settings.get("payment_gateway")
+    enabled = enabled_gateways()
+    if choice:
+        return next((g for g in enabled if g.name.lower() == choice.lower()), None)
+    return enabled[0] if enabled else None
+
+
 def get_gateway(name=None, mode=None):
     gateways = [g for g in enabled_gateways() if not mode or mode in g.modes]
     if name:

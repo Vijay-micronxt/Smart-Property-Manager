@@ -9,9 +9,8 @@ POST /api/method/property_core.api.payments.start
 | Param | Required | |
 |---|---|---|
 | `target` | yes | Booking / Payment Plan / Sales Invoice |
-| `mode` | no | `link` or `checkout` (default `checkout`) |
+| `mode` | no | `link` (default) or `checkout`. `checkout` gives the popup only when the gateway is Razorpay; otherwise you get a link, so read `mode` in the response |
 | `amount` | no | ₹. Default = everything due on the instalment; more than that is refused |
-| `gateway` | no | `Razorpay` or `mSwipe` (a `name` from `options`). Default = first enabled gateway for that mode. mSwipe supports `mode=link` only |
 | `phone` | no | Customer's mobile (10 digits, `+91`/spaces are fine). Needed for mSwipe when `options` says `has_phone: false`; otherwise overrides the number on file |
 | `return_url` | no, `link` only | Your page the customer lands on after paying. See [05-return-page.md](05-return-page.md) |
 
@@ -88,7 +87,7 @@ send its result to [`confirm`](03-confirm.md):
 ```js
 new Razorpay({
   ...data.checkout.options,
-  handler: (resp) => confirmPayment(data.gateway, resp),   // see 03-confirm.md
+  handler: (resp) => confirmPayment(resp),   // see 03-confirm.md
   modal: { ondismiss: () => showToast("Payment cancelled") },
 }).open();
 ```
