@@ -11,6 +11,9 @@
          gateway=<optional: first enabled one that supports the mode>
          return_url=<link mode, optional: where the customer's browser lands
                      after paying -- the frontend page; see link_return>
+         phone=<optional: the customer's mobile, when none is on file or
+                another should get the link; gateways with needs_phone
+                (mSwipe) cannot start without one>
          -> checkout: {"checkout": {"script", "options", "confirm_fields"}}
             link:     {"link": {"url", "id"}, "share_text"}
 
@@ -56,7 +59,7 @@ def options(target=None):
     to show when none is, and -- with ``target`` -- what is due on it now."""
     enabled = gateways.enabled_gateways()
     data = {
-        "gateways": [{"name": g.name, "modes": list(g.modes)} for g in enabled],
+        "gateways": [{"name": g.name, "modes": list(g.modes), "needs_phone": g.needs_phone} for g in enabled],
         "instructions": settings.get("payment_instructions"),
         "online": bool(enabled),
     }
@@ -67,22 +70,29 @@ def options(target=None):
             "invoice": ctx.invoice,
             "description": ctx.description,
             "amount": ctx.due,
+            # False: a gateway with needs_phone must be sent `phone` in start
+            "has_phone": bool(ctx.phone),
         }
     return ok(data=data)
 
 
 @frappe.whitelist(methods=["POST"])
-def start(target, amount=None, mode="checkout", gateway=None, return_url=None):
+def start(target, amount=None, mode="checkout", gateway=None, return_url=None, phone=None):
     """Start an online payment on a booking (its next unpaid instalment), an
     instalment or an invoice. ``mode=link`` returns a hosted URL and share text;
     ``mode=checkout`` returns the options for the gateway's in-page widget.
     ``amount`` defaults to, and may not exceed, what is due. ``return_url``:
-    where a link sends the customer after paying (see ``link_return``)."""
+    where a link sends the customer after paying (see ``link_return``).
+    ``phone``: the customer's mobile, overriding the one on file."""
     if mode not in ("checkout", "link"):
         frappe.throw(_("mode must be checkout or link"))
     ctx = _context(target)
     ctx.return_url = _check_return_url(return_url)
     ctx.callback_url = get_url("/api/method/property_core.api.payments.link_return")
+    if phone not in (None, ""):
+        if len("".join(c for c in str(phone) if c.isdigit())) < 10:
+            frappe.throw(_("phone must be a 10-digit mobile number"))
+        ctx.phone = str(phone).strip()
 
     amount = flt(amount) if amount not in (None, "") else ctx.due
     if amount <= 0:

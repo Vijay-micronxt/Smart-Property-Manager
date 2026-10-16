@@ -34,6 +34,8 @@ class PaymentGateway:
     name = ""
     #: "checkout", "link"
     modes = ()
+    #: the gateway cannot start without the customer's mobile number
+    needs_phone = False
 
     def is_enabled(self):
         raise NotImplementedError

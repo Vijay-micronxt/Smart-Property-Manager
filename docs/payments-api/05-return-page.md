@@ -4,11 +4,11 @@ You build this page; nothing to call to get here.
 
 1. You pass `return_url` to [`start`](02-start.md), e.g.
    `https://app.example.com/payment-result`.
-2. The customer pays on Razorpay's page.
-3. Razorpay sends the browser to the site
-   (`property_core.api.payments.link_return` — called by Razorpay, not by you).
-   The site checks Razorpay's signature, records the Payment Entry and marks
-   the instalment paid.
+2. The customer pays on the gateway's page (Razorpay or mSwipe).
+3. The gateway sends the browser to the site
+   (`property_core.api.payments.link_return` — called by the gateway, not by you).
+   The site verifies the payment with the gateway, records the Payment Entry
+   and marks the instalment paid.
 4. The site redirects the browser to your `return_url` with:
 
 ```

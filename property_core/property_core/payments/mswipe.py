@@ -25,6 +25,7 @@ PAID, PENDING = 1, 2  # getPBLTransactionDetails Payment_Status; anything else =
 class MswipeAdapter(PaymentGateway):
     name = "mSwipe"
     modes = ("link",)
+    needs_phone = True
 
     def is_enabled(self):
         if not frappe.db.exists("DocType", "Mswipe Settings"):

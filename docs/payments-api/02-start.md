@@ -12,6 +12,7 @@ POST /api/method/property_core.api.payments.start
 | `mode` | no | `link` or `checkout` (default `checkout`) |
 | `amount` | no | ₹. Default = everything due on the instalment; more than that is refused |
 | `gateway` | no | `Razorpay` or `mSwipe` (a `name` from `options`). Default = first enabled gateway for that mode. mSwipe supports `mode=link` only |
+| `phone` | no | Customer's mobile (10 digits, `+91`/spaces are fine). Needed for mSwipe when `options` says `has_phone: false`; otherwise overrides the number on file |
 | `return_url` | no, `link` only | Your page the customer lands on after paying. See [05-return-page.md](05-return-page.md) |
 
 `return_url` must be a path on the site (`/customer-portal`) or a URL whose
@@ -41,6 +42,8 @@ Response:
   "share_text": "Dear Tushar Patel, please pay ₹ 1,00,000.00 for Booking Amount on BKG-0112: https://rzp.io/rzp/pKQ8S9wS"
 }
 ```
+
+mSwipe returns the same shape, with `"gateway": "mSwipe"` and no `expires_at`.
 
 Open `link.url` (`window.location = link.url`), or send `share_text`:
 
