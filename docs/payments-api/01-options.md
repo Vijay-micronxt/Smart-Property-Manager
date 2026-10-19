@@ -23,7 +23,8 @@ GET /api/method/property_core.api.payments.options?target=PP-0502
     "invoice": "ACC-SINV-2026-00283",
     "description": "Booking Amount on BKG-0124",
     "amount": 50000.0,
-    "has_phone": true
+    "has_phone": true,
+    "phone": "9000000001"
   }
 }
 ```
@@ -35,6 +36,7 @@ GET /api/method/property_core.api.payments.options?target=PP-0502
 | `gateway.modes` | `link`, plus `checkout` for Razorpay |
 | `gateway.needs_phone` | `true` = it cannot start without the customer's mobile number |
 | `due.has_phone` | `false` = no mobile on file: when `needs_phone`, ask for one and send it as `phone` to `start` |
+| `due.phone` | The mobile on file (or `null`): prefill an editable mobile field — the link goes to that number |
 | `gateways` | The same gateway as a one-item list, for older frontends |
 | `due.amount` | ₹ due now. `0` = nothing to pay, hide the button |
 | `due.description` | Show it on the button / screen, e.g. "Booking Amount on BKG-0124" |

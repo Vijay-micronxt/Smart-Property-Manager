@@ -42,7 +42,7 @@ Response:
 }
 ```
 
-mSwipe returns the same shape, with `"gateway": "mSwipe"` and no `expires_at`.
+mSwipe returns the same shape, with `"gateway": "mSwipe"` and `expires_at` as a site-time string (`"2026-10-20 13:22:30"`). Keep `link.id`: pass it to `status` as `link_id`. Each call makes a new link; older unpaid links on the same invoice become `superseded`. Full mSwipe/WhatsApp flow: [MSWIPE_WHATSAPP_FLOW.md](MSWIPE_WHATSAPP_FLOW.md).
 
 Open `link.url` (`window.location = link.url`), or send `share_text`:
 

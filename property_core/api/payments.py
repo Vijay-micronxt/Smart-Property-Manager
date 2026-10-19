@@ -19,14 +19,17 @@
                 another should get the link; gateways with needs_phone
                 (mSwipe) cannot start without one>
          -> checkout: {"checkout": {"script", "options", "confirm_fields"}}
-            link:     {"link": {"url", "id"}, "share_text"}
+            link:     {"link": {"url", "id", "expires_at"}, "share_text"}
 
     POST property_core.api.payments.confirm
          payload={...the checkout widget's response...}
          -> {"paid", "payment_entry", ...}
 
-    GET  property_core.api.payments.status?target=...
-         -> what is still due -- poll this after sending a link
+    GET  property_core.api.payments.status?target=...&link_id=<optional>
+         -> did the customer pay, how much, and each link's state
+            (initiated | pending | paid | failed | expired | superseded);
+            checks open links with the gateway first -- poll this after
+            sending a link
 
     GET  property_core.api.payments.link_return   (the gateway calls it, not you)
          After paying on a link, the gateway sends the customer here. It
@@ -79,6 +82,8 @@ def options(target=None):
             "amount": ctx.due,
             # False: a gateway with needs_phone must be sent `phone` in start
             "has_phone": bool(ctx.phone),
+            # the mobile on file, to prefill an editable field; the link goes to it
+            "phone": ctx.phone,
         }
     return ok(data=data)
 
@@ -148,11 +153,44 @@ def confirm(payload, gateway=None):
 
 
 @frappe.whitelist()
-def status(target):
-    """What is still due on ``target`` -- poll this after sending a link."""
+def status(target, link_id=None):
+    """Did the customer pay, and how much -- poll this after sending a link
+    (every 5-10 s while the staff screen waits, and once on the return page).
+
+    Asks the gateway about the open links on ``target`` first, so a payment
+    whose customer never came back to the frontend is recorded right away.
+    ``link_id`` (``link.id`` from start): report that one link, under
+    ``link``, and the invoice it was raised on."""
     ctx = _context(target, raise_invoice=False)
-    return ok(data={"target": ctx.target, "invoice": ctx.invoice, "description": ctx.description,
-                    "due": ctx.due, "paid": ctx.due <= 0.005})
+    attempts = []
+    for gw in gateways.enabled_gateways():
+        if "link" in gw.modes:
+            attempts += gw.link_attempts(ctx, link_id=link_id)
+    attempts.sort(key=lambda a: a.get("created_on") or "", reverse=True)
+    if link_id and not attempts:
+        frappe.throw(_("Payment link {0} not found").format(link_id), frappe.DoesNotExistError)
+
+    link = attempts[0] if link_id else None
+    if link and link.get("invoice"):
+        invoice = link["invoice"]
+    else:
+        ctx = _context(target, raise_invoice=False)  # due may have changed after a settle
+        invoice = ctx.invoice
+    total, due = (frappe.db.get_value("Sales Invoice", invoice, ["grand_total", "outstanding_amount"])
+                  if invoice else (0, 0))
+    total, due = flt(total, 2), flt(due, 2)
+    return ok(data={
+        "target": ctx.target,
+        "invoice": invoice,
+        "description": ctx.description,
+        "invoice_total": total,
+        "due": due,
+        "paid_amount": flt(total - due, 2) if invoice else 0,
+        "paid": bool(invoice) and due <= 0.005,
+        "invoice_status": frappe.db.get_value("Sales Invoice", invoice, "status") if invoice else None,
+        "link": link,
+        "attempts": attempts,
+    })
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])

@@ -57,6 +57,8 @@ class MswipeGateway:
         self.password = settings.get_password("password") if settings.password else None
         self.system_user = settings.system_user
         self.mode_of_payment = getattr(settings, "mode_of_payment", None) or "Mswipe"
+        self.link_validity = getattr(settings, "link_validity", None) or ""
+        self.link_validity_hours = getattr(settings, "link_validity_hours", None)
 
         for field in ("base_url", "cust_code", "user_id", "client_id", "password"):
             if not getattr(self, field):
@@ -82,7 +84,7 @@ class MswipeGateway:
         data = self._make_request(url, payload)
         if str(data.get("status", "")).lower() != "true":
             frappe.throw(
-                _("Mswipe auth failed: {0}").format(data.get("message", "Unknown error"))
+                _("Mswipe auth failed: {0}").format(data.get("message") or data.get("msg") or "Unknown error")
             )
 
         token = data.get("sessionToken") or data.get("token") or data.get("data", {}).get("sessionToken")
@@ -92,7 +94,8 @@ class MswipeGateway:
         frappe.cache().set_value("mswipe_pbl_token", token, expires_in_sec=72000)
         return token
 
-    def initiate_transaction(self, order_id, amount, mobileno, email, callback_url=None, return_url=None):
+    def initiate_transaction(self, order_id, amount, mobileno, email, callback_url=None, return_url=None,
+                             link_validity=None):
         session_token = self._get_session_token()
 
         if not callback_url:
@@ -122,7 +125,7 @@ class MswipeGateway:
             "addlnote8": "",
             "addlnote9": "",
             "addlnote10": "",
-            "LinkValidity": "",
+            "LinkValidity": link_validity or self.link_validity or "",
             "paymentreason": "",
             "redirect_url": callback_url,
             "IsSendSMS": False,
@@ -136,7 +139,7 @@ class MswipeGateway:
 
         if str(data.get("status", "")).lower() != "true":
             frappe.throw(
-                _("Mswipe payment initiation failed: {0}").format(data.get("message", str(data)))
+                _("Mswipe payment initiation failed: {0}").format(data.get("message") or data.get("msg") or str(data))
             )
 
         smslink = data.get("smslink") or data.get("shortUrl") or data.get("link")
@@ -345,14 +348,19 @@ def create_payment_entry_from_mswipe(mswipe_payment_entry, system_user=None, mod
     pe.base_received_amount = float(mswipe_payment_entry.amount)
     pe.reference_no = mswipe_payment_entry.mswipe_txn_id or mswipe_payment_entry.mswipe_order_id
     pe.reference_date = frappe.utils.today()
-    pe.append(
-        "references",
-        {
-            "reference_doctype": "Sales Invoice",
-            "reference_name": si_name,
-            "allocated_amount": mswipe_payment_entry.amount,
-        },
-    )
+    # A second link paid after the first one cleared the invoice (or a link
+    # for more than is now due) is still money received: allocate what the
+    # invoice can take and leave the rest on the customer as an advance.
+    allocated = min(frappe.utils.flt(mswipe_payment_entry.amount), frappe.utils.flt(si.outstanding_amount))
+    if allocated > 0:
+        pe.append(
+            "references",
+            {
+                "reference_doctype": "Sales Invoice",
+                "reference_name": si_name,
+                "allocated_amount": allocated,
+            },
+        )
     if frappe.db.has_column("Payment Entry", "custom_mswipe_txn_id"):
         pe.custom_mswipe_txn_id = mswipe_payment_entry.mswipe_txn_id
     if frappe.db.has_column("Payment Entry", "custom_mswipe_order_id"):

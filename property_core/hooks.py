@@ -89,7 +89,7 @@ scheduler_events = {
     ],
     "cron": {
         # mSwipe has no webhook: settle paid links whose customer never came back
-        "*/10 * * * *": ["property_core.property_core.payments.mswipe.reconcile_pending"],
+        "*/5 * * * *": ["property_core.property_core.payments.mswipe.reconcile_pending"],
     },
 }
 

@@ -60,6 +60,15 @@ class PaymentGateway:
         the callback URL) came from this gateway."""
         return False
 
+    def link_attempts(self, ctx, link_id=None, live=True):
+        """The payment links raised on ``ctx.invoice``, newest first:
+        ``[{"link_id", "url", "amount", "status": "initiated" | "pending" |
+        "paid" | "failed" | "expired" | "superseded", "paid_amount",
+        "paid_on", "payment_entry", "created_on", "expires_at", ...}]``.
+        ``live``: check the open ones with the gateway first. Gateways that
+        keep no per-link record return []."""
+        return []
+
     def handle_link_return(self, params):
         """Verify the return and record the payment. Return
         ``{"status": "success" | "pending" | "failed", "target", "invoice",

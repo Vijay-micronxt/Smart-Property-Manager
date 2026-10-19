@@ -17,10 +17,14 @@ first one set up). Never send `gateway`; if you do, it is ignored.
 | 1 | [`payments.options`](01-options.md) | GET | Show the Pay button: is a gateway on, how much is due |
 | 2 | [`payments.start`](02-start.md) | POST | Start the payment: get a payment link, or the checkout popup options |
 | 3 | [`payments.confirm`](03-confirm.md) | POST | Checkout popup only: hand back the popup's result |
-| 4 | [`payments.status`](04-status.md) | GET | After paying: is it paid, what is still due |
+| 4 | [`payments.status`](04-status.md) | GET | Did they pay, how much, each link's state — poll it after sending a link |
 
 After a **link** payment the customer is sent back to your page — see
 [05-return-page.md](05-return-page.md).
+
+**mSwipe link sent on WhatsApp** (the customer pays on their phone and may
+never come back): the whole flow, payloads and screens are in
+[MSWIPE_WHATSAPP_FLOW.md](MSWIPE_WHATSAPP_FLOW.md).
 
 ## Basics
 
