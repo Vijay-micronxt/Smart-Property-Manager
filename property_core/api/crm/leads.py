@@ -232,6 +232,8 @@ def assign_lead(name, user, note=None):
     doc.custom_follow_up_owner = user
     if not doc.lead_owner:
         doc.lead_owner = user
+    # the assignment below pushes to the new user already, unless they hold it
+    doc.flags.skip_owner_push = user not in base.assignments("Lead", [name]).get(name, [])
     doc.save()
 
     base.assign_to("Lead", name, user, note or _("Lead assigned"))
@@ -244,10 +246,15 @@ def transfer_ownership(name, user):
     doc = base.read_doc("Lead", name)
     doc.check_permission("write")
 
+    # reassigning pushes to both sides (new assignee, removed assignee) when
+    # the assignment really moves; otherwise the owner-change push tells them
+    holders = base.assignments("Lead", [name]).get(name, [])
+    doc.flags.skip_owner_push = user not in holders and doc.lead_owner in holders
+
     doc.lead_owner = user
     doc.custom_follow_up_owner = user
     doc.save()
-    base.assign_to("Lead", name, user, _("Lead transferred"))
+    base.assign_to("Lead", name, user, _("Lead transferred to you"))
     return ok(data={"name": name, "lead_owner": user})
 
 

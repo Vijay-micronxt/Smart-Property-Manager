@@ -27,6 +27,7 @@ Modules:
     maintenance   maintenance visits per unit: auto-opened tasks, updates, photo proof
     operations    Issue + Work Order
     activity      comments, assignment, timeline on any record
+    notifications push device registration, notification list, read state, test push
 
 Visibility is not re-implemented here: every listing runs through Frappe's
 permission engine, which is wired to
