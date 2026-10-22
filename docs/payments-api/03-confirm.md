@@ -11,12 +11,10 @@ POST /api/method/property_core.api.payments.confirm
 
 | Param | Required | |
 |---|---|---|
-| `gateway` | yes | `gateway` from the `start` response |
 | `payload` | yes | The popup's response object, untouched |
 
 ```json
 {
-  "gateway": "Razorpay",
   "payload": {
     "razorpay_payment_id": "pay_TlnwQ0N9VR8jVF",
     "razorpay_order_id": "order_TloMzp086bvs4V",

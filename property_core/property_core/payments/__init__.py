@@ -34,6 +34,8 @@ class PaymentGateway:
     name = ""
     #: "checkout", "link"
     modes = ()
+    #: the gateway cannot start without the customer's mobile number
+    needs_phone = False
 
     def is_enabled(self):
         raise NotImplementedError
@@ -57,6 +59,15 @@ class PaymentGateway:
         """True when ``params`` (the query string the gateway appended to
         the callback URL) came from this gateway."""
         return False
+
+    def link_attempts(self, ctx, link_id=None, live=True):
+        """The payment links raised on ``ctx.invoice``, newest first:
+        ``[{"link_id", "url", "amount", "status": "initiated" | "pending" |
+        "paid" | "failed" | "expired" | "superseded", "paid_amount",
+        "paid_on", "payment_entry", "created_on", "expires_at", ...}]``.
+        ``live``: check the open ones with the gateway first. Gateways that
+        keep no per-link record return []."""
+        return []
 
     def handle_link_return(self, params):
         """Verify the return and record the payment. Return
@@ -84,6 +95,19 @@ def enabled_gateways():
         except Exception:
             frappe.log_error(frappe.get_traceback(), f"Payment gateway check failed: {gateway.name}")
     return out
+
+
+def selected_gateway():
+    """The gateway customers pay through: the one picked under Online Payment
+    Gateway in Property Core Settings, else the first enabled one. None when
+    that gateway is not set up (its Settings are empty)."""
+    from property_core.property_core.utils import settings
+
+    choice = settings.get("payment_gateway")
+    enabled = enabled_gateways()
+    if choice:
+        return next((g for g in enabled if g.name.lower() == choice.lower()), None)
+    return enabled[0] if enabled else None
 
 
 def get_gateway(name=None, mode=None):

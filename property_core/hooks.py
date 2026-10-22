@@ -48,7 +48,10 @@ doctype_js = {
     "Commission Entry": "public/js/commission_entry.js",
     "Commission Settlement": "public/js/commission_settlement.js",
     # notifications
-    "Sales Invoice": "public/js/sales_invoice_notifications.js",
+    "Sales Invoice": [
+        "public/js/sales_invoice_notifications.js",
+        "public/js/sales_invoice_online_payment.js",
+    ],
     "Payment Entry": "public/js/payment_entry_notifications.js",
     "Property Notification Log": "public/js/property_notification_log.js",
     # crm -- the funnel that used to run on Frappe CRM's CRM Lead
@@ -83,7 +86,16 @@ scheduler_events = {
         "property_core.property_core.notifications.lead_followup.run_daily_lead_follow_ups",
         "property_core.property_core.notifications.dispatcher.retry_failed",
         "property_core.property_core.notifications.dispatcher.purge_old_logs",
-    ]
+    ],
+    "cron": {
+        "*/5 * * * *": [
+            # mSwipe has no webhook: settle paid links whose customer never came back
+            "property_core.property_core.payments.mswipe.reconcile_pending",
+            # push the assignee a few minutes before each follow-up
+            "property_core.property_core.notifications.push.send_due_reminders",
+        ],
+        "0 7 * * *": ["property_core.property_core.notifications.push.send_daily_digest"],
+    },
 }
 
 doc_events = {
@@ -135,6 +147,7 @@ doc_events = {
             "property_core.property_core.notifications.lead_followup.on_lead_update",
             "property_core.property_core.crm.call_log.keep_single_assignment",
             "property_core.property_core.crm.customer_from_lead.sync_lead_address",
+            "property_core.property_core.notifications.push.on_owner_change",
         ],
     },
     "Customer": {
@@ -142,6 +155,11 @@ doc_events = {
     },
     "Opportunity": {
         "validate": "property_core.property_core.crm.opportunity_events.validate",
+        "on_update": "property_core.property_core.notifications.push.on_owner_change",
+    },
+    "Notification Log": {
+        # frappe_fcm_notification pushes every log and crashes on an empty body
+        "before_insert": "property_core.property_core.notifications.push.fill_notification_body",
     },
     "Call Log": {
         "after_insert": "property_core.property_core.crm.call_log.after_insert",

@@ -454,6 +454,69 @@ Property Maintenance Task:
 `activity.add_comment` / `get_comments` / `timeline` / `assign` / `unassign`,
 `activity.my_assignments` (the "My work" inbox across all records).
 
+### 5.15 Push notifications and the bell
+
+Full frontend walkthrough (Firebase setup, code samples, payloads):
+`PUSH_NOTIFICATIONS.md`.
+
+The server pushes through Firebase Cloud Messaging (FCM). The app's only job
+is to hand over its FCM token and to open the right screen when a push is
+tapped.
+
+**After login** (and whenever Firebase gives a new token — `onTokenRefresh`):
+
+```
+POST notifications.register_device
+     device_token = <FCM registration token>
+     device_type  = android | ios | web
+     device_name  = "Pixel 7"          (optional)
+```
+
+Safe to call every launch — the same token is not stored twice, and a token
+that was registered by another user on the same phone moves to this user.
+
+**On logout**, before clearing the session:
+`POST notifications.unregister_device(device_token)`. Without this the phone
+keeps getting the previous user's pushes.
+
+**Firebase setup on the app side**: use the same Firebase project whose
+service account is saved on the site (*FCM Notification Settings*). Web needs
+`firebase-messaging-sw.js` and the project's VAPID key for `getToken`.
+
+**What gets pushed** (title = `notification.title`, text = `notification.body`):
+
+| When | Who | Title example |
+|---|---|---|
+| Someone assigns a record (any `assign` endpoint, `leads.assign_lead`, desk) | assignee | "Tushar assigned a new task Lead Ramesh to you" |
+| Lead transferred (`leads.transfer_ownership`) | new owner + previous assignee | same assignment texts |
+| Lead / Opportunity owner changed any other way | new owner + old owner | "Lead transferred to you: Ramesh" / "Lead moved: Ramesh" |
+| Follow-up created or reassigned for someone else | follow-up `assigned_to` | "New follow-up: Call with Ramesh" |
+| 15 minutes before an open follow-up (configurable) | follow-up `assigned_to` | "Follow-up at 03:30 PM: Ramesh" |
+| Every day 7 AM | each user with follow-ups due | "Today: 5 follow-ups, 2 overdue" |
+| Desk mentions, shares, ERPNext Notifications set to *System Notification* | that user | Frappe's text |
+
+**On tap**, read the push's `data`:
+
+```json
+{"doctype": "Lead", "docname": "CRM-LEAD-2026-00012"}
+```
+
+Open that record's screen. For follow-up pushes `doctype` is the Lead /
+Opportunity / Property Booking the follow-up belongs to. `docname` is the
+string `"None"` for the morning digest (`doctype` = `Property Follow Up`):
+open today's follow-ups.
+
+**Bell screen**: `notifications.get_notifications(unread_only?, page?, page_size?)`
+lists the same records the pushes came from (`subject`, `body`,
+`document_type`, `document_name`, `read`, `creation`) plus the `unread`
+count. `notifications.unread_count()` for the badge, `notifications.mark_read(name?)`
+(no name = all). `notifications.send_test()` pushes a test message to the
+logged-in user's devices — use it to check the setup.
+
+Switches: *Property Notification Settings → App Push Notifications* (on/off,
+morning digest, minutes before follow-up). Each user can still mute
+everything in their own Frappe *Notification Settings*.
+
 ---
 
 ## 6. Who sees what
@@ -476,7 +539,7 @@ comes back scoped.
 All endpoints, generated from the code. Params with `?` are optional.
 Full detail per endpoint is in `CRM_API.md`.
 
-**164 endpoints.** Path: `/api/method/property_core.api.crm.<module>.<function>`.
+**171 endpoints.** Path: `/api/method/property_core.api.crm.<module>.<function>`.
 
 
 #### `session` (5)
@@ -730,6 +793,18 @@ Full detail per endpoint is in `CRM_API.md`.
 | `activity.assign(doctype, name, user, note?)` | One working owner: earlier open assignments are released. |
 | `activity.unassign(doctype, name, user)` | Remove an assignee from any record. |
 | `activity.my_assignments(status?, reference_type?, page?, page_size?)` | Everything assigned to me (desk ToDo), across records. |
+
+#### `notifications` (7)
+
+| Endpoint | What it is for |
+|---|---|
+| `notifications.register_device(device_token, device_type?, device_name?)` | POST after login / token refresh: save this device's FCM token. `device_type` android \| ios \| web. |
+| `notifications.unregister_device(device_token?, all_devices?)` | POST on logout: stop pushes to this device (`all_devices=1`: every device). |
+| `notifications.my_devices()` | Devices registered for the logged-in user. |
+| `notifications.get_notifications(unread_only?, page?, page_size?)` | Bell screen: newest first, paged, with `unread` count. |
+| `notifications.unread_count()` | Badge count. |
+| `notifications.mark_read(name?)` | POST: mark one notification read, or all when `name` is empty. |
+| `notifications.send_test()` | POST: push a test message to my devices. |
 
 #### `operations` (9)
 

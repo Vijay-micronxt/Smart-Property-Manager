@@ -9,9 +9,9 @@ POST /api/method/property_core.api.payments.start
 | Param | Required | |
 |---|---|---|
 | `target` | yes | Booking / Payment Plan / Sales Invoice |
-| `mode` | no | `link` or `checkout` (default `checkout`) |
+| `mode` | no | `link` (default) or `checkout`. `checkout` gives the popup only when the gateway is Razorpay; otherwise you get a link, so read `mode` in the response |
 | `amount` | no | ₹. Default = everything due on the instalment; more than that is refused |
-| `gateway` | no | e.g. `Razorpay`. Default = first enabled gateway for that mode |
+| `phone` | no | Customer's mobile (10 digits, `+91`/spaces are fine). Needed for mSwipe when `options` says `has_phone: false`; otherwise overrides the number on file |
 | `return_url` | no, `link` only | Your page the customer lands on after paying. See [05-return-page.md](05-return-page.md) |
 
 `return_url` must be a path on the site (`/customer-portal`) or a URL whose
@@ -41,6 +41,8 @@ Response:
   "share_text": "Dear Tushar Patel, please pay ₹ 1,00,000.00 for Booking Amount on BKG-0112: https://rzp.io/rzp/pKQ8S9wS"
 }
 ```
+
+mSwipe returns the same shape, with `"gateway": "mSwipe"` and `expires_at` as a site-time string (`"2026-10-20 13:22:30"`). Keep `link.id`: pass it to `status` as `link_id`. Each call makes a new link; older unpaid links on the same invoice become `superseded`. Full mSwipe/WhatsApp flow: [MSWIPE_WHATSAPP_FLOW.md](MSWIPE_WHATSAPP_FLOW.md).
 
 Open `link.url` (`window.location = link.url`), or send `share_text`:
 
@@ -85,7 +87,7 @@ send its result to [`confirm`](03-confirm.md):
 ```js
 new Razorpay({
   ...data.checkout.options,
-  handler: (resp) => confirmPayment(data.gateway, resp),   // see 03-confirm.md
+  handler: (resp) => confirmPayment(resp),   // see 03-confirm.md
   modal: { ondismiss: () => showToast("Payment cancelled") },
 }).open();
 ```

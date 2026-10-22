@@ -1,25 +1,35 @@
 """Collect a payment online -- one API for the customer portal and the CRM.
 
+    The gateway is the site's choice, not the frontend's: Online Payment
+    Gateway in Property Core Settings (Razorpay or mSwipe; blank = the first
+    one set up). The frontend calls the same endpoints whichever it is.
+
     GET  property_core.api.payments.options?target=BKG-0018
-         -> enabled gateways and their modes, what is due now, and the payment
-            instructions to show when no gateway is enabled
+         -> the gateway in use and its modes, what is due now, and the payment
+            instructions to show when no gateway is set up
 
     POST property_core.api.payments.start
          target=BKG-0018 | PP-0054 | ACC-SINV-...   (booking = its next unpaid instalment)
          amount=<rupees, optional: defaults to the full amount due on that instalment>
-         mode=checkout | link
-         gateway=<optional: first enabled one that supports the mode>
+         mode=<optional: link (default) | checkout; a gateway without checkout
+               (mSwipe) answers with a link>
          return_url=<link mode, optional: where the customer's browser lands
                      after paying -- the frontend page; see link_return>
+         phone=<optional: the customer's mobile, when none is on file or
+                another should get the link; gateways with needs_phone
+                (mSwipe) cannot start without one>
          -> checkout: {"checkout": {"script", "options", "confirm_fields"}}
-            link:     {"link": {"url", "id"}, "share_text"}
+            link:     {"link": {"url", "id", "expires_at"}, "share_text"}
 
     POST property_core.api.payments.confirm
-         gateway=Razorpay  payload={...the checkout widget's response...}
+         payload={...the checkout widget's response...}
          -> {"paid", "payment_entry", ...}
 
-    GET  property_core.api.payments.status?target=...
-         -> what is still due -- poll this after sending a link
+    GET  property_core.api.payments.status?target=...&link_id=<optional>
+         -> did the customer pay, how much, and each link's state
+            (initiated | pending | paid | failed | expired | superseded);
+            checks open links with the gateway first -- poll this after
+            sending a link
 
     GET  property_core.api.payments.link_return   (the gateway calls it, not you)
          After paying on a link, the gateway sends the customer here. It
@@ -52,13 +62,16 @@ from property_core.property_core.utils import settings
 
 @frappe.whitelist()
 def options(target=None):
-    """Which gateways are enabled (and their modes), the payment instructions
-    to show when none is, and -- with ``target`` -- what is due on it now."""
-    enabled = gateways.enabled_gateways()
+    """The gateway customers pay through (set in Property Core Settings),
+    the payment instructions to show when there is none, and -- with
+    ``target`` -- what is due on it now."""
+    gw = gateways.selected_gateway()
+    info = gw and {"name": gw.name, "modes": list(gw.modes), "needs_phone": gw.needs_phone}
     data = {
-        "gateways": [{"name": g.name, "modes": list(g.modes)} for g in enabled],
+        "online": bool(gw),
+        "gateway": info,
+        "gateways": [info] if info else [],  # older frontends read this list
         "instructions": settings.get("payment_instructions"),
-        "online": bool(enabled),
     }
     if target:
         ctx = _context(target)
@@ -67,22 +80,39 @@ def options(target=None):
             "invoice": ctx.invoice,
             "description": ctx.description,
             "amount": ctx.due,
+            # False: a gateway with needs_phone must be sent `phone` in start
+            "has_phone": bool(ctx.phone),
+            # the mobile on file, to prefill an editable field; the link goes to it
+            "phone": ctx.phone,
         }
     return ok(data=data)
 
 
 @frappe.whitelist(methods=["POST"])
-def start(target, amount=None, mode="checkout", gateway=None, return_url=None):
+def start(target, amount=None, mode=None, gateway=None, return_url=None, phone=None):
     """Start an online payment on a booking (its next unpaid instalment), an
-    instalment or an invoice. ``mode=link`` returns a hosted URL and share text;
-    ``mode=checkout`` returns the options for the gateway's in-page widget.
+    instalment or an invoice, through the gateway set in Property Core
+    Settings. ``mode=link`` (default) returns a hosted URL and share text;
+    ``mode=checkout`` returns the options for the gateway's in-page widget, or
+    a link when the gateway has no widget -- read ``mode`` in the response.
+    ``gateway`` is ignored (kept so older frontends that send it still work).
     ``amount`` defaults to, and may not exceed, what is due. ``return_url``:
-    where a link sends the customer after paying (see ``link_return``)."""
-    if mode not in ("checkout", "link"):
+    where a link sends the customer after paying (see ``link_return``).
+    ``phone``: the customer's mobile, overriding the one on file."""
+    if mode not in (None, "", "checkout", "link"):
         frappe.throw(_("mode must be checkout or link"))
+    gw = gateways.selected_gateway()
+    if not gw:
+        frappe.throw(_("Online payment is not set up. Pick the gateway under Online Payment Gateway "
+                       "in Property Core Settings and fill in its Settings."))
+    mode = mode if mode in gw.modes else "link"
     ctx = _context(target)
     ctx.return_url = _check_return_url(return_url)
     ctx.callback_url = get_url("/api/method/property_core.api.payments.link_return")
+    if phone not in (None, ""):
+        if len("".join(c for c in str(phone) if c.isdigit())) < 10:
+            frappe.throw(_("phone must be a 10-digit mobile number"))
+        ctx.phone = str(phone).strip()
 
     amount = flt(amount) if amount not in (None, "") else ctx.due
     if amount <= 0:
@@ -95,7 +125,6 @@ def start(target, amount=None, mode="checkout", gateway=None, return_url=None):
         )
     ctx.amount = flt(amount, 2)
 
-    gw = gateways.get_gateway(gateway, mode)
     if mode == "checkout":
         return ok(data={"gateway": gw.name, "mode": mode, "amount": ctx.amount, "invoice": ctx.invoice,
                         "checkout": gw.start_checkout(ctx)})
@@ -112,21 +141,56 @@ def start(target, amount=None, mode="checkout", gateway=None, return_url=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def confirm(gateway, payload):
+def confirm(payload, gateway=None):
     """Hand back the checkout widget's response, as-is. Verifies it with the
     gateway and records the Payment Entry."""
     if isinstance(payload, str):
         payload = json.loads(payload)
-    gw = gateways.get_gateway(gateway, "checkout")
+    gw = gateways.selected_gateway()
+    if not gw or "checkout" not in gw.modes:
+        gw = gateways.get_gateway(gateway, "checkout")
     return ok(data=gw.confirm_checkout(frappe._dict(payload)))
 
 
 @frappe.whitelist()
-def status(target):
-    """What is still due on ``target`` -- poll this after sending a link."""
+def status(target, link_id=None):
+    """Did the customer pay, and how much -- poll this after sending a link
+    (every 5-10 s while the staff screen waits, and once on the return page).
+
+    Asks the gateway about the open links on ``target`` first, so a payment
+    whose customer never came back to the frontend is recorded right away.
+    ``link_id`` (``link.id`` from start): report that one link, under
+    ``link``, and the invoice it was raised on."""
     ctx = _context(target, raise_invoice=False)
-    return ok(data={"target": ctx.target, "invoice": ctx.invoice, "description": ctx.description,
-                    "due": ctx.due, "paid": ctx.due <= 0.005})
+    attempts = []
+    for gw in gateways.enabled_gateways():
+        if "link" in gw.modes:
+            attempts += gw.link_attempts(ctx, link_id=link_id)
+    attempts.sort(key=lambda a: a.get("created_on") or "", reverse=True)
+    if link_id and not attempts:
+        frappe.throw(_("Payment link {0} not found").format(link_id), frappe.DoesNotExistError)
+
+    link = attempts[0] if link_id else None
+    if link and link.get("invoice"):
+        invoice = link["invoice"]
+    else:
+        ctx = _context(target, raise_invoice=False)  # due may have changed after a settle
+        invoice = ctx.invoice
+    total, due = (frappe.db.get_value("Sales Invoice", invoice, ["grand_total", "outstanding_amount"])
+                  if invoice else (0, 0))
+    total, due = flt(total, 2), flt(due, 2)
+    return ok(data={
+        "target": ctx.target,
+        "invoice": invoice,
+        "description": ctx.description,
+        "invoice_total": total,
+        "due": due,
+        "paid_amount": flt(total - due, 2) if invoice else 0,
+        "paid": bool(invoice) and due <= 0.005,
+        "invoice_status": frappe.db.get_value("Sales Invoice", invoice, "status") if invoice else None,
+        "link": link,
+        "attempts": attempts,
+    })
 
 
 @frappe.whitelist(allow_guest=True, methods=["GET"])

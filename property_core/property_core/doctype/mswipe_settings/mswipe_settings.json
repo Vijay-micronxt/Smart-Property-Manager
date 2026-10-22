@@ -11,7 +11,9 @@
   "client_id",
   "password",
   "mode_of_payment",
-  "system_user"
+  "system_user",
+  "link_validity_hours",
+  "link_validity"
  ],
  "fields": [
   {
@@ -32,7 +34,7 @@
    "fieldtype": "Data",
    "label": "Mswipe API User ID",
    "reqd": 1,
-   "description": "API user ID issued by Mswipe for the Pay-by-Link service \u2014 not your ERPNext login."
+   "description": "API user ID issued by Mswipe for the Pay-by-Link service — not your ERPNext login."
   },
   {
    "fieldname": "client_id",
@@ -46,7 +48,7 @@
    "fieldtype": "Password",
    "label": "Mswipe API Password",
    "reqd": 1,
-   "description": "API password issued by Mswipe for the Pay-by-Link service \u2014 not your ERPNext login."
+   "description": "API password issued by Mswipe for the Pay-by-Link service — not your ERPNext login."
   },
   {
    "fieldname": "mode_of_payment",
@@ -61,11 +63,25 @@
    "label": "System User",
    "options": "User",
    "description": "ERPNext user under whose name Payment Entries will be created."
+  },
+  {
+   "fieldname": "link_validity_hours",
+   "fieldtype": "Int",
+   "label": "Link Valid For (hours)",
+   "default": "24",
+   "non_negative": 1,
+   "description": "How long a payment link stays open. After this the API reports it as expired and the frontend offers a new link. A payment made on it later is still recorded."
+  },
+  {
+   "fieldname": "link_validity",
+   "fieldtype": "Data",
+   "label": "LinkValidity sent to mSwipe",
+   "description": "Optional. Sent to mSwipe as LinkValidity, in the format mSwipe's integration guide gives. Blank = mSwipe's own default expiry."
   }
  ],
  "is_single": 1,
  "links": [],
- "modified": "2026-08-02 02:00:00.000000",
+ "modified": "2026-10-19 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Mswipe Settings",
