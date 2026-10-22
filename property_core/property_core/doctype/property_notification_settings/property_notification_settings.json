@@ -361,7 +361,7 @@
       "fieldtype": "Check",
       "label": "Morning Follow-Up Digest",
       "default": "1",
-      "description": "At 9 AM every user gets today's and overdue follow-up counts.",
+      "description": "At 7 AM every user gets today's and overdue follow-up counts.",
       "depends_on": "enable_push_notifications"
     },
     {

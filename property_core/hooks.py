@@ -87,7 +87,7 @@ scheduler_events = {
     "cron": {
         # push the assignee a few minutes before each follow-up
         "*/5 * * * *": ["property_core.property_core.notifications.push.send_due_reminders"],
-        "0 9 * * *": ["property_core.property_core.notifications.push.send_daily_digest"],
+        "0 7 * * *": ["property_core.property_core.notifications.push.send_daily_digest"],
     },
 }
 

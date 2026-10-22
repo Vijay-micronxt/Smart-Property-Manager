@@ -489,7 +489,7 @@ service account is saved on the site (*FCM Notification Settings*). Web needs
 | Lead / Opportunity owner changed any other way | new owner + old owner | "Lead transferred to you: Ramesh" / "Lead moved: Ramesh" |
 | Follow-up created or reassigned for someone else | follow-up `assigned_to` | "New follow-up: Call with Ramesh" |
 | 15 minutes before an open follow-up (configurable) | follow-up `assigned_to` | "Follow-up at 03:30 PM: Ramesh" |
-| Every day 9 AM | each user with follow-ups due | "Today: 5 follow-ups, 2 overdue" |
+| Every day 7 AM | each user with follow-ups due | "Today: 5 follow-ups, 2 overdue" |
 | Desk mentions, shares, ERPNext Notifications set to *System Notification* | that user | Frappe's text |
 
 **On tap**, read the push's `data`:
