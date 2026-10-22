@@ -83,7 +83,12 @@ scheduler_events = {
         "property_core.property_core.notifications.lead_followup.run_daily_lead_follow_ups",
         "property_core.property_core.notifications.dispatcher.retry_failed",
         "property_core.property_core.notifications.dispatcher.purge_old_logs",
-    ]
+    ],
+    "cron": {
+        # push the assignee a few minutes before each follow-up
+        "*/5 * * * *": ["property_core.property_core.notifications.push.send_due_reminders"],
+        "0 9 * * *": ["property_core.property_core.notifications.push.send_daily_digest"],
+    },
 }
 
 doc_events = {
@@ -135,6 +140,7 @@ doc_events = {
             "property_core.property_core.notifications.lead_followup.on_lead_update",
             "property_core.property_core.crm.call_log.keep_single_assignment",
             "property_core.property_core.crm.customer_from_lead.sync_lead_address",
+            "property_core.property_core.notifications.push.on_owner_change",
         ],
     },
     "Customer": {
@@ -142,6 +148,11 @@ doc_events = {
     },
     "Opportunity": {
         "validate": "property_core.property_core.crm.opportunity_events.validate",
+        "on_update": "property_core.property_core.notifications.push.on_owner_change",
+    },
+    "Notification Log": {
+        # frappe_fcm_notification pushes every log and crashes on an empty body
+        "before_insert": "property_core.property_core.notifications.push.fill_notification_body",
     },
     "Call Log": {
         "after_insert": "property_core.property_core.crm.call_log.after_insert",

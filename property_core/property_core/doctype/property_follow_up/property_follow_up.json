@@ -28,7 +28,8 @@
   "next_follow_up_on",
   "next_action",
   "completed_on",
-  "completed_by"
+  "completed_by",
+  "reminder_sent_on"
  ],
  "fields": [
   {
@@ -184,10 +185,19 @@
    "no_copy": 1,
    "options": "User",
    "read_only": 1
+  },
+  {
+   "fieldname": "reminder_sent_on",
+   "fieldtype": "Datetime",
+   "label": "Reminder Sent On",
+   "read_only": 1,
+   "hidden": 1,
+   "no_copy": 1,
+   "description": "Push reminder sent to the assignee. Cleared when the time or assignee changes."
   }
  ],
  "links": [],
- "modified": "2026-09-28 15:00:00.000000",
+ "modified": "2026-10-22 18:00:00.000000",
  "modified_by": "Administrator",
  "module": "Property Core",
  "name": "Property Follow Up",

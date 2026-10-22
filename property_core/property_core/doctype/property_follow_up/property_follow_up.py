@@ -13,6 +13,8 @@ import frappe
 from frappe.model.document import Document
 from frappe.utils import get_datetime, getdate, now_datetime
 
+from property_core.property_core.notifications import push
+
 # reference_doctype -> (name field, phone field, property field, unit field, status field)
 REFERENCE_MAP = {
     "Lead": ("lead_name", "mobile_no", "custom_property", "custom_property_unit", "custom_lead_status"),
@@ -33,10 +35,12 @@ class PropertyFollowUp(Document):
     def validate(self):
         self.pull_reference_details()
         self.set_completion_stamp()
+        push.reset_reminder(self)
 
     def on_update(self):
         self.sync_todo()
         self.push_next_follow_up()
+        push.on_follow_up_update(self)
 
     def on_trash(self):
         _close_todos(self.doctype, self.name)

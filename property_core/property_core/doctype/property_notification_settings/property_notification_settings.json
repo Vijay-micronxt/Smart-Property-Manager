@@ -47,6 +47,11 @@
     "lead_repeat_overdue",
     "lead_repeat_every_days",
     "lead_stop_statuses",
+    "section_push",
+    "enable_push_notifications",
+    "push_daily_digest",
+    "column_break_push",
+    "push_follow_up_before_minutes",
     "section_advanced",
     "max_retries",
     "log_retention_days",
@@ -339,6 +344,39 @@
       "description": "One Lead status per line. Reminders also stop when the Lead is disabled or already converted to a Customer."
     },
     {
+      "fieldname": "section_push",
+      "fieldtype": "Section Break",
+      "label": "App Push Notifications",
+      "description": "Pushes go out as Notification Logs, which Frappe FCM Notification sends to each user's registered devices."
+    },
+    {
+      "fieldname": "enable_push_notifications",
+      "fieldtype": "Check",
+      "label": "Enable Push Notifications",
+      "default": "1",
+      "description": "Follow-up assigned / reminder / morning digest, and Lead or Opportunity transferred."
+    },
+    {
+      "fieldname": "push_daily_digest",
+      "fieldtype": "Check",
+      "label": "Morning Follow-Up Digest",
+      "default": "1",
+      "description": "At 9 AM every user gets today's and overdue follow-up counts.",
+      "depends_on": "enable_push_notifications"
+    },
+    {
+      "fieldname": "column_break_push",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "push_follow_up_before_minutes",
+      "fieldtype": "Int",
+      "label": "Remind Minutes Before Follow-Up",
+      "default": "15",
+      "non_negative": 1,
+      "depends_on": "enable_push_notifications"
+    },
+    {
       "fieldname": "section_advanced",
       "fieldtype": "Section Break",
       "label": "Advanced"
@@ -384,7 +422,7 @@
   ],
   "issingle": 1,
   "links": [],
-  "modified": "2026-07-31 00:00:00.000000",
+  "modified": "2026-10-22 18:00:00.000000",
   "modified_by": "Administrator",
   "module": "Property Core",
   "name": "Property Notification Settings",
