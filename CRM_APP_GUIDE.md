@@ -456,6 +456,9 @@ Property Maintenance Task:
 
 ### 5.15 Push notifications and the bell
 
+Full frontend walkthrough (Firebase setup, code samples, payloads):
+`PUSH_NOTIFICATIONS.md`.
+
 The server pushes through Firebase Cloud Messaging (FCM). The app's only job
 is to hand over its FCM token and to open the right screen when a push is
 tapped.
